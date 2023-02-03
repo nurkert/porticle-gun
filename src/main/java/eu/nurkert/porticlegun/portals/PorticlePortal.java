@@ -57,8 +57,6 @@ public class PorticlePortal extends PotentialPortal {
         double sin = Math.sin(radians) / (Math.abs(direction.getY()) + 1);
         double cos = Math.cos(radians) / 2;
 
-        System.out.println("direction: " + direction.getY());
-
         if(direction.getY() == 0.0) {
             // horizontal facing portal
             loc = loc.clone().add(0.5 - 0.4 * direction.getX(), 1, 0.5 - 0.4 * direction.getZ());
@@ -70,7 +68,6 @@ public class PorticlePortal extends PotentialPortal {
             // upward facing portal
             return new Vector(loc.getX() + cos + 0.5, loc.getY() + 0.1, loc.getZ() + sin + 0.5);
         }
-        System.out.println("direction: " + direction.getY());
         return null;
     }
 }

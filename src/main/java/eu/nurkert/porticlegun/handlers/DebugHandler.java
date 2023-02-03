@@ -10,8 +10,4 @@ import org.bukkit.event.player.PlayerInteractEvent;
 
 public class DebugHandler implements Listener {
 
-    @EventHandler
-    public void on(EntityDamageEvent event) {
-        Bukkit.broadcastMessage("test");
-    }
 }

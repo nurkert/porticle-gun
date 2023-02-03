@@ -35,5 +35,45 @@ public class TeleportationHandler implements Listener {
 
     }
 
+    double[][] expected = {
+            new double[]{26d, 12d, 43d, 12d},
+            new double[]{17d, 10d, 30d, 17d},
+            new double[]{36d, 16d, 59d, 14d}
+    };
 
+    /**
+     * Multiplies two matrices.
+     *
+     * @param firstMatrix  the first matrix
+     * @param secondMatrix the second matrix
+     * @return the result of the multiplication
+     */
+    double[][] multiplyMatrices(double[][] firstMatrix, double[][] secondMatrix) {
+        double[][] result = new double[firstMatrix.length][secondMatrix[0].length];
+
+        for (int row = 0; row < result.length; row++) {
+            for (int col = 0; col < result[row].length; col++) {
+                result[row][col] = multiplyMatricesCell(firstMatrix, secondMatrix, row, col);
+            }
+        }
+
+        return result;
+    }
+
+    /**
+     * Multiplies a cell of the result matrix.
+     *
+     * @param firstMatrix  the first matrix
+     * @param secondMatrix the second matrix
+     * @param row          the row of the cell
+     * @param col          the column of the cell
+     * @return the result of the multiplication
+     */
+    double multiplyMatricesCell(double[][] firstMatrix, double[][] secondMatrix, int row, int col) {
+        double cell = 0;
+        for (int i = 0; i < secondMatrix.length; i++) {
+            cell += firstMatrix[row][i] * secondMatrix[i][col];
+        }
+        return cell;
+    }
 }

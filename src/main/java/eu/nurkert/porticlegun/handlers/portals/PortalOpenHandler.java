@@ -3,6 +3,7 @@ package eu.nurkert.porticlegun.handlers.portals;
 import eu.nurkert.porticlegun.handlers.AudioHandler;
 import eu.nurkert.porticlegun.handlers.gun.GunColorHandler;
 import eu.nurkert.porticlegun.handlers.item.ItemHandler;
+import eu.nurkert.porticlegun.handlers.visualization.TitleHandler;
 import eu.nurkert.porticlegun.portals.PortalColor;
 import eu.nurkert.porticlegun.portals.PortalTracing;
 import eu.nurkert.porticlegun.portals.PorticlePortal;
@@ -45,6 +46,7 @@ public class PortalOpenHandler implements Listener {
                                 PorticlePortal secondary = new PorticlePortal(potential, gunID, color);
                                 OpenedPortalsHandler.setSecondaryPortal(gunID, secondary);
                             }
+                            TitleHandler.sendPortalStatus(player, gunID);
                             AudioHandler.playSound(player, AudioHandler.PortalSound.PORTAL_OPEN);
                             return;
                         }

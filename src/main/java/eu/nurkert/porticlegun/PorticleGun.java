@@ -22,7 +22,7 @@ public final class PorticleGun extends JavaPlugin {
     }
 
 
-    public static boolean developMode = true;
+    public static boolean developMode = false;
     static PorticleGun plugin;
 
     public PorticleGun() {

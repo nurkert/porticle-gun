@@ -28,6 +28,30 @@ public class OpenedPortalsHandler implements Listener {
         }
     }
 
+    public static void removePrimaryPortal(String gunID) {
+        primaryPortals.remove(gunID);
+    }
+
+    public static boolean hasPrimaryPortal(String gunID) {
+        return primaryPortals.containsKey(gunID);
+    }
+
+    public static void removeSecondaryPortal(String gunID) {
+        secondaryPortals.remove(gunID);
+    }
+
+    public static boolean hasSecondaryPortal(String gunID) {
+        return secondaryPortals.containsKey(gunID);
+    }
+
+    public static PorticlePortal getPrimaryPortal(String gunID) {
+        return primaryPortals.get(gunID);
+    }
+
+    public static PorticlePortal getSecondaryPortal(String gunID) {
+        return secondaryPortals.get(gunID);
+    }
+
     public static ArrayList<PorticlePortal> getAllPortal() {
         return new ArrayList<PorticlePortal>() {{
             addAll(primaryPortals.values());

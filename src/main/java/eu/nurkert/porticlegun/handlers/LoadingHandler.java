@@ -4,10 +4,9 @@ import eu.nurkert.porticlegun.PorticleGun;
 import eu.nurkert.porticlegun.commands.PorticleGunCommand;
 import eu.nurkert.porticlegun.handlers.gravity.GravityGun;
 import eu.nurkert.porticlegun.handlers.item.RecipeHandler;
-import eu.nurkert.porticlegun.handlers.portals.PortalOpenHandler;
-import eu.nurkert.porticlegun.handlers.portals.OpenedPortalsHandler;
-import eu.nurkert.porticlegun.handlers.portals.TeleportationHandler;
-import eu.nurkert.porticlegun.handlers.portals.VisualizationHanlder;
+import eu.nurkert.porticlegun.handlers.portals.*;
+import eu.nurkert.porticlegun.handlers.visualization.TitleHandler;
+import eu.nurkert.porticlegun.handlers.visualization.VisualizationHanlder;
 import org.bukkit.Bukkit;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.event.Listener;
@@ -41,6 +40,8 @@ public class LoadingHandler {
         register(new PorticleGunCommand());
         register(new VisualizationHanlder());
         register(new TeleportationHandler());
+        register(new ChangeColorHandler());
+        register(new TitleHandler());
         register(new GravityGun());
 
         if(developMode) register(new DebugHandler());
