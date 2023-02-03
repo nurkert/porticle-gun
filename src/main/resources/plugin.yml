@@ -1,0 +1,11 @@
+name: PorticleGun
+version: '${project.version}'
+main: eu.nurkert.porticlegun.PorticleGun
+api-version: 1.19
+authors: [ nurkert ]
+
+commands:
+  porticlegun:
+    description: Get a PorticleGun
+    usage: /porticlegun
+    permission: porticlegun.command
