@@ -46,19 +46,19 @@ public class ChangeColorHandler implements Listener {
                         AudioHandler.playSound((Player) event.getWhoClicked(), AudioHandler.PortalSound.PORTAL_CLOSE);
                     } else if(event.getRawSlot() == 0) {
                         GunColorHandler.selectNextPrimary(gunID);
-                        Inventory inv = getCurrentSettings((Player) event.getWhoClicked(), gunID);
+                        Inventory inv = getCurrentSettings(gunID);
                         event.getClickedInventory().setContents(inv.getContents());
                     } else if(event.getRawSlot() == 6) {
                         GunColorHandler.selectPreviousPrimary(gunID);
-                        Inventory inv = getCurrentSettings((Player) event.getWhoClicked(), gunID);
+                        Inventory inv = getCurrentSettings(gunID);
                         event.getClickedInventory().setContents(inv.getContents());
                     } else if(event.getRawSlot() == 2) {
                         GunColorHandler.selectNextSecondary(gunID);
-                        Inventory inv = getCurrentSettings((Player) event.getWhoClicked(), gunID);
+                        Inventory inv = getCurrentSettings(gunID);
                         event.getClickedInventory().setContents(inv.getContents());
                     } else if(event.getRawSlot() == 8) {
                         GunColorHandler.selectPreviousSecondary(gunID);
-                        Inventory inv = getCurrentSettings((Player) event.getWhoClicked(), gunID);
+                        Inventory inv = getCurrentSettings(gunID);
                         event.getClickedInventory().setContents(inv.getContents());
                     } else {
                         return;
@@ -85,13 +85,18 @@ public class ChangeColorHandler implements Listener {
                 Player player = event.getPlayer();
 
                 AudioHandler.playSound(player, AudioHandler.PortalSound.INV_OPEN);
-                Inventory inv = getCurrentSettings(player, gunID);
+                Inventory inv = getCurrentSettings(gunID);
                 player.openInventory(inv);
             }
         }
     }
 
-    public Inventory getCurrentSettings(Player player, String gunID) {
+    /**
+     * Get an inventory with the current settings of the gun
+     * @param gunID the id of the gun
+     * @return
+     */
+    public Inventory getCurrentSettings(String gunID) {
         Inventory inv = Bukkit.createInventory(null, InventoryType.DROPPER, INVENTORY_TITLE);
         inv.setItem(0, up);
         inv.setItem(2, up);

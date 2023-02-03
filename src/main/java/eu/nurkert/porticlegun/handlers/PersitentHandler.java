@@ -7,7 +7,9 @@ import org.bukkit.configuration.file.YamlConfiguration;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Base64;
 import java.util.List;
+import java.util.stream.Collectors;
 
 public class PersitentHandler {
     // Singleton construction
@@ -28,25 +30,46 @@ public class PersitentHandler {
         return instance;
     }
 
-    public void saveChanges() {
 
+    /**
+     * @param path the path to the section
+     * @return a list of all keys in the section
+     */
+    public static List<String> getSection(String path) {
+        return new ArrayList<String>(config.getConfigurationSection(path).getKeys(false)).stream().map(key -> Base64.getDecoder().decode(key).toString()).collect(Collectors.toList());
     }
 
-    public static List<String> getSection(String path) {
-        return new ArrayList<String>(config.getConfigurationSection(path).getKeys(false));
+    /**
+     * Encodes a path Base64
+     */
+    private static String encodePath(String path) {
+        StringBuilder encoded = new StringBuilder();
+        for(String key : path.split("."))
+            encoded.append(Base64.getEncoder().encodeToString(key.getBytes()));
+        return encoded.toString();
+    }
+
+    /**
+     * Decodes a path from Base64
+     */
+    private static String decodePath(String path) {
+        StringBuilder decoded = new StringBuilder();
+        for (String key : path.split("."))
+            decoded.append(new String(Base64.getDecoder().decode(key)));
+        return decoded.toString();
     }
 
     public static void set(String path, Object value) {
-        config.set(path, value);
+        config.set(encodePath(path), value);
         portalsFile.save();
     }
 
     public static String get(String path) {
-        return config.getString(path);
+        return Base64.getDecoder().decode(config.getString(encodePath(path))).toString();
     }
 
     public static boolean exists(String path) {
-        return config.get(path) != null;
+        return config.get(encodePath(path)) != null;
     }
 
     public class PortalsFile {

@@ -1,5 +1,5 @@
 name: PorticleGun
-version: '${project.version}'
+version: v1.1-SNAPSHOT
 main: eu.nurkert.porticlegun.PorticleGun
 api-version: 1.19
 authors: [ nurkert ]
