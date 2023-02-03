@@ -1,6 +1,6 @@
 package eu.nurkert.porticlegun.handlers.portals;
 
-import eu.nurkert.porticlegun.portals.PorticlePortal;
+import eu.nurkert.porticlegun.portals.Portal;
 import org.bukkit.entity.Player;
 import org.bukkit.event.Listener;
 
@@ -9,10 +9,10 @@ import java.util.HashMap;
 
 public class OpenedPortalsHandler implements Listener {
 
-    private static HashMap<String, PorticlePortal> primaryPortals = new HashMap<>();
-    private static HashMap<String, PorticlePortal> secondaryPortals = new HashMap<>();
+    private static HashMap<String, Portal> primaryPortals = new HashMap<>();
+    private static HashMap<String, Portal> secondaryPortals = new HashMap<>();
 
-    public static void setPrimaryPortal(String gunID, PorticlePortal portal) {
+    public static void setPrimaryPortal(String gunID, Portal portal) {
         primaryPortals.put(gunID, portal);
         if(secondaryPortals.containsKey(gunID)) {
             portal.setLinkedPortal(secondaryPortals.get(gunID));
@@ -20,7 +20,7 @@ public class OpenedPortalsHandler implements Listener {
         }
     }
 
-    public static void setSecondaryPortal(String gunID, PorticlePortal portal) {
+    public static void setSecondaryPortal(String gunID, Portal portal) {
         secondaryPortals.put(gunID, portal);
         if(primaryPortals.containsKey(gunID)) {
             portal.setLinkedPortal(primaryPortals.get(gunID));
@@ -44,16 +44,16 @@ public class OpenedPortalsHandler implements Listener {
         return secondaryPortals.containsKey(gunID);
     }
 
-    public static PorticlePortal getPrimaryPortal(String gunID) {
+    public static Portal getPrimaryPortal(String gunID) {
         return primaryPortals.get(gunID);
     }
 
-    public static PorticlePortal getSecondaryPortal(String gunID) {
+    public static Portal getSecondaryPortal(String gunID) {
         return secondaryPortals.get(gunID);
     }
 
-    public static ArrayList<PorticlePortal> getAllPortal() {
-        return new ArrayList<PorticlePortal>() {{
+    public static ArrayList<Portal> getAllPortal() {
+        return new ArrayList<Portal>() {{
             addAll(primaryPortals.values());
             addAll(secondaryPortals.values());
         }};
@@ -63,7 +63,7 @@ public class OpenedPortalsHandler implements Listener {
      * @param player the player to get the portals for
      * @return all portals that are relevant to the player
      */
-    public static ArrayList<PorticlePortal> getRelevantPortals(Player player) {
+    public static ArrayList<Portal> getRelevantPortals(Player player) {
         return getAllPortal();
     }
 }

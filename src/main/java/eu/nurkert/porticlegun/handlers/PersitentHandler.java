@@ -59,8 +59,8 @@ public class PersitentHandler {
         return decoded.toString();
     }
 
-    public static void set(String path, Object value) {
-        config.set(encodePath(path), value);
+    public static void set(String path, String value) {
+        config.set(encodePath(path), Base64.getEncoder().encodeToString(value.getBytes()));
         portalsFile.save();
     }
 

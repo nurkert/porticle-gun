@@ -1,11 +1,8 @@
-package eu.nurkert.porticlegun.handlers.gun;
+package eu.nurkert.porticlegun.handlers.visualization;
 
-import eu.nurkert.porticlegun.handlers.portals.OpenedPortalsHandler;
 import eu.nurkert.porticlegun.portals.PortalColor;
 
 import java.util.HashMap;
-import java.util.Map;
-import java.util.Stack;
 
 public class GunColorHandler {
     private static HashMap<String, GunColors> colors = new HashMap<>();

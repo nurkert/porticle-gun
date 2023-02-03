@@ -1,12 +1,12 @@
 package eu.nurkert.porticlegun.handlers.portals;
 
 import eu.nurkert.porticlegun.handlers.AudioHandler;
-import eu.nurkert.porticlegun.handlers.gun.GunColorHandler;
+import eu.nurkert.porticlegun.handlers.visualization.GunColorHandler;
 import eu.nurkert.porticlegun.handlers.item.ItemHandler;
 import eu.nurkert.porticlegun.handlers.visualization.TitleHandler;
 import eu.nurkert.porticlegun.portals.PortalColor;
 import eu.nurkert.porticlegun.portals.PortalTracing;
-import eu.nurkert.porticlegun.portals.PorticlePortal;
+import eu.nurkert.porticlegun.portals.Portal;
 import eu.nurkert.porticlegun.portals.PotentialPortal;
 import org.bukkit.Location;
 import org.bukkit.entity.Player;
@@ -39,11 +39,11 @@ public class PortalOpenHandler implements Listener {
 
                             if(action == Action.LEFT_CLICK_AIR || action == Action.LEFT_CLICK_BLOCK) {
                                 PortalColor color = GunColorHandler.getColors(gunID).getPrimary();
-                                PorticlePortal primary = new PorticlePortal(potential, gunID, color);
+                                Portal primary = new Portal(potential, gunID, color);
                                 OpenedPortalsHandler.setPrimaryPortal(gunID, primary);
                             } else if(action == Action.RIGHT_CLICK_AIR || action == Action.RIGHT_CLICK_BLOCK) {
                                 PortalColor color = GunColorHandler.getColors(gunID).getSecondary();
-                                PorticlePortal secondary = new PorticlePortal(potential, gunID, color);
+                                Portal secondary = new Portal(potential, gunID, color);
                                 OpenedPortalsHandler.setSecondaryPortal(gunID, secondary);
                             }
                             TitleHandler.sendPortalStatus(player, gunID);

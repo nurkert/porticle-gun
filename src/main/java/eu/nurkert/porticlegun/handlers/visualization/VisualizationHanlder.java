@@ -2,7 +2,7 @@ package eu.nurkert.porticlegun.handlers.visualization;
 
 import eu.nurkert.porticlegun.PorticleGun;
 import eu.nurkert.porticlegun.handlers.portals.OpenedPortalsHandler;
-import eu.nurkert.porticlegun.portals.PorticlePortal;
+import eu.nurkert.porticlegun.portals.Portal;
 import org.bukkit.*;
 import org.bukkit.entity.Player;
 import org.bukkit.event.Listener;
@@ -23,9 +23,9 @@ public class VisualizationHanlder implements Listener {
 
             @Override
             public void run() {
-                ArrayList<PorticlePortal> portals = OpenedPortalsHandler.getAllPortal();
+                ArrayList<Portal> portals = OpenedPortalsHandler.getAllPortal();
                 for (int i = 0; i < portals.size(); i++) {
-                    PorticlePortal portal = portals.get(i);
+                    Portal portal = portals.get(i);
                     double radians = Math.toRadians(System.currentTimeMillis() / 5);
                     Vector[] locs = {portal.nextParticleLocation(radians) , portal.nextParticleLocation(radians + Math.PI)};
                     Color color = portal.getColor().getBukkitColor();

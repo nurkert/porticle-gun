@@ -1,4 +1,4 @@
-package eu.nurkert.porticlegun.handlers.gun;
+package eu.nurkert.porticlegun.handlers.visualization;
 
 import eu.nurkert.porticlegun.handlers.portals.OpenedPortalsHandler;
 import eu.nurkert.porticlegun.portals.PortalColor;

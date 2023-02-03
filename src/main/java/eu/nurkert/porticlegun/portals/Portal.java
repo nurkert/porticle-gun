@@ -3,23 +3,23 @@ package eu.nurkert.porticlegun.portals;
 import org.bukkit.Location;
 import org.bukkit.util.Vector;
 
-public class PorticlePortal extends PotentialPortal {
+public class Portal extends PotentialPortal {
 
     // the color of the portal
     PortalColor color;
     // the id of the gun that created this portal
     String gunID;
     // the linked portal that is linked to this one
-    PorticlePortal linkedPortal;
+    Portal linkedPortal;
 
-    public PorticlePortal(Location location, Vector direction, String gunID, PortalColor color) {
+    public Portal(Location location, Vector direction, String gunID, PortalColor color) {
         super(location, direction);
         this.gunID = gunID;
         this.color = color;
         this.linkedPortal = null;
     }
 
-    public PorticlePortal(PotentialPortal potential, String gunID, PortalColor color) {
+    public Portal(PotentialPortal potential, String gunID, PortalColor color) {
         super(potential.getLocation(), potential.getDirection());
         this.gunID = gunID;
         this.color = color;
@@ -42,11 +42,11 @@ public class PorticlePortal extends PotentialPortal {
         this.gunID = gunID;
     }
     
-    public void setLinkedPortal(PorticlePortal linkedPortal) {
+    public void setLinkedPortal(Portal linkedPortal) {
         this.linkedPortal = linkedPortal;
     }
     
-    public PorticlePortal getLinkedPortal() {
+    public Portal getLinkedPortal() {
         return linkedPortal;
     }
 
