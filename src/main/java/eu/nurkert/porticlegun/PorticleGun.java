@@ -16,12 +16,6 @@ public final class PorticleGun extends JavaPlugin {
         LoadingHandler.getInstance();
     }
 
-    @Override
-    public void onDisable() {
-        PersitentHandler.getInstance().saveChanges();
-    }
-
-
     public static boolean developMode = false;
     static PorticleGun plugin;
 

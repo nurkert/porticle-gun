@@ -1,4 +1,4 @@
-package eu.nurkert.porticlegun.portals;
+package eu.nurkert.porticlegun.handlers.visualization;
 
 import org.bukkit.ChatColor;
 import org.bukkit.Color;

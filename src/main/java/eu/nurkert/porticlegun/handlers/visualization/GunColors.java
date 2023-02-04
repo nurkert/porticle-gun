@@ -1,7 +1,6 @@
 package eu.nurkert.porticlegun.handlers.visualization;
 
-import eu.nurkert.porticlegun.handlers.portals.OpenedPortalsHandler;
-import eu.nurkert.porticlegun.portals.PortalColor;
+import eu.nurkert.porticlegun.portals.Portal;
 
 public class GunColors {
     PortalColor primary;
@@ -19,17 +18,17 @@ public class GunColors {
     public PortalColor getSecondary() {
         return secondary;
     }
-
+    public PortalColor get(Portal.PortalType type) {
+        if(type == Portal.PortalType.PRIMARY)
+            return primary;
+        return secondary;
+    }
     private void setPrimary(PortalColor primary, String gunID) {
         this.primary = primary;
-        if(OpenedPortalsHandler.hasPrimaryPortal(gunID))
-            OpenedPortalsHandler.getPrimaryPortal(gunID).setColor(primary);
     }
 
     private void setSecondary(PortalColor secondary, String gunID) {
         this.secondary = secondary;
-        if(OpenedPortalsHandler.hasSecondaryPortal(gunID))
-            OpenedPortalsHandler.getSecondaryPortal(gunID).setColor(secondary);
     }
 
     public void selectNextPrimary(String gunID) {

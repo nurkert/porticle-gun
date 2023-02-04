@@ -7,7 +7,7 @@ import org.bukkit.event.Listener;
 import java.util.ArrayList;
 import java.util.HashMap;
 
-public class OpenedPortalsHandler implements Listener {
+public class ActivePortalsHandler implements Listener {
 
     private static HashMap<String, Portal> primaryPortals = new HashMap<>();
     private static HashMap<String, Portal> secondaryPortals = new HashMap<>();

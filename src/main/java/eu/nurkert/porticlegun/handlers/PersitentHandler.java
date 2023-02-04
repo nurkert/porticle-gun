@@ -15,8 +15,8 @@ public class PersitentHandler {
     // Singleton construction
     final private static PersitentHandler instance = new PersitentHandler();
 
-    static PortalsFile portalsFile;
-    static FileConfiguration config;
+    private static PortalsFile portalsFile;
+    private static FileConfiguration config;
 
     private PersitentHandler() {
         portalsFile = new PortalsFile();
@@ -30,46 +30,21 @@ public class PersitentHandler {
         return instance;
     }
 
-
-    /**
-     * @param path the path to the section
-     * @return a list of all keys in the section
-     */
     public static List<String> getSection(String path) {
-        return new ArrayList<String>(config.getConfigurationSection(path).getKeys(false)).stream().map(key -> Base64.getDecoder().decode(key).toString()).collect(Collectors.toList());
+        return new ArrayList<String>(config.getConfigurationSection(path).getKeys(false));
     }
 
-    /**
-     * Encodes a path Base64
-     */
-    private static String encodePath(String path) {
-        StringBuilder encoded = new StringBuilder();
-        for(String key : path.split("."))
-            encoded.append(Base64.getEncoder().encodeToString(key.getBytes()));
-        return encoded.toString();
-    }
-
-    /**
-     * Decodes a path from Base64
-     */
-    private static String decodePath(String path) {
-        StringBuilder decoded = new StringBuilder();
-        for (String key : path.split("."))
-            decoded.append(new String(Base64.getDecoder().decode(key)));
-        return decoded.toString();
-    }
-
-    public static void set(String path, String value) {
-        config.set(encodePath(path), Base64.getEncoder().encodeToString(value.getBytes()));
+    public static void set(String path, Object value) {
+        config.set(path, value);
         portalsFile.save();
     }
 
     public static String get(String path) {
-        return Base64.getDecoder().decode(config.getString(encodePath(path))).toString();
+        return config.getString(path);
     }
 
     public static boolean exists(String path) {
-        return config.get(encodePath(path)) != null;
+        return config.get(path) != null;
     }
 
     public class PortalsFile {

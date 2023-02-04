@@ -4,7 +4,7 @@ import eu.nurkert.porticlegun.handlers.AudioHandler;
 import eu.nurkert.porticlegun.handlers.visualization.GunColorHandler;
 import eu.nurkert.porticlegun.handlers.item.ItemHandler;
 import eu.nurkert.porticlegun.handlers.visualization.TitleHandler;
-import eu.nurkert.porticlegun.portals.PortalColor;
+import eu.nurkert.porticlegun.handlers.visualization.PortalColor;
 import eu.nurkert.porticlegun.portals.PortalTracing;
 import eu.nurkert.porticlegun.portals.Portal;
 import eu.nurkert.porticlegun.portals.PotentialPortal;
@@ -38,13 +38,13 @@ public class PortalOpenHandler implements Listener {
                             Action action = event.getAction();
 
                             if(action == Action.LEFT_CLICK_AIR || action == Action.LEFT_CLICK_BLOCK) {
-                                PortalColor color = GunColorHandler.getColors(gunID).getPrimary();
-                                Portal primary = new Portal(potential, gunID, color);
-                                OpenedPortalsHandler.setPrimaryPortal(gunID, primary);
+                                Portal primary = new Portal(potential, gunID, Portal.PortalType.PRIMARY);
+                                ActivePortalsHandler.setPrimaryPortal(gunID, primary);
+                                primary.saveAll();
                             } else if(action == Action.RIGHT_CLICK_AIR || action == Action.RIGHT_CLICK_BLOCK) {
-                                PortalColor color = GunColorHandler.getColors(gunID).getSecondary();
-                                Portal secondary = new Portal(potential, gunID, color);
-                                OpenedPortalsHandler.setSecondaryPortal(gunID, secondary);
+                                Portal secondary = new Portal(potential, gunID, Portal.PortalType.SECONDARY);
+                                ActivePortalsHandler.setSecondaryPortal(gunID, secondary);
+                                secondary.saveAll();
                             }
                             TitleHandler.sendPortalStatus(player, gunID);
                             AudioHandler.playSound(player, AudioHandler.PortalSound.PORTAL_OPEN);

@@ -1,7 +1,7 @@
 package eu.nurkert.porticlegun.handlers.visualization;
 
 import eu.nurkert.porticlegun.PorticleGun;
-import eu.nurkert.porticlegun.handlers.portals.OpenedPortalsHandler;
+import eu.nurkert.porticlegun.handlers.portals.ActivePortalsHandler;
 import eu.nurkert.porticlegun.portals.Portal;
 import org.bukkit.*;
 import org.bukkit.entity.Player;
@@ -23,14 +23,14 @@ public class VisualizationHanlder implements Listener {
 
             @Override
             public void run() {
-                ArrayList<Portal> portals = OpenedPortalsHandler.getAllPortal();
+                ArrayList<Portal> portals = ActivePortalsHandler.getAllPortal();
                 for (int i = 0; i < portals.size(); i++) {
                     Portal portal = portals.get(i);
                     double radians = Math.toRadians(System.currentTimeMillis() / 5);
-                    Vector[] locs = {portal.nextParticleLocation(radians) , portal.nextParticleLocation(radians + Math.PI)};
-                    Color color = portal.getColor().getBukkitColor();
+                    Vector[] locs = {portal.getParticleLocation(radians) , portal.getParticleLocation(radians + Math.PI)};
+                    Color color = GunColorHandler.getColors(portal.getGunID()).get(portal.getType()).getBukkitColor();
                     for(Player player : Bukkit.getOnlinePlayers()) {
-                        Particle.DustOptions dustOptions = new Particle.DustOptions(portal.getColor().getBukkitColor(), 1);
+                        Particle.DustOptions dustOptions = new Particle.DustOptions(color, 1);
                         for(Vector loc : locs) {
                             player.spawnParticle(Particle.REDSTONE, loc.getX(), loc.getY(), loc.getZ(), 1, dustOptions);
                         }

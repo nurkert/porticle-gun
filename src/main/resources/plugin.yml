@@ -1,5 +1,5 @@
 name: PorticleGun
-version: v1.1-SNAPSHOT
+version: v1.2-SNAPSHOT
 main: eu.nurkert.porticlegun.PorticleGun
 api-version: 1.19
 authors: [ nurkert ]

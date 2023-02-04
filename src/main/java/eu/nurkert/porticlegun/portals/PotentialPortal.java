@@ -7,16 +7,22 @@ public class PotentialPortal {
 
     // the location of the portal
     Location location;
-    // the direction the portal is facing
-    Vector direction;
 
     public PotentialPortal(Location location, Vector direction) {
         this.location = location;
-        this.direction = direction;
+        this.location.setDirection(direction);
+    }
+
+    public PotentialPortal(Location location) {
+        this.location = location;
     }
 
     public Location getLocation() {
         return location;
+    }
+
+    public boolean isInPortal(Location loc) {
+        return this.location.getBlockX() == loc.getBlockX() && this.location.getBlockY() == loc.getBlockY() && this.location.getBlockZ() == loc.getBlockZ();
     }
 
     public void setLocation(Location location) {
@@ -24,11 +30,11 @@ public class PotentialPortal {
     }
 
     public Vector getDirection() {
-        return direction;
+        return this.location.getDirection();
     }
 
     public void setDirection(Vector direction) {
-        this.direction = direction;
+        this.location.setDirection(direction);
     }
 
 }

@@ -6,7 +6,8 @@ import eu.nurkert.porticlegun.handlers.AudioHandler;
 import eu.nurkert.porticlegun.handlers.visualization.GunColorHandler;
 import eu.nurkert.porticlegun.handlers.visualization.GunColors;
 import eu.nurkert.porticlegun.handlers.item.ItemHandler;
-import eu.nurkert.porticlegun.portals.PortalColor;
+import eu.nurkert.porticlegun.portals.Portal;
+import eu.nurkert.porticlegun.handlers.visualization.PortalColor;
 import org.bukkit.Bukkit;
 import org.bukkit.DyeColor;
 import org.bukkit.Material;
@@ -41,8 +42,8 @@ public class ChangeColorHandler implements Listener {
                 event.setCancelled(true);
                 if (event.getCurrentItem() != null) {
                     if (event.getClick() == ClickType.DOUBLE_CLICK &&  event.getCurrentItem().getType() == Material.BARRIER) {
-                        OpenedPortalsHandler.removePrimaryPortal(gunID);
-                        OpenedPortalsHandler.removeSecondaryPortal(gunID);
+                        ActivePortalsHandler.removePrimaryPortal(gunID);
+                        ActivePortalsHandler.removeSecondaryPortal(gunID);
                         AudioHandler.playSound((Player) event.getWhoClicked(), AudioHandler.PortalSound.PORTAL_CLOSE);
                     } else if(event.getRawSlot() == 0) {
                         GunColorHandler.selectNextPrimary(gunID);
@@ -121,6 +122,9 @@ public class ChangeColorHandler implements Listener {
     public void on(InventoryCloseEvent event) {
         String gunID = isPorticleSettingsInv(event.getView());
         if(gunID != null) {
+            GunColors colors = GunColorHandler.getColors(gunID);
+            Portal.saveColor(gunID, Portal.PortalType.PRIMARY, colors.getPrimary());
+            Portal.saveColor(gunID, Portal.PortalType.SECONDARY, colors.getSecondary());
             AudioHandler.playSound((Player) event.getPlayer(), AudioHandler.PortalSound.INV_CLOSE);
         }
     }
