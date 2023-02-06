@@ -2,8 +2,10 @@ package eu.nurkert.porticlegun.portals;
 
 import eu.nurkert.porticlegun.PorticleGun;
 import eu.nurkert.porticlegun.handlers.PersitentHandler;
+import eu.nurkert.porticlegun.handlers.item.ItemHandler;
 import eu.nurkert.porticlegun.handlers.visualization.GunColorHandler;
 import eu.nurkert.porticlegun.handlers.visualization.PortalColor;
+import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.util.Vector;
 
@@ -39,7 +41,7 @@ public class Portal extends PotentialPortal {
 
     private static Location extractLocation(String from) {
         String[] args = from.split(":");
-        return new Location(PorticleGun.getInstance().getServer().getWorld(args[0]), Double.parseDouble(args[1]), Double.parseDouble(args[2]), Double.parseDouble(args[3]));
+        return new Location(Bukkit.getWorld(args[0]), Double.parseDouble(args[1]), Double.parseDouble(args[2]), Double.parseDouble(args[3]));
     }
 
     private static Vector extractVector(String from) {
@@ -96,27 +98,19 @@ public class Portal extends PotentialPortal {
     }
 
     public void saveAll() {
-        PersitentHandler.set("porticleguns." + base64(gunID) + "." + type.toString().toLowerCase() + ".position", getPositionString());
+        PersitentHandler.set("porticleguns." + ItemHandler.saveable(gunID) + "." + type.toString().toLowerCase() + ".position", getPositionString());
         PortalColor color = GunColorHandler.getColors(gunID).get(type);
         saveColor(gunID, type, color);
     }
 
     public static void saveColor(String gunID, PortalType type, PortalColor color) {
-        PersitentHandler.set("porticleguns." + base64(gunID) + "." + type.toString().toLowerCase() + ".color", color.toString());
+        PersitentHandler.set("porticleguns." + ItemHandler.saveable(gunID) + "." + type.toString().toLowerCase() + ".color", color.toString());
     }
 
     public void delete() {
-        PersitentHandler.set("porticleguns." + base64(gunID) + "." + type.toString().toLowerCase(), null);
+        PersitentHandler.set("porticleguns." + ItemHandler.saveable(gunID) + "." + type.toString().toLowerCase(), null);
     }
 
-    /**
-     * Encodes a string to base64
-     * @param str the string to encode
-     * @return the base64 encoded string
-     */
-    private static String base64(String str) {
-        return new String(java.util.Base64.getEncoder().encode(str.getBytes()));
-    }
 
     public PortalType getType() {
         return this.type;

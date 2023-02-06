@@ -109,7 +109,7 @@ public class ChangeColorHandler implements Listener {
         inv.setItem(3, getColorPreview(colors.getPrimary()));
         inv.setItem(5, getColorPreview(colors.getSecondary()));
 
-        ItemStack background =  new ItemBuilder(Material.GRAY_STAINED_GLASS_PANE).setName(ItemHandler.encodeID(gunID)).build();
+        ItemStack background =  new ItemBuilder(Material.GRAY_STAINED_GLASS_PANE).setName(ItemHandler.vanishID(gunID)).build();
         for (int i = 1; i <= 3; i++)
             inv.setItem((i * 3) - 2, background);
 
@@ -141,7 +141,7 @@ public class ChangeColorHandler implements Listener {
             if(inv.getItem(1).getType() == Material.GRAY_STAINED_GLASS_PANE) {
                 ItemStack item = inv.getItem(1);
                 if(item.hasItemMeta() && item.getItemMeta().hasDisplayName() && item.getItemMeta().getDisplayName().contains("§")) {
-                    String gunID = ItemHandler.decodeID(item.getItemMeta().getDisplayName());
+                    String gunID = ItemHandler.revealID(item.getItemMeta().getDisplayName());
                     if(ItemHandler.isValidGunID(gunID)) {
                         return gunID;
                     }

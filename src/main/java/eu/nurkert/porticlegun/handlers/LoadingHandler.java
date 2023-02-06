@@ -3,6 +3,7 @@ package eu.nurkert.porticlegun.handlers;
 import eu.nurkert.porticlegun.PorticleGun;
 import eu.nurkert.porticlegun.commands.PorticleGunCommand;
 import eu.nurkert.porticlegun.handlers.gravity.GravityGun;
+import eu.nurkert.porticlegun.handlers.item.ItemHandler;
 import eu.nurkert.porticlegun.handlers.item.RecipeHandler;
 import eu.nurkert.porticlegun.handlers.portals.*;
 import eu.nurkert.porticlegun.handlers.visualization.*;
@@ -73,7 +74,7 @@ public class LoadingHandler {
     private void loadPortals() {
         if (PersitentHandler.exists("porticleguns")) {
             PersitentHandler.getSection("porticleguns").forEach(porticlegun -> {
-                String gunID = decode(porticlegun);
+                String gunID = ItemHandler.useable(porticlegun);
                 if (PersitentHandler.exists("porticleguns." + porticlegun + ".primary")) {
                     PortalColor primaryColor;
                     if (PersitentHandler.exists("porticleguns." + porticlegun + ".primary.color")) {
@@ -102,9 +103,5 @@ public class LoadingHandler {
                 }
             });
         }
-    }
-
-    private String decode(String encoded) {
-        return new String(Base64.getDecoder().decode(encoded));
     }
 }

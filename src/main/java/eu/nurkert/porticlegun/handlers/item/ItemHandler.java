@@ -28,7 +28,7 @@ public class ItemHandler implements Listener {
 
         ItemBuilder builder = new ItemBuilder(PORTICLE_GUN_TYPE);
         builder.setName(PORTICLE_GUN_NAME);
-        builder.setLore(encodeID(id), PORTICLE_GUN_LORE);
+        builder.setLore(vanishID(id), PORTICLE_GUN_LORE);
 
         return builder.build();
     }
@@ -46,13 +46,16 @@ public class ItemHandler implements Listener {
         ItemMeta meta = itemStack.getItemMeta();
         assert meta != null;
         if(!meta.hasLore()) return null;
-        String id = decodeID(meta.getLore().get(0));
+        String id = revealID(meta.getLore().get(0));
         if(!isValidGunID(id)) return null;
         return id;
     }
 
     // Charset for generating portal IDs
     private static final String charSet = "ᵃᵇᶜᵈᵉᶠᵍʰᶤʲᵏˡᵐᶰᵒᵖᵠʳˢᵗᵘᵛʷˣʸᶻᴬᴮᶜᴰᴱᶠᴳᴴᴵᴶᴷᴸᴹᴺᴼᴾᵠᴿˢᵀᵁᵛᵂᵡᵞᶻ⁰¹²³⁴⁵⁶⁷⁸⁹";
+    private static final String charSet2 = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+
+
 
     public static String generateGunID() {
         StringBuilder id = new StringBuilder();
@@ -83,7 +86,7 @@ public class ItemHandler implements Listener {
      * @param id the id to encode
      * @return the id with '§' between every char
      */
-    public static String encodeID(String id) {
+    public static String vanishID(String id) {
         // add '§' between every char frrom the id to hide it in the lore
         String[] idArray = id.split("");
         StringBuilder idBuilder = new StringBuilder();
@@ -99,8 +102,24 @@ public class ItemHandler implements Listener {
      * @param id the id with '§' between every char
      * @return the id without '§'
      */
-    public static String decodeID(String id) {
+    public static String revealID(String id) {
         // removes '§' from the id
         return id.replaceAll("§", "");
+    }
+
+    public static String saveable(String id) {
+        StringBuilder encoded = new StringBuilder();
+        for (char c : id.toCharArray()) {
+            encoded.append(charSet2.toCharArray()[charSet.indexOf(c)]);
+        }
+        return encoded.toString();
+    }
+
+    public static String useable(String id) {
+        StringBuilder decoded = new StringBuilder();
+        for (char c : id.toCharArray()) {
+            decoded.append(charSet.toCharArray()[charSet2.indexOf(c)]);
+        }
+        return decoded.toString();
     }
 }
