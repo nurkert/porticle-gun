@@ -1,4 +1,4 @@
-# PorticleGun
+# ![Alt text](https://raw.githubusercontent.com/nurkert/PorticleGun/main/images/porticlegun_banner.png)
  A server plugin for Minecraft that adds a device to place portals.
  
 ![Alt text](https://raw.githubusercontent.com/nurkert/PorticleGun/main/images/basic_preview.gif)
