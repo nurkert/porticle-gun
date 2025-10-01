@@ -49,6 +49,15 @@ public final class PortalCreationAnimation {
         double maxUp = portal.getDirection().getY() == 0.0 ? 0.95 : 0.55;
         int pointsPerTick = 36;
 
+        final Location finalCenter = center;
+        final World finalWorld = world;
+        final Vector finalRight = right.clone();
+        final Vector finalUp = up.clone();
+        final Particle.DustOptions finalDustOptions = dustOptions;
+        final double finalMaxRight = maxRight;
+        final double finalMaxUp = maxUp;
+        final int finalPointsPerTick = pointsPerTick;
+
         new BukkitRunnable() {
             int tick = 0;
 
@@ -64,33 +73,33 @@ public final class PortalCreationAnimation {
                 double spiralRotation = tick * 0.25;
                 double wave = Math.sin(progress * Math.PI);
 
-                for (int i = 0; i < pointsPerTick; i++) {
-                    double normalizedIndex = (i + 1) / (double) pointsPerTick;
+                for (int i = 0; i < finalPointsPerTick; i++) {
+                    double normalizedIndex = (i + 1) / (double) finalPointsPerTick;
                     double radiusFactor = Math.sqrt(normalizedIndex) * easing;
                     double angle = GOLDEN_ANGLE * i + spiralRotation;
                     double sin = Math.sin(angle);
                     double cos = Math.cos(angle);
 
-                    double x = cos * radiusFactor * maxRight;
-                    double y = sin * radiusFactor * maxUp;
+                    double x = cos * radiusFactor * finalMaxRight;
+                    double y = sin * radiusFactor * finalMaxUp;
                     double pulse = Math.sin(angle + progress * Math.PI * 2) * 0.03 * wave;
 
-                    Vector offset = right.clone().multiply(x + pulse).add(up.clone().multiply(y - pulse));
-                    Location particleLocation = center.clone().add(offset);
-                    world.spawnParticle(Particle.DUST, particleLocation.getX(), particleLocation.getY(), particleLocation.getZ(),
-                            1, 0.0, 0.0, 0.0, 0.0, dustOptions);
+                    Vector offset = finalRight.clone().multiply(x + pulse).add(finalUp.clone().multiply(y - pulse));
+                    Location particleLocation = finalCenter.clone().add(offset);
+                    finalWorld.spawnParticle(Particle.DUST, particleLocation.getX(), particleLocation.getY(), particleLocation.getZ(),
+                            1, 0.0, 0.0, 0.0, 0.0, finalDustOptions);
                 }
 
                 int outlinePoints = 24;
                 double outlineScale = 0.4 + 0.6 * easing;
                 for (int j = 0; j < outlinePoints; j++) {
                     double theta = (Math.PI * 2 / outlinePoints) * j + spiralRotation * 0.5;
-                    double x = Math.cos(theta) * maxRight * outlineScale;
-                    double y = Math.sin(theta * 0.8 + progress * Math.PI) * maxUp * outlineScale;
+                    double x = Math.cos(theta) * finalMaxRight * outlineScale;
+                    double y = Math.sin(theta * 0.8 + progress * Math.PI) * finalMaxUp * outlineScale;
 
-                    Vector offset = right.clone().multiply(x).add(up.clone().multiply(y));
-                    Location outlineLocation = center.clone().add(offset);
-                    world.spawnParticle(Particle.END_ROD, outlineLocation.getX(), outlineLocation.getY(), outlineLocation.getZ(),
+                    Vector offset = finalRight.clone().multiply(x).add(finalUp.clone().multiply(y));
+                    Location outlineLocation = finalCenter.clone().add(offset);
+                    finalWorld.spawnParticle(Particle.END_ROD, outlineLocation.getX(), outlineLocation.getY(), outlineLocation.getZ(),
                             1, 0.0, 0.0, 0.0, 0.0);
                 }
 
