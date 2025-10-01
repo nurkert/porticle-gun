@@ -2,6 +2,7 @@ package eu.nurkert.porticlegun.handlers;
 
 import eu.nurkert.porticlegun.PorticleGun;
 import eu.nurkert.porticlegun.commands.PorticleGunCommand;
+import eu.nurkert.porticlegun.config.ConfigManager;
 import eu.nurkert.porticlegun.handlers.gravity.GravityGun;
 import eu.nurkert.porticlegun.handlers.item.ItemHandler;
 import eu.nurkert.porticlegun.handlers.item.RecipeHandler;
@@ -13,6 +14,7 @@ import org.bukkit.Bukkit;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.PluginCommand;
 import org.bukkit.command.TabCompleter;
+import org.bukkit.event.HandlerList;
 import org.bukkit.event.Listener;
 
 import static eu.nurkert.porticlegun.PorticleGun.developMode;
@@ -23,6 +25,7 @@ public class LoadingHandler {
     final private static LoadingHandler instance = new LoadingHandler();
 
     private final PorticleGunCommand porticleGunCommand;
+    private GravityGun gravityGun;
 
     private LoadingHandler() {
         // Private constructor
@@ -49,9 +52,24 @@ public class LoadingHandler {
         register(new TeleportationHandler());
         register(new SettingsHandler());
         register(new TitleHandler());
-        register(new GravityGun());
+        updateGravityGunRegistration();
 
         if(developMode) register(new DebugHandler());
+    }
+
+    private void updateGravityGunRegistration() {
+        if (ConfigManager.isGravityGunEnabled()) {
+            if (gravityGun == null) {
+                gravityGun = new GravityGun(ConfigManager.getGravityGunBlockBlacklist());
+                register(gravityGun);
+            } else {
+                gravityGun.updateBlockBlacklist(ConfigManager.getGravityGunBlockBlacklist());
+            }
+        } else if (gravityGun != null) {
+            gravityGun.shutdown();
+            HandlerList.unregisterAll(gravityGun);
+            gravityGun = null;
+        }
     }
 
     private void register(Listener listener) {
@@ -119,6 +137,8 @@ public class LoadingHandler {
     }
 
     public void reload() {
+        ConfigManager.reload();
+        updateGravityGunRegistration();
         PersitentHandler.reload();
         ActivePortalsHandler.clear();
         GunColorHandler.clear();
