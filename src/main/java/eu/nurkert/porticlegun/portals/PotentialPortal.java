@@ -22,6 +22,9 @@ public class PotentialPortal {
     }
 
     public boolean isInPortal(Location loc) {
+        if (loc == null) {
+            return false; // or handle the null case appropriately
+        }
         return this.location.getBlockX() == loc.getBlockX() && this.location.getBlockY() == loc.getBlockY() && this.location.getBlockZ() == loc.getBlockZ();
     }
 

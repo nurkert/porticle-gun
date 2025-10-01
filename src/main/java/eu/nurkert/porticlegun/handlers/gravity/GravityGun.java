@@ -35,46 +35,17 @@ import org.bukkit.util.Vector;
 
 public class GravityGun implements Listener {
 
-        private static GravityGun instance;
+	HashMap<Player, Entity> players;
+	HashMap<Entity, Location> entitys;
+	HashMap<Entity, EntityType> spawner;
+	BukkitTask task;
 
-        HashMap<Player, Entity> players;
-        HashMap<Entity, Location> entitys;
-        HashMap<Entity, EntityType> spawner;
-        BukkitTask task;
-
-        public GravityGun() {
-                instance = this;
-                entitys = new HashMap<Entity, Location>();
-                players = new HashMap<Player, Entity>();
-                spawner = new HashMap<Entity, EntityType>();
-                init();
-        }
-
-        public static GravityGun getInstance() {
-                return instance;
-        }
-
-        public void releaseEntity(Entity entity) {
-                if (entity == null) {
-                        return;
-                }
-
-                entitys.remove(entity);
-                spawner.remove(entity);
-
-                Player boundPlayer = null;
-                for (Player player : players.keySet()) {
-                        Entity stored = players.get(player);
-                        if (stored != null && stored.equals(entity)) {
-                                boundPlayer = player;
-                                break;
-                        }
-                }
-
-                if (boundPlayer != null) {
-                        players.remove(boundPlayer);
-                }
-        }
+	public GravityGun() {
+		entitys = new HashMap<Entity, Location>();
+		players = new HashMap<Player, Entity>();
+		spawner = new HashMap<Entity, EntityType>();
+		init();
+	}
 
 	private void init() {
 		task = new BukkitRunnable() {

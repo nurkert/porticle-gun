@@ -6,14 +6,6 @@ authors: [ nurkert ]
 
 commands:
   porticlegun:
-    description: Get a PorticleGun or manage the plugin
-    usage: /porticlegun [reload]
+    description: Get a PorticleGun
+    usage: /porticlegun
     permission: porticlegun.command
-
-permissions:
-  porticlegun.command:
-    description: Allows using the /porticlegun command to obtain a portal gun.
-    default: op
-  porticlegun.command.reload:
-    description: Allows reloading the PorticleGun configuration.
-    default: op

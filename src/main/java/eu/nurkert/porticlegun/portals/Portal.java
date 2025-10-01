@@ -5,6 +5,7 @@ import eu.nurkert.porticlegun.handlers.PersitentHandler;
 import eu.nurkert.porticlegun.handlers.item.ItemHandler;
 import eu.nurkert.porticlegun.handlers.visualization.GunColorHandler;
 import eu.nurkert.porticlegun.handlers.visualization.PortalColor;
+import eu.nurkert.porticlegun.handlers.visualization.concrete.PortalVisualizationType;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.util.Vector;
@@ -18,25 +19,30 @@ public class Portal extends PotentialPortal {
     // the type of the portal (primary or secondary)
     PortalType type;
 
-    public Portal(Location location, Vector direction, String gunID, PortalType type) {
+    PortalVisualizationType visualizationType;
+
+    public Portal(Location location, Vector direction, String gunID, PortalType type, PortalVisualizationType visualizationType) {
         super(location, direction);
         this.gunID = gunID;
         this.linkedPortal = null;
         this.type = type;
+        this.visualizationType = visualizationType;
     }
 
-    public Portal(PotentialPortal potential, String gunID, PortalType type) {
+    public Portal(PotentialPortal potential, String gunID, PortalType type, PortalVisualizationType visualizationType) {
         super(potential.getLocation(), potential.getDirection());
         this.gunID = gunID;
         this.type = type;
         this.linkedPortal = null;
+        this.visualizationType = visualizationType;
     }
 
-    public Portal(String position, String gunID, PortalType type) {
+    public Portal(String position, String gunID, PortalType type, PortalVisualizationType visualizationType) {
         super(extractLocation(position), extractVector(position));
         this.gunID = gunID;
         this.type = type;
         this.linkedPortal = null;
+        this.visualizationType = visualizationType;
     }
 
     private static Location extractLocation(String from) {
@@ -65,6 +71,16 @@ public class Portal extends PotentialPortal {
         return linkedPortal;
     }
 
+    // getter setter for visualization type
+    public PortalVisualizationType getVisualizationType() {
+        return visualizationType;
+    }
+
+    public PortalVisualizationType toggleVisualizationType() {
+        this.visualizationType = this.visualizationType.getNext();
+        return this.visualizationType;
+    }
+
     /**
      * Gets the location of particles that are emitted from the portal
      *
@@ -75,22 +91,7 @@ public class Portal extends PotentialPortal {
         Location loc = getLocation();
         Vector direction = getDirection();
 
-        // horizontal facing portal are one block higher than the other portals
-        double sin = Math.sin(radians) / (Math.abs(direction.getY()) + 1);
-        double cos = Math.cos(radians) / 2;
-
-        if(direction.getY() == 0.0) {
-            // horizontal facing portal
-            loc = loc.clone().add(0.5 - 0.4 * direction.getX(), 1, 0.5 - 0.4 * direction.getZ());
-            return new Vector(loc.getX() + cos * direction.getZ(), loc.getY() + sin, loc.getZ() + cos * direction.getX());
-        } else if (direction.getY() < 0.0) {
-            // downward facing portal
-            return new Vector(loc.getX() + cos + 0.5, loc.getY() + 0.9, loc.getZ() + sin + 0.5);
-        } else if (direction.getY() > 0.0) {
-            // upward facing portal
-            return new Vector(loc.getX() + cos + 0.5, loc.getY() + 0.1, loc.getZ() + sin + 0.5);
-        }
-        return null;
+        return this.visualizationType .getParticleLocation(radians, loc, direction);
     }
 
     public String getPositionString() {
@@ -109,6 +110,7 @@ public class Portal extends PotentialPortal {
 
     public void delete() {
         PersitentHandler.set("porticleguns." + ItemHandler.saveable(gunID) + "." + type.toString().toLowerCase(), null);
+        PersitentHandler.saveAll(); // Ensure the changes are saved
     }
 
 

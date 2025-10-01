@@ -1,7 +1,6 @@
 package eu.nurkert.porticlegun.commands;
 
 import eu.nurkert.porticlegun.builders.ItemBuilder;
-import eu.nurkert.porticlegun.config.ConfigManager;
 import eu.nurkert.porticlegun.handlers.item.ItemHandler;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
@@ -19,11 +18,9 @@ import org.bukkit.inventory.Inventory;
 public class PorticleGunCommand implements CommandExecutor, Listener {
 
 
-    private static final String TITLE = "§8PorticleGun";
-    private static final String COMMAND_PERMISSION = "porticlegun.command";
-    private static final String RELOAD_PERMISSION = "porticlegun.command.reload";
+    final private String TITLE = "§8PorticleGun";
 
-    private final Inventory inv;
+    Inventory inv;
 
     public PorticleGunCommand() {
         inv = Bukkit.createInventory(null, InventoryType.DROPPER, TITLE);
@@ -31,48 +28,31 @@ public class PorticleGunCommand implements CommandExecutor, Listener {
     }
 
     private void init() {
-        for (int i = 0; i < inv.getSize(); i++) {
+
+        for (int i = 0; i < inv.getSize(); i++)
             inv.setItem(i, new ItemBuilder(Material.BLACK_STAINED_GLASS_PANE).setName("§0|").build());
-        }
         inv.setItem(4, ItemHandler.generateNewGun());
     }
 
     @Override
     public boolean onCommand(CommandSender sender, Command cmd, String label, String[] args) {
-        if (args.length > 0) {
-            if ("reload".equalsIgnoreCase(args[0])) {
-                if (!sender.hasPermission(RELOAD_PERMISSION)) {
-                    sender.sendMessage("§cDu hast keine Berechtigung, die Konfiguration neu zu laden.");
-                    return true;
-                }
+        if (sender instanceof Player) {
+            Player player = (Player) sender;
 
-                ConfigManager.reload();
-                sender.sendMessage("§aDie PorticleGun-Konfiguration wurde neu geladen.");
-                return true;
+            if (player.hasPermission("porticlegun.command")) {
+                player.openInventory(inv);
+                //SoundHandler.playSound(player, APGSound.INV_OPEN);
             }
 
-            sender.sendMessage("§cUnbekannter Unterbefehl.");
-            return true;
+        } else {
+            sender.sendMessage("You have no permission to execute this command.");
         }
-
-        if (!(sender instanceof Player)) {
-            sender.sendMessage("Only players can execute this command.");
-            return true;
-        }
-        Player player = (Player) sender;
-
-        if (!player.hasPermission(COMMAND_PERMISSION)) {
-            player.sendMessage("§cDu hast keine Berechtigung, diese Aktion auszuführen.");
-            return true;
-        }
-
-        player.openInventory(inv);
         return true;
     }
 
     @EventHandler
     public void on(InventoryClickEvent event) {
-        if (TITLE.equals(event.getView().getTitle())) {
+        if (event.getView().getTitle().toString().equals(TITLE)) {
             if (event.getRawSlot() < event.getInventory().getSize()) {
                 event.setCancelled(true);
                 if (event.getRawSlot() == 4) {
@@ -84,7 +64,7 @@ public class PorticleGunCommand implements CommandExecutor, Listener {
 
     @EventHandler
     public void on(InventoryCloseEvent event) {
-        if (TITLE.equals(event.getView().getTitle())) {
+        if (event.getView().getTitle().toString().equals(TITLE)) {
             //SoundHandler.playSound(event.getPlayer().getEyeLocation(), APGSound.INV_CLOSE);
         }
     }

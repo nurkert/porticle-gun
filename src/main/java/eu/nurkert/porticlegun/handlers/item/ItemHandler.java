@@ -6,13 +6,7 @@ import org.bukkit.event.Listener;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.ThreadLocalRandom;
+import java.util.Random;
 
 public class ItemHandler implements Listener {
 
@@ -50,40 +44,23 @@ public class ItemHandler implements Listener {
         if (itemStack.getType() != PORTICLE_GUN_TYPE) return null;
         if (!itemStack.hasItemMeta()) return null;
         ItemMeta meta = itemStack.getItemMeta();
-        if (meta == null || !meta.hasLore()) return null;
-        List<String> lore = meta.getLore();
-        if (lore == null || lore.isEmpty()) return null;
-        String id = revealID(lore.get(0));
+        assert meta != null;
+        if(!meta.hasLore()) return null;
+        String id = revealID(meta.getLore().get(0));
         if(!isValidGunID(id)) return null;
         return id;
     }
 
     // Charset for generating portal IDs
-    private static final String CHAR_SET = "ᵃᵇᶜᵈᵉᶠᵍʰᶤʲᵏˡᵐᶰᵒᵖᵠʳˢᵗᵘᵛʷˣʸᶻᴬᴮᶜᴰᴱᶠᴳᴴᴵᴶᴷᴸᴹᴺᴼᴾᵠᴿˢᵀᵁᵛᵂᵡᵞᶻ⁰¹²³⁴⁵⁶⁷⁸⁹";
-    private static final String CHAR_SET_STORAGE = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-    private static final char[] HIDDEN_ID_CHARACTERS = CHAR_SET.toCharArray();
-    private static final char[] STORAGE_ID_CHARACTERS = CHAR_SET_STORAGE.toCharArray();
-    private static final int GUN_ID_LENGTH = 10;
-    private static final Set<Character> VALID_GUN_ID_CHARACTERS;
-    private static final Map<Character, Character> HIDDEN_TO_STORAGE_MAP;
-    private static final Map<Character, Character> STORAGE_TO_HIDDEN_MAP;
+    private static final String charSet = "ᵃᵇᶜᵈᵉᶠᵍʰᶤʲᵏˡᵐᶰᵒᵖᵠʳˢᵗᵘᵛʷˣʸᶻᴬᴮᶜᴰᴱᶠᴳᴴᴵᴶᴷᴸᴹᴺᴼᴾᵠᴿˢᵀᵁᵛᵂᵡᵞᶻ⁰¹²³⁴⁵⁶⁷⁸⁹";
+    private static final String charSet2 = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
 
-    static {
-        Set<Character> characters = new HashSet<>();
-        for (char character : HIDDEN_ID_CHARACTERS) {
-            characters.add(character);
-        }
-        VALID_GUN_ID_CHARACTERS = Collections.unmodifiableSet(characters);
 
-        HIDDEN_TO_STORAGE_MAP = buildTranslationMap(HIDDEN_ID_CHARACTERS, STORAGE_ID_CHARACTERS);
-        STORAGE_TO_HIDDEN_MAP = buildTranslationMap(STORAGE_ID_CHARACTERS, HIDDEN_ID_CHARACTERS);
-    }
 
     public static String generateGunID() {
-        StringBuilder id = new StringBuilder(GUN_ID_LENGTH);
-        ThreadLocalRandom random = ThreadLocalRandom.current();
-        for (int i = 0; i < GUN_ID_LENGTH; i++) {
-            id.append(HIDDEN_ID_CHARACTERS[random.nextInt(HIDDEN_ID_CHARACTERS.length)]);
+        StringBuilder id = new StringBuilder();
+        for (int i = 0; i < 10; i++) {
+            id.append(charSet.toCharArray()[new Random().nextInt(charSet.length())]);
         }
         return id.toString();
     }
@@ -96,9 +73,9 @@ public class ItemHandler implements Listener {
      */
     public static boolean isValidGunID(String id) {
         // check if the id is 10 chars long and only contains chars from the charset
-        if (id == null || id.length() != GUN_ID_LENGTH) return false;
+        if (id.length() != 10) return false;
         for (char c : id.toCharArray()) {
-            if (!VALID_GUN_ID_CHARACTERS.contains(c)) return false;
+            if (!charSet.contains(String.valueOf(c))) return false;
         }
         return true;
     }
@@ -127,41 +104,22 @@ public class ItemHandler implements Listener {
      */
     public static String revealID(String id) {
         // removes '§' from the id
-        return id == null ? null : id.replace("§", "");
+        return id.replaceAll("§", "");
     }
 
     public static String saveable(String id) {
-        return translateCharacters(id, HIDDEN_TO_STORAGE_MAP);
+        StringBuilder encoded = new StringBuilder();
+        for (char c : id.toCharArray()) {
+            encoded.append(charSet2.toCharArray()[charSet.indexOf(c)]);
+        }
+        return encoded.toString();
     }
 
     public static String useable(String id) {
-        return translateCharacters(id, STORAGE_TO_HIDDEN_MAP);
-    }
-
-    private static Map<Character, Character> buildTranslationMap(char[] source, char[] target) {
-        if (source.length != target.length) {
-            throw new IllegalStateException("Source and target character sets must have the same length");
+        StringBuilder decoded = new StringBuilder();
+        for (char c : id.toCharArray()) {
+            decoded.append(charSet.toCharArray()[charSet2.indexOf(c)]);
         }
-        Map<Character, Character> map = new HashMap<>(source.length);
-        for (int i = 0; i < source.length; i++) {
-            map.put(source[i], target[i]);
-        }
-        return Collections.unmodifiableMap(map);
-    }
-
-    private static String translateCharacters(String value, Map<Character, Character> translationMap) {
-        if (value == null) {
-            throw new IllegalArgumentException("Value may not be null");
-        }
-        StringBuilder encoded = new StringBuilder(value.length());
-        for (int i = 0; i < value.length(); i++) {
-            char c = value.charAt(i);
-            Character mapped = translationMap.get(c);
-            if (mapped == null) {
-                throw new IllegalArgumentException("Unexpected character '" + c + "' for translation");
-            }
-            encoded.append(mapped);
-        }
-        return encoded.toString();
+        return decoded.toString();
     }
 }

@@ -1,0 +1,20 @@
+name: PorticleGun
+version: v1.2.2-SNAPSHOT
+main: eu.nurkert.porticlegun.PorticleGun
+api-version: 1.19
+authors: [ nurkert ]
+
+commands:
+  porticlegun:
+    description: Main command for the PorticleGun plugin
+    aliases: [pg]
+    permission: porticlegun.command
+    usage: /<command> [gui|remove]
+
+permissions:
+  porticlegun.command:
+    description: Allows use of the porticlegun command
+    default: op
+  porticlegun.command.remove:
+    description: Allows players to remove portals with /pg remove
+    default: op

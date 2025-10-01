@@ -15,7 +15,7 @@ public class BannerBuilder {
     ItemStack item;
 
     public BannerBuilder() {
-        item = new ItemStack(Material.BLACK_BANNER);
+        item = new ItemStack(Material.WHITE_BANNER);
     }
 
     public BannerBuilder setName(String name) {
@@ -26,9 +26,9 @@ public class BannerBuilder {
     }
 
     public BannerBuilder setBaseColor(DyeColor color) {
-        BannerMeta meta = getItemMeta();
-        meta.setBaseColor(color);
-        item.setItemMeta(meta);
+        ItemMeta cache = item.getItemMeta();
+        item = new ItemStack(Material.valueOf(color.toString() + "_BANNER"));
+        item.setItemMeta(cache);
         return this;
     }
 

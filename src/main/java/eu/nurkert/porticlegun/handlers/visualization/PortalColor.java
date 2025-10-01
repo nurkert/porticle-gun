@@ -13,7 +13,7 @@ public enum PortalColor {
     DARK_RED(ChatColor.DARK_RED, Color.RED , DyeColor.RED),
     DARK_PURPLE(ChatColor.DARK_PURPLE, Color.PURPLE, DyeColor.PURPLE),
     GOLD(ChatColor.GOLD, Color.ORANGE, DyeColor.ORANGE),
-    GRAY(ChatColor.GRAY, Color.fromBGR(170, 170, 170), DyeColor.LIGHT_GRAY),
+    //GRAY(ChatColor.GRAY, Color.fromBGR(170, 170, 170), DyeColor.LIGHT_GRAY),
     DARK_GRAY(ChatColor.DARK_GRAY, Color.fromBGR(85, 85, 85), DyeColor.GRAY),
     BLUE(ChatColor.BLUE, Color.BLUE, DyeColor.LIGHT_BLUE),
     GREEN(ChatColor.GREEN, Color.LIME, DyeColor.LIME),
