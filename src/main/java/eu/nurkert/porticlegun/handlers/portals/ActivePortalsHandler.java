@@ -59,6 +59,11 @@ public class ActivePortalsHandler implements Listener {
         }};
     }
 
+    public static void clear() {
+        primaryPortals.clear();
+        secondaryPortals.clear();
+    }
+
     /**
      * @param player the player to get the portals for
      * @return all portals that are relevant to the player
