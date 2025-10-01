@@ -43,10 +43,16 @@ public class LoadingHandler {
         register(new ActivePortalsHandler());
         register(porticleGunCommand);
         register(new VisualizationHanlder());
-        register(new TeleportationHandler());
+
+        TeleportationHandler teleportationHandler = new TeleportationHandler();
+        register(teleportationHandler);
+        teleportationHandler.startEntityMonitor();
+
         register(new ChangeColorHandler());
         register(new TitleHandler());
-        register(new GravityGun());
+
+        GravityGun gravityGun = new GravityGun();
+        register(gravityGun);
 
         if(developMode) register(new DebugHandler());
     }
