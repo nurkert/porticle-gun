@@ -70,6 +70,8 @@ public class TeleportationHandler implements Listener {
         double upComponent = vector.dot(source.up);
         double rightComponent = vector.dot(source.right);
 
+        forwardComponent *= -1;
+
         Vector transformed = destination.forward.clone().multiply(forwardComponent);
         transformed.add(destination.up.clone().multiply(upComponent));
         transformed.add(destination.right.clone().multiply(rightComponent));
