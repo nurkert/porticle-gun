@@ -1,6 +1,7 @@
 package eu.nurkert.porticlegun.commands;
 
 import eu.nurkert.porticlegun.builders.ItemBuilder;
+import eu.nurkert.porticlegun.config.ConfigManager;
 import eu.nurkert.porticlegun.handlers.item.ItemHandler;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
@@ -20,6 +21,7 @@ public class PorticleGunCommand implements CommandExecutor, Listener {
 
     private static final String TITLE = "§8PorticleGun";
     private static final String COMMAND_PERMISSION = "porticlegun.command";
+    private static final String RELOAD_PERMISSION = "porticlegun.command.reload";
 
     private final Inventory inv;
 
@@ -37,6 +39,22 @@ public class PorticleGunCommand implements CommandExecutor, Listener {
 
     @Override
     public boolean onCommand(CommandSender sender, Command cmd, String label, String[] args) {
+        if (args.length > 0) {
+            if ("reload".equalsIgnoreCase(args[0])) {
+                if (!sender.hasPermission(RELOAD_PERMISSION)) {
+                    sender.sendMessage("§cDu hast keine Berechtigung, die Konfiguration neu zu laden.");
+                    return true;
+                }
+
+                ConfigManager.reload();
+                sender.sendMessage("§aDie PorticleGun-Konfiguration wurde neu geladen.");
+                return true;
+            }
+
+            sender.sendMessage("§cUnbekannter Unterbefehl.");
+            return true;
+        }
+
         if (!(sender instanceof Player)) {
             sender.sendMessage("Only players can execute this command.");
             return true;

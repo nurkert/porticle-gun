@@ -1,5 +1,6 @@
 package eu.nurkert.porticlegun.portals;
 
+import eu.nurkert.porticlegun.config.ConfigManager;
 import org.bukkit.Location;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
@@ -17,13 +18,16 @@ public class PortalTracing {
      * @return the potential portal, or null if the player is not targeting a (valid) block.
      */
     public static PotentialPortal tracePortal(Player player) {
-        Block block = player.getTargetBlockExact(128);
+        Block block = player.getTargetBlockExact(ConfigManager.getPortalMaxTargetDistance());
+        if (block == null) {
+            return null;
+        }
         // get the mid point of the block
         BlockFace face = getBlockFace(player);
         if(face == null) return null;
         Vector direction = face.getDirection().normalize();
         Location loc = block.getLocation().add(direction);
-        if(loc.distance(player.getLocation()) >= 100) return null;
+        if(loc.distance(player.getLocation()) >= ConfigManager.getPortalMaxPlayerDistance()) return null;
         return new PotentialPortal(loc, direction);
     }
 
@@ -34,7 +38,7 @@ public class PortalTracing {
      * @return the BlockFace of the targeted block, or null if the targeted block is non-occluding.
      */
     public static BlockFace getBlockFace(Player player) {
-        List<Block> lastTwoTargetBlocks = player.getLastTwoTargetBlocks(null, 100);
+        List<Block> lastTwoTargetBlocks = player.getLastTwoTargetBlocks(null, ConfigManager.getPortalMaxBlockTrace());
         if (lastTwoTargetBlocks.size() != 2 || !lastTwoTargetBlocks.get(1).getType().isOccluding()) return null;
         Block targetBlock = lastTwoTargetBlocks.get(1);
         Block adjacentBlock = lastTwoTargetBlocks.get(0);
