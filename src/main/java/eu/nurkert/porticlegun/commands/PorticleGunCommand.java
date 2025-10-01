@@ -6,6 +6,7 @@ import eu.nurkert.porticlegun.handlers.LoadingHandler;
 import eu.nurkert.porticlegun.handlers.PersitentHandler;
 import eu.nurkert.porticlegun.handlers.item.ItemHandler;
 import eu.nurkert.porticlegun.handlers.portals.ActivePortalsHandler;
+import eu.nurkert.porticlegun.messages.MessageManager;
 import eu.nurkert.porticlegun.portals.Portal;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
@@ -26,31 +27,24 @@ import org.bukkit.inventory.PlayerInventory;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Set;
+import java.util.HashSet;
 import java.util.stream.Collectors;
 
 public class PorticleGunCommand implements CommandExecutor, Listener, TabCompleter {
 
-
-    private static final String TITLE = "§8PorticleGun";
     private static final String COMMAND_PERMISSION = "porticlegun.command";
     private static final String ADMIN_PERMISSION = "porticlegun.admin";
-
-    Inventory inv;
+    private static final List<String> ADMIN_SUBCOMMANDS = Arrays.asList("list", "remove", "clearplayer", "reload");
 
     public PorticleGunCommand() {
-        inv = Bukkit.createInventory(null, InventoryType.DROPPER, TITLE);
-        init();
     }
 
-    private void init() {
-
-        for (int i = 0; i < inv.getSize(); i++)
-            inv.setItem(i, new ItemBuilder(Material.BLACK_STAINED_GLASS_PANE).setName("§0|").build());
-        inv.setItem(4, ItemHandler.generateNewGun());
+    public void reloadMessages() {
+        // Inventory titles are resolved dynamically when the menu is opened.
     }
 
     @Override
@@ -60,13 +54,13 @@ public class PorticleGunCommand implements CommandExecutor, Listener, TabComplet
                 Player player = (Player) sender;
 
                 if (player.hasPermission(COMMAND_PERMISSION)) {
-                    player.openInventory(inv);
+                    player.openInventory(createMenu(player));
                     //SoundHandler.playSound(player, APGSound.INV_OPEN);
                 } else {
-                    player.sendMessage("§cYou do not have permission to use this command.");
+                    player.sendMessage(MessageManager.getMessage(player, "commands.general.no-permission"));
                 }
             } else {
-                sender.sendMessage("§cOnly players may open the PorticleGun menu.");
+                sender.sendMessage(MessageManager.getMessage(sender, "commands.general.players-only"));
             }
             return true;
         }
@@ -80,7 +74,7 @@ public class PorticleGunCommand implements CommandExecutor, Listener, TabComplet
             case "remove":
                 if (!ensureAdmin(sender)) return true;
                 if (args.length < 2) {
-                    sender.sendMessage("§cUsage: /" + label + " remove <gunId>");
+                    sender.sendMessage(MessageManager.getMessage(sender, "commands.usage.remove", Map.of("label", label)));
                     return true;
                 }
                 handleRemove(sender, args[1]);
@@ -88,7 +82,7 @@ public class PorticleGunCommand implements CommandExecutor, Listener, TabComplet
             case "clearplayer":
                 if (!ensureAdmin(sender)) return true;
                 if (args.length < 2) {
-                    sender.sendMessage("§cUsage: /" + label + " clearplayer <player>");
+                    sender.sendMessage(MessageManager.getMessage(sender, "commands.usage.clearplayer", Map.of("label", label)));
                     return true;
                 }
                 handleClearPlayer(sender, args[1]);
@@ -98,9 +92,26 @@ public class PorticleGunCommand implements CommandExecutor, Listener, TabComplet
                 handleReload(sender);
                 return true;
             default:
-                sender.sendMessage("§cUnknown subcommand. Available: list, remove, clearplayer, reload");
+                sender.sendMessage(MessageManager.getMessage(sender, "commands.general.unknown", Map.of(
+                        "subcommands", String.join(", ", ADMIN_SUBCOMMANDS))));
                 return true;
         }
+    }
+
+    private Inventory createMenu(Player player) {
+        Inventory inventory = Bukkit.createInventory(null, InventoryType.DROPPER,
+                MessageManager.getMessage(player, "menus.porticlegun.title"));
+        ItemStack filler = new ItemBuilder(Material.BLACK_STAINED_GLASS_PANE)
+                .setName(MessageManager.getMessage(player, "menus.porticlegun.filler-name"))
+                .build();
+        for (int i = 0; i < inventory.getSize(); i++) {
+            if (i == 4) {
+                continue;
+            }
+            inventory.setItem(i, filler.clone());
+        }
+        inventory.setItem(4, ItemHandler.generateNewGun());
+        return inventory;
     }
 
     private boolean ensureAdmin(CommandSender sender) {
@@ -110,23 +121,24 @@ public class PorticleGunCommand implements CommandExecutor, Listener, TabComplet
         if (((Player) sender).hasPermission(ADMIN_PERMISSION)) {
             return true;
         }
-        sender.sendMessage("§cYou do not have permission to manage PorticleGun data.");
+        sender.sendMessage(MessageManager.getMessage(sender, "commands.admin.no-permission"));
         return false;
     }
 
     private void handleList(CommandSender sender) {
         if (!PersitentHandler.exists("porticleguns")) {
-            sender.sendMessage("§eNo stored portal guns found.");
+            sender.sendMessage(MessageManager.getMessage(sender, "commands.list.empty"));
             return;
         }
 
         List<String> entries = PersitentHandler.getSection("porticleguns");
         if (entries.isEmpty()) {
-            sender.sendMessage("§eNo stored portal guns found.");
+            sender.sendMessage(MessageManager.getMessage(sender, "commands.list.empty"));
             return;
         }
 
-        sender.sendMessage("§aStored portal guns (" + entries.size() + "):");
+        sender.sendMessage(MessageManager.getMessage(sender, "commands.list.header",
+                Map.of("count", String.valueOf(entries.size()))));
         for (String entry : entries) {
             String gunId = ItemHandler.useable(entry);
             String basePath = "porticleguns." + entry;
@@ -135,46 +147,50 @@ public class PorticleGunCommand implements CommandExecutor, Listener, TabComplet
             boolean activePrimary = ActivePortalsHandler.hasPrimaryPortal(gunId);
             boolean activeSecondary = ActivePortalsHandler.hasSecondaryPortal(gunId);
 
-            String primaryStatus = buildStatus(activePrimary, persistedPrimary);
-            String secondaryStatus = buildStatus(activeSecondary, persistedSecondary);
+            String primaryStatus = buildStatus(sender, activePrimary, persistedPrimary);
+            String secondaryStatus = buildStatus(sender, activeSecondary, persistedSecondary);
 
-            sender.sendMessage("§7- §f" + gunId + " §8[§9primary: " + primaryStatus + "§8, §dsecondary: " + secondaryStatus + "§8]");
+            sender.sendMessage(MessageManager.getMessage(sender, "commands.list.entry", Map.of(
+                    "gun_id", gunId,
+                    "primary_status", primaryStatus,
+                    "secondary_status", secondaryStatus
+            )));
         }
     }
 
-    private String buildStatus(boolean active, boolean persisted) {
+    private String buildStatus(CommandSender sender, boolean active, boolean persisted) {
         if (active) {
-            return "§aactive";
+            return MessageManager.getMessage(sender, "commands.list.status.active");
         }
         if (persisted) {
-            return "§esaved";
+            return MessageManager.getMessage(sender, "commands.list.status.saved");
         }
-        return "§cnone";
+        return MessageManager.getMessage(sender, "commands.list.status.none");
     }
 
     private void handleRemove(CommandSender sender, String gunId) {
         if (!ItemHandler.isValidGunID(gunId)) {
-            sender.sendMessage("§c'" + gunId + "' is not a valid PorticleGun ID.");
+            sender.sendMessage(MessageManager.getMessage(sender, "commands.remove.invalid-id", Map.of("gun_id", gunId)));
             return;
         }
 
         if (removeGunData(gunId)) {
-            sender.sendMessage("§aRemoved stored data for gun §f" + gunId + "§a.");
+            sender.sendMessage(MessageManager.getMessage(sender, "commands.remove.success", Map.of("gun_id", gunId)));
         } else {
-            sender.sendMessage("§eNo stored portals were found for gun §f" + gunId + "§e.");
+            sender.sendMessage(MessageManager.getMessage(sender, "commands.remove.not-found", Map.of("gun_id", gunId)));
         }
     }
 
     private void handleClearPlayer(CommandSender sender, String playerName) {
         Player target = Bukkit.getPlayerExact(playerName);
         if (target == null) {
-            sender.sendMessage("§cPlayer '" + playerName + "' is not online.");
+            sender.sendMessage(MessageManager.getMessage(sender, "commands.clearplayer.not-online", Map.of("player", playerName)));
             return;
         }
 
         Set<String> gunIds = collectGunIds(target);
         if (gunIds.isEmpty()) {
-            sender.sendMessage("§ePlayer §f" + target.getName() + " §ehas no PorticleGuns in their inventories.");
+            sender.sendMessage(MessageManager.getMessage(sender, "commands.clearplayer.none", Map.of("player", target.getName())));
             return;
         }
 
@@ -190,16 +206,30 @@ public class PorticleGunCommand implements CommandExecutor, Listener, TabComplet
         }
 
         if (!cleared.isEmpty()) {
-            sender.sendMessage("§aCleared portals for §f" + target.getName() + "§a: §7" + String.join("§8, §7", cleared));
+            sender.sendMessage(MessageManager.getMessage(sender, "commands.clearplayer.cleared", Map.of(
+                    "player", target.getName(),
+                    "gun_ids", formatIdList(sender, cleared)
+            )));
         }
 
         if (!untouched.isEmpty()) {
-            sender.sendMessage("§eNo stored portals found for: §7" + String.join("§8, §7", untouched));
+            sender.sendMessage(MessageManager.getMessage(sender, "commands.clearplayer.untouched", Map.of(
+                    "gun_ids", formatIdList(sender, untouched)
+            )));
         }
 
         if (cleared.isEmpty() && untouched.isEmpty()) {
-            sender.sendMessage("§eNo portal data was changed for §f" + target.getName() + "§e.");
+            sender.sendMessage(MessageManager.getMessage(sender, "commands.clearplayer.no-change", Map.of(
+                    "player", target.getName()
+            )));
         }
+    }
+
+    private String formatIdList(CommandSender sender, List<String> ids) {
+        String separator = MessageManager.getMessage(sender, "lists.default-separator");
+        return ids.stream()
+                .map(id -> MessageManager.getMessage(sender, "commands.clearplayer.id-format", Map.of("gun_id", id)))
+                .collect(Collectors.joining(separator));
     }
 
     private Set<String> collectGunIds(Player player) {
@@ -259,7 +289,7 @@ public class PorticleGunCommand implements CommandExecutor, Listener, TabComplet
     private void handleReload(CommandSender sender) {
         PorticleGun.getInstance().reloadConfig();
         LoadingHandler.getInstance().reload();
-        sender.sendMessage("§aPorticleGun data reloaded from disk.");
+        sender.sendMessage(MessageManager.getMessage(sender, "commands.reload.success"));
     }
 
     @Override
@@ -268,9 +298,8 @@ public class PorticleGunCommand implements CommandExecutor, Listener, TabComplet
             if (!hasAdminSuggestions(sender)) {
                 return Collections.emptyList();
             }
-            List<String> options = Arrays.asList("list", "remove", "clearplayer", "reload");
             String prefix = args[0].toLowerCase(Locale.ROOT);
-            return options.stream()
+            return ADMIN_SUBCOMMANDS.stream()
                     .filter(option -> option.startsWith(prefix))
                     .collect(Collectors.toList());
         }
@@ -305,7 +334,7 @@ public class PorticleGunCommand implements CommandExecutor, Listener, TabComplet
 
     @EventHandler
     public void on(InventoryClickEvent event) {
-        if (event.getView().getTitle().toString().equals(TITLE)) {
+        if (MessageManager.matchesConfiguredValue("menus.porticlegun.title", event.getView().getTitle())) {
             if (event.getRawSlot() < event.getInventory().getSize()) {
                 event.setCancelled(true);
                 if (event.getRawSlot() == 4) {
@@ -317,7 +346,7 @@ public class PorticleGunCommand implements CommandExecutor, Listener, TabComplet
 
     @EventHandler
     public void on(InventoryCloseEvent event) {
-        if (event.getView().getTitle().toString().equals(TITLE)) {
+        if (MessageManager.matchesConfiguredValue("menus.porticlegun.title", event.getView().getTitle())) {
             //SoundHandler.playSound(event.getPlayer().getEyeLocation(), APGSound.INV_CLOSE);
         }
     }

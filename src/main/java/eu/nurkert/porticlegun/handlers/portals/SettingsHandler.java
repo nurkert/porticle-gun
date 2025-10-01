@@ -8,6 +8,7 @@ import eu.nurkert.porticlegun.handlers.visualization.GunColorHandler;
 import eu.nurkert.porticlegun.handlers.visualization.GunColors;
 import eu.nurkert.porticlegun.handlers.item.ItemHandler;
 import eu.nurkert.porticlegun.handlers.visualization.concrete.PortalVisualizationType;
+import eu.nurkert.porticlegun.messages.MessageManager;
 import eu.nurkert.porticlegun.portals.Portal;
 import eu.nurkert.porticlegun.handlers.visualization.PortalColor;
 import org.bukkit.Bukkit;
@@ -23,8 +24,11 @@ import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.InventoryView;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.meta.ItemMeta;
 
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.Map;
 
 public class SettingsHandler implements Listener {
 
@@ -37,12 +41,10 @@ public class SettingsHandler implements Listener {
                     new Pattern(DyeColor.LIGHT_GRAY, PatternType.DIAGONAL_UP_LEFT))
             .hideItemFlags().build();
 
-    final ItemStack reset = new BannerBuilder().setBaseColor(DyeColor.LIGHT_GRAY).setName("§c§lRemove portals")
-            .setLore("§8§o(requires double click)").setPatterns(new Pattern(DyeColor.RED, PatternType.CROSS),
+    final ItemStack resetTemplate = new BannerBuilder().setBaseColor(DyeColor.LIGHT_GRAY)
+            .setPatterns(new Pattern(DyeColor.RED, PatternType.CROSS),
                     new Pattern(DyeColor.LIGHT_GRAY, PatternType.BORDER))
             .hideItemFlags().build();
-
-    private final static String INVENTORY_TITLE = "§8Settings";
 
     HashMap<String, Long> lastClick = new HashMap<>();
 
@@ -53,6 +55,7 @@ public class SettingsHandler implements Listener {
             if (gunID != null) {
                 event.setCancelled(true);
                 if (event.getCurrentItem() != null) {
+                    Player player = (Player) event.getWhoClicked();
                     if ( event.getRawSlot() == 4) {
                         if(lastClick.containsKey(gunID) && System.currentTimeMillis() - lastClick.get(gunID) < 500) {
                             ActivePortalsHandler.removePrimaryPortal(gunID);
@@ -63,19 +66,19 @@ public class SettingsHandler implements Listener {
                         }
                     } else if(event.getRawSlot() == 0) {
                         GunColorHandler.selectNextPrimary(gunID);
-                        Inventory inv = getCurrentSettings(gunID);
+                        Inventory inv = getCurrentSettings(gunID, player);
                         event.getClickedInventory().setContents(inv.getContents());
                     } else if(event.getRawSlot() == 6) {
                         GunColorHandler.selectPreviousPrimary(gunID);
-                        Inventory inv = getCurrentSettings(gunID);
+                        Inventory inv = getCurrentSettings(gunID, player);
                         event.getClickedInventory().setContents(inv.getContents());
                     } else if(event.getRawSlot() == 2) {
                         GunColorHandler.selectNextSecondary(gunID);
-                        Inventory inv = getCurrentSettings(gunID);
+                        Inventory inv = getCurrentSettings(gunID, player);
                         event.getClickedInventory().setContents(inv.getContents());
                     } else if(event.getRawSlot() == 8) {
                         GunColorHandler.selectPreviousSecondary(gunID);
-                        Inventory inv = getCurrentSettings(gunID);
+                        Inventory inv = getCurrentSettings(gunID, player);
                         event.getClickedInventory().setContents(inv.getContents());
                     } else if (event.getRawSlot() == 7) {
 
@@ -88,7 +91,7 @@ public class SettingsHandler implements Listener {
                         PortalVisualizationType visualizationType = PortalVisualizationType.fromString(PersitentHandler.get("porticleguns." + ItemHandler.saveable(gunID) + ".shape"));
                         PersitentHandler.set("porticleguns." + ItemHandler.saveable(gunID) + ".shape", visualizationType.getNext().toString());
 
-                        Inventory inv = getCurrentSettings(gunID);
+                        Inventory inv = getCurrentSettings(gunID, player);
                         event.getClickedInventory().setContents(inv.getContents());
                     } else {
                         return;
@@ -115,7 +118,7 @@ public class SettingsHandler implements Listener {
                 Player player = event.getPlayer();
 
                 AudioHandler.playSound(player, AudioHandler.PortalSound.INV_OPEN);
-                Inventory inv = getCurrentSettings(gunID);
+                Inventory inv = getCurrentSettings(gunID, player);
                 player.openInventory(inv);
             }
         }
@@ -126,8 +129,9 @@ public class SettingsHandler implements Listener {
      * @param gunID the id of the gun
      * @return
      */
-    public Inventory getCurrentSettings(String gunID) {
-        Inventory inv = Bukkit.createInventory(null, InventoryType.DROPPER, INVENTORY_TITLE);
+    public Inventory getCurrentSettings(String gunID, Player player) {
+        Inventory inv = Bukkit.createInventory(null, InventoryType.DROPPER,
+                MessageManager.getMessage(player, "menus.settings.title"));
         inv.setItem(0, up);
         inv.setItem(2, up);
         inv.setItem(6, down);
@@ -142,20 +146,40 @@ public class SettingsHandler implements Listener {
         for (int i = 1; i <= 3; i++)
             inv.setItem((i * 3) - 2, background);
 
-        inv.setItem(4, reset);
+        inv.setItem(4, createResetItem(player));
 
         PortalVisualizationType visualizationType = PortalVisualizationType.fromString(PersitentHandler.get("porticleguns." + ItemHandler.saveable(gunID) + ".shape"));
 
         boolean ellpitic = visualizationType == PortalVisualizationType.ELLIPTIC;
+
+        String stateKey = ellpitic ? "menus.settings.round-on" : "menus.settings.round-off";
+        String roundState = MessageManager.getMessage(player, stateKey);
+        String roundLabel = MessageManager.getMessage(player, "menus.settings.round-label", Map.of("state", roundState));
 
         inv.setItem(7, new BannerBuilder().setBaseColor(DyeColor.WHITE).
                 setPatterns(new Pattern(ellpitic ? DyeColor.GRAY : DyeColor.RED, PatternType.HALF_HORIZONTAL),
                         new Pattern(ellpitic ? DyeColor.GREEN : DyeColor.GRAY, PatternType.HALF_HORIZONTAL_BOTTOM),
                         new Pattern(ellpitic ? DyeColor.GREEN : DyeColor.RED, PatternType.STRIPE_MIDDLE),
                         new Pattern(DyeColor.LIGHT_GRAY, PatternType.BORDER))
-                .hideItemFlags().setName("§7Round: " + (ellpitic ? "§2ON" : "§4OFF")).build());
+                .hideItemFlags().setName(roundLabel).build());
 
         return inv;
+    }
+
+    private ItemStack createResetItem(Player player) {
+        ItemStack reset = resetTemplate.clone();
+        ItemMeta meta = reset.getItemMeta();
+        if (meta != null) {
+            meta.setDisplayName(MessageManager.getMessage(player, "menus.settings.reset-name"));
+            String loreLine = MessageManager.getMessage(player, "menus.settings.reset-lore");
+            if (loreLine != null && !loreLine.isEmpty()) {
+                meta.setLore(Collections.singletonList(loreLine));
+            } else {
+                meta.setLore(null);
+            }
+            reset.setItemMeta(meta);
+        }
+        return reset;
     }
 
     @EventHandler
@@ -176,12 +200,12 @@ public class SettingsHandler implements Listener {
      */
     private String isPorticleSettingsInv(InventoryView view) {
         String title = view.getTitle();
-        if (title.startsWith(INVENTORY_TITLE)) {
+        if (MessageManager.matchesConfiguredValue("menus.settings.title", title)) {
             Inventory inv = view.getTopInventory();
-            if(inv.getItem(1).getType() == Material.GRAY_STAINED_GLASS_PANE) {
-                ItemStack item = inv.getItem(1);
-                if(item.hasItemMeta() && item.getItemMeta().hasDisplayName() && item.getItemMeta().getDisplayName().contains("§")) {
-                    String gunID = ItemHandler.revealID(item.getItemMeta().getDisplayName());
+            ItemStack slot = inv.getItem(1);
+            if(slot != null && slot.getType() == Material.GRAY_STAINED_GLASS_PANE) {
+                if(slot.hasItemMeta() && slot.getItemMeta().hasDisplayName() && slot.getItemMeta().getDisplayName().contains("§")) {
+                    String gunID = ItemHandler.revealID(slot.getItemMeta().getDisplayName());
                     if(ItemHandler.isValidGunID(gunID)) {
                         return gunID;
                     }

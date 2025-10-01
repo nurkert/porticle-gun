@@ -25,3 +25,23 @@ The plugin ships with a `config.yml` that can be used to tweak runtime behaviour
 
 * `gravity-gun.enabled` – Set to `false` to completely disable the gravity gun event listeners and background tasks.
 * `gravity-gun.block-blacklist` – A list of Bukkit material names that players are prevented from picking up with the gravity gun.
+
+## Localization
+
+Player-facing text is stored in `messages.yml`. The file is copied to the plugin's data folder on first start, so you can adjust translations without rebuilding the plugin.
+
+### Editing translations
+
+* `default-language` controls which language section is used as the fallback and for console output. Change it to the language key you prefer (for example `de`).
+* Each top-level language key (`en`, `de`, …) mirrors the same nested structure. Add new sections or edit the existing strings to customise the wording. Colour codes use the standard `&` notation and support placeholders such as `%gun_id%`, `%player%`, or `%state%`.
+* After modifying the file, run `/porticlegun reload` to apply the new texts in-game.
+
+### Per-player language selection
+
+The plugin automatically tries to match a player's Minecraft locale (e.g. `de_de` or `en_us`) to the available language sections. If a match is found, that translation is used for menu titles, chat messages, and other UI elements for that player. Operators can also override the language manually at runtime:
+
+```java
+MessageManager.setPlayerLanguage(player.getUniqueId(), "de");
+```
+
+Calling the method with `null` reverts a player back to automatic detection. This makes it easy to integrate custom language selectors or to honour preferences stored by other plugins.
