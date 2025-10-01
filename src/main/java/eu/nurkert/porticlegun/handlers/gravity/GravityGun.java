@@ -1,9 +1,9 @@
 package eu.nurkert.porticlegun.handlers.gravity;
 
-import java.util.Arrays;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.List;
+import java.util.Set;
 
 import eu.nurkert.porticlegun.PorticleGun;
 import eu.nurkert.porticlegun.handlers.AudioHandler;
@@ -35,20 +35,35 @@ import org.bukkit.util.Vector;
 
 public class GravityGun implements Listener {
 
-	HashMap<Player, Entity> players;
-	HashMap<Entity, Location> entitys;
-	HashMap<Entity, EntityType> spawner;
-	BukkitTask task;
+        HashMap<Player, Entity> players;
+        HashMap<Entity, Location> entitys;
+        HashMap<Entity, EntityType> spawner;
+        BukkitTask task;
 
-	public GravityGun() {
-		entitys = new HashMap<Entity, Location>();
-		players = new HashMap<Player, Entity>();
-		spawner = new HashMap<Entity, EntityType>();
-		init();
-	}
+        private final Set<Material> blacklist;
 
-	private void init() {
-		task = new BukkitRunnable() {
+        public GravityGun(Collection<Material> blockBlacklist) {
+                entitys = new HashMap<Entity, Location>();
+                players = new HashMap<Player, Entity>();
+                spawner = new HashMap<Entity, EntityType>();
+                blacklist = new HashSet<>();
+                updateBlockBlacklist(blockBlacklist);
+                init();
+        }
+
+        public void updateBlockBlacklist(Collection<Material> blockBlacklist) {
+                blacklist.clear();
+                if (blockBlacklist != null) {
+                        for (Material material : blockBlacklist) {
+                                if (material != null) {
+                                        blacklist.add(material);
+                                }
+                        }
+                }
+        }
+
+        private void init() {
+                task = new BukkitRunnable() {
 			@Override
 			public void run() {
 				for (Entity entity : entitys.keySet()) {
@@ -62,13 +77,17 @@ public class GravityGun implements Listener {
 					entity.setVelocity(direction);
 				}
 			}
-		}.runTaskTimer(PorticleGun.getInstance(), 0, 1);
-	}
+                }.runTaskTimer(PorticleGun.getInstance(), 0, 1);
+        }
 
-	final List<Material> BLACKLIST = Arrays.asList(Material.AIR, Material.CHEST);
+        public void shutdown() {
+                if (task != null) {
+                        task.cancel();
+                }
+        }
 
-	@EventHandler
-	public void on(PlayerDropItemEvent event) {
+        @EventHandler
+        public void on(PlayerDropItemEvent event) {
 		Player player = event.getPlayer();
 
 		if (player.hasMetadata("portalgun-drop_bypass")) {
@@ -124,10 +143,10 @@ public class GravityGun implements Listener {
 						}
 					}
 
-					if (BLACKLIST.contains(block.getType()) || block.isLiquid()) {
-						AudioHandler.playSound(event.getPlayer(), AudioHandler.PortalSound.DENY);
-						return;
-					}
+                                        if (blacklist.contains(block.getType()) || block.isLiquid()) {
+                                                AudioHandler.playSound(event.getPlayer(), AudioHandler.PortalSound.DENY);
+                                                return;
+                                        }
 
 					AudioHandler.playSound(player.getLocation(), AudioHandler.PortalSound.GRAB_BLOCK);
 					FallingBlock fallingblock = (FallingBlock) block.getLocation().getWorld()

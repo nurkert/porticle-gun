@@ -1,5 +1,6 @@
 package eu.nurkert.porticlegun;
 
+import eu.nurkert.porticlegun.config.ConfigManager;
 import eu.nurkert.porticlegun.handlers.LoadingHandler;
 import eu.nurkert.porticlegun.handlers.PersitentHandler;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -12,6 +13,8 @@ public final class PorticleGun extends JavaPlugin {
         System.out.println("PorticleGun has been enabled!");
 
 
+        saveDefaultConfig();
+        ConfigManager.init();
         PersitentHandler.getInstance();
         LoadingHandler.getInstance();
     }
