@@ -30,6 +30,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.HashSet;
 import java.util.stream.Collectors;
@@ -141,6 +142,10 @@ public class PorticleGunCommand implements CommandExecutor, Listener, TabComplet
                 Map.of("count", String.valueOf(entries.size()))));
         for (String entry : entries) {
             String gunId = ItemHandler.useable(entry);
+            if (gunId == null) {
+                PorticleGun.getInstance().getLogger().warning("Skipping invalid persisted gun id '" + entry + "' while listing porticle guns.");
+                continue;
+            }
             String basePath = "porticleguns." + entry;
             boolean persistedPrimary = PersitentHandler.exists(basePath + ".primary.position");
             boolean persistedSecondary = PersitentHandler.exists(basePath + ".secondary.position");
@@ -313,6 +318,7 @@ public class PorticleGunCommand implements CommandExecutor, Listener, TabComplet
                 String prefix = args[1].toLowerCase(Locale.ROOT);
                 return PersitentHandler.getSection("porticleguns").stream()
                         .map(ItemHandler::useable)
+                        .filter(Objects::nonNull)
                         .filter(id -> id.toLowerCase(Locale.ROOT).startsWith(prefix))
                         .collect(Collectors.toList());
             }

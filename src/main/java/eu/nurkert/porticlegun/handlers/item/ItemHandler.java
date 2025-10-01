@@ -1,5 +1,6 @@
 package eu.nurkert.porticlegun.handlers.item;
 
+import eu.nurkert.porticlegun.PorticleGun;
 import eu.nurkert.porticlegun.builders.ItemBuilder;
 import eu.nurkert.porticlegun.messages.MessageManager;
 import org.bukkit.Material;
@@ -54,13 +55,15 @@ public class ItemHandler implements Listener {
     // Charset for generating portal IDs
     private static final String charSet = "ᵃᵇᶜᵈᵉᶠᵍʰᶤʲᵏˡᵐᶰᵒᵖᵠʳˢᵗᵘᵛʷˣʸᶻᴬᴮᶜᴰᴱᶠᴳᴴᴵᴶᴷᴸᴹᴺᴼᴾᵠᴿˢᵀᵁᵛᵂᵡᵞᶻ⁰¹²³⁴⁵⁶⁷⁸⁹";
     private static final String charSet2 = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+    private static final char[] CHAR_SET = charSet.toCharArray();
+    private static final char[] CHAR_SET_ASCII = charSet2.toCharArray();
 
 
 
     public static String generateGunID() {
         StringBuilder id = new StringBuilder();
         for (int i = 0; i < 10; i++) {
-            id.append(charSet.toCharArray()[new Random().nextInt(charSet.length())]);
+            id.append(CHAR_SET[new Random().nextInt(CHAR_SET.length)]);
         }
         return id.toString();
     }
@@ -110,15 +113,31 @@ public class ItemHandler implements Listener {
     public static String saveable(String id) {
         StringBuilder encoded = new StringBuilder();
         for (char c : id.toCharArray()) {
-            encoded.append(charSet2.toCharArray()[charSet.indexOf(c)]);
+            int index = charSet.indexOf(c);
+            if (index == -1) {
+                PorticleGun.getInstance().getLogger().warning("Encountered unknown character '" + c + "' while encoding gun id");
+                continue;
+            }
+            encoded.append(CHAR_SET_ASCII[index]);
         }
         return encoded.toString();
     }
 
+    /**
+     * Decodes an id stored in the configuration.
+     *
+     * @param id the persisted id encoded via {@link #saveable(String)}
+     * @return the decoded id or {@code null} if the persisted value contains unsupported characters
+     */
     public static String useable(String id) {
         StringBuilder decoded = new StringBuilder();
         for (char c : id.toCharArray()) {
-            decoded.append(charSet.toCharArray()[charSet2.indexOf(c)]);
+            int index = charSet2.indexOf(c);
+            if (index == -1) {
+                PorticleGun.getInstance().getLogger().warning("Encountered unknown character '" + c + "' while decoding gun id");
+                return null;
+            }
+            decoded.append(CHAR_SET[index]);
         }
         return decoded.toString();
     }
