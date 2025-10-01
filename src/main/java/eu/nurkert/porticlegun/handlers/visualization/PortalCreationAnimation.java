@@ -84,8 +84,11 @@ public final class PortalCreationAnimation {
 
                     Vector offset = finalRight.clone().multiply(x + pulse).add(finalUp.clone().multiply(y - pulse));
                     Location particleLocation = center.clone().add(offset);
-                    world.spawnParticle(Particle.DUST, particleLocation.getX(), particleLocation.getY(), particleLocation.getZ(),
-                            1, 0.0, 0.0, 0.0, 0.0, finalDustOptions);
+                    world.spawnParticle(
+                            Particle.DUST,
+                            particleLocation.getX(), particleLocation.getY(), particleLocation.getZ(),
+                            1, 0.0, 0.0, 0.0, 0.0, finalDustOptions
+                    );
                 }
 
                 int outlinePoints = 24;
@@ -97,8 +100,11 @@ public final class PortalCreationAnimation {
 
                     Vector offset = finalRight.clone().multiply(x).add(finalUp.clone().multiply(y));
                     Location outlineLocation = center.clone().add(offset);
-                    world.spawnParticle(Particle.END_ROD, outlineLocation.getX(), outlineLocation.getY(), outlineLocation.getZ(),
-                            1, 0.0, 0.0, 0.0, 0.0);
+                    world.spawnParticle(
+                            Particle.END_ROD,
+                            outlineLocation.getX(), outlineLocation.getY(), outlineLocation.getZ(),
+                            1, 0.0, 0.0, 0.0, 0.0
+                    );
                 }
 
                 tick++;
