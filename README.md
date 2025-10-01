@@ -29,4 +29,4 @@ After adjusting the configuration you can reload it in-game or from the console 
 /porticlegun reload
 ```
 
-The reload subcommand requires the `porticlegun.command.reload` permission (granted to server operators by default).
+The reload subcommand requires the `porticlegun.admin` permission (granted to server operators by default).

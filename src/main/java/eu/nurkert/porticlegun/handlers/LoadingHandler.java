@@ -12,6 +12,7 @@ import org.bukkit.Bukkit;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.PluginCommand;
 import org.bukkit.event.Listener;
+import org.bukkit.command.TabCompleter;
 
 import static eu.nurkert.porticlegun.PorticleGun.developMode;
 
@@ -78,6 +79,9 @@ public class LoadingHandler {
             return;
         }
         pluginCommand.setExecutor(executor);
+        if (executor instanceof TabCompleter) {
+            pluginCommand.setTabCompleter((TabCompleter) executor);
+        }
     }
 
     /**
