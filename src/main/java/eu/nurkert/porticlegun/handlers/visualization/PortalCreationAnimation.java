@@ -43,11 +43,11 @@ public final class PortalCreationAnimation {
         Vector up = normal.clone().crossProduct(right).normalize();
 
         Color color = GunColorHandler.getColors(portal.getGunID()).get(portal.getType()).getBukkitColor();
-        Particle.DustOptions dustOptions = new Particle.DustOptions(color, 1.4F);
+        Particle.DustOptions dustOptions = new Particle.DustOptions(color, 0.9F);
 
-        double maxRight = portal.getDirection().getY() == 0.0 ? 0.45 : 0.55;
-        double maxUp = portal.getDirection().getY() == 0.0 ? 0.95 : 0.55;
-        int pointsPerTick = 36;
+        double maxRight = portal.getDirection().getY() == 0.0 ? 0.35 : 0.45;
+        double maxUp = portal.getDirection().getY() == 0.0 ? 0.75 : 0.45;
+        int pointsPerTick = 20;
 
         final Vector finalRight = right.clone();
         final Vector finalUp = up.clone();
@@ -67,9 +67,9 @@ public final class PortalCreationAnimation {
                 }
 
                 double progress = (tick + 1) / (double) ANIMATION_DURATION_TICKS;
-                double easing = 1 - Math.pow(1 - progress, 3);
-                double spiralRotation = tick * 0.25;
-                double wave = Math.sin(progress * Math.PI);
+                double easing = 1 - Math.pow(1 - progress, 2.5);
+                double spiralRotation = tick * 0.15;
+                double wave = Math.sin(progress * Math.PI) * 0.5;
 
                 for (int i = 0; i < finalPointsPerTick; i++) {
                     double normalizedIndex = (i + 1) / (double) finalPointsPerTick;
@@ -80,7 +80,7 @@ public final class PortalCreationAnimation {
 
                     double x = cos * radiusFactor * finalMaxRight;
                     double y = sin * radiusFactor * finalMaxUp;
-                    double pulse = Math.sin(angle + progress * Math.PI * 2) * 0.03 * wave;
+                    double pulse = Math.sin(angle + progress * Math.PI * 1.5) * 0.02 * wave;
 
                     Vector offset = finalRight.clone().multiply(x + pulse).add(finalUp.clone().multiply(y - pulse));
                     Location particleLocation = center.clone().add(offset);
@@ -88,22 +88,6 @@ public final class PortalCreationAnimation {
                             Particle.DUST,
                             particleLocation.getX(), particleLocation.getY(), particleLocation.getZ(),
                             1, 0.0, 0.0, 0.0, 0.0, finalDustOptions
-                    );
-                }
-
-                int outlinePoints = 24;
-                double outlineScale = 0.4 + 0.6 * easing;
-                for (int j = 0; j < outlinePoints; j++) {
-                    double theta = (Math.PI * 2 / outlinePoints) * j + spiralRotation * 0.5;
-                    double x = Math.cos(theta) * finalMaxRight * outlineScale;
-                    double y = Math.sin(theta * 0.8 + progress * Math.PI) * finalMaxUp * outlineScale;
-
-                    Vector offset = finalRight.clone().multiply(x).add(finalUp.clone().multiply(y));
-                    Location outlineLocation = center.clone().add(offset);
-                    world.spawnParticle(
-                            Particle.END_ROD,
-                            outlineLocation.getX(), outlineLocation.getY(), outlineLocation.getZ(),
-                            1, 0.0, 0.0, 0.0, 0.0
                     );
                 }
 
