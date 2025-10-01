@@ -106,6 +106,10 @@ public class LoadingHandler {
             PersitentHandler.getSection("porticleguns").forEach(porticlegun -> {
                 String basePath = "porticleguns." + porticlegun;
                 String gunID = ItemHandler.useable(porticlegun);
+                if (gunID == null) {
+                    PorticleGun.getInstance().getLogger().warning("Skipping persisted entry '" + porticlegun + "' because it contains invalid characters.");
+                    return;
+                }
                 PortalVisualizationType visualizationType = PortalVisualizationType.fromString(PersitentHandler.get(basePath + ".shape"));
                 if (PersitentHandler.exists(basePath + ".primary")) {
                     PortalColor primaryColor;

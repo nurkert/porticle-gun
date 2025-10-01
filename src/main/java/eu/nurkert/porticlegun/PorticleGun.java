@@ -11,7 +11,7 @@ public final class PorticleGun extends JavaPlugin {
     @Override
     public void onEnable() {
         // Plugin startup logic
-        System.out.println("PorticleGun has been enabled!");
+        getLogger().info("PorticleGun has been enabled!");
 
 
         saveDefaultConfig();
