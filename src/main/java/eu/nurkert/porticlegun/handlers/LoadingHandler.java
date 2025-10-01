@@ -10,6 +10,7 @@ import eu.nurkert.porticlegun.handlers.portals.*;
 import eu.nurkert.porticlegun.handlers.visualization.*;
 import eu.nurkert.porticlegun.handlers.visualization.concrete.PortalVisualizationType;
 import eu.nurkert.porticlegun.portals.Portal;
+import eu.nurkert.porticlegun.messages.MessageManager;
 import org.bukkit.Bukkit;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.PluginCommand;
@@ -137,6 +138,8 @@ public class LoadingHandler {
     }
 
     public void reload() {
+        MessageManager.reload(PorticleGun.getInstance());
+        porticleGunCommand.reloadMessages();
         ConfigManager.reload();
         updateGravityGunRegistration();
         PersitentHandler.reload();

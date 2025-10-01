@@ -1,0 +1,107 @@
+default-language: en
+
+en:
+  commands:
+    general:
+      no-permission: "&cYou do not have permission to use this command."
+      players-only: "&cOnly players may open the PorticleGun menu."
+      unknown: "&cUnknown subcommand. Available: %subcommands%"
+    admin:
+      no-permission: "&cYou do not have permission to manage PorticleGun data."
+    usage:
+      remove: "&cUsage: /%label% remove <gunId>"
+      clearplayer: "&cUsage: /%label% clearplayer <player>"
+    list:
+      empty: "&eNo stored portal guns found."
+      header: "&aStored portal guns (%count%):"
+      entry: "&7- &f%gun_id% &8[&9primary: %primary_status%&8, &dsecondary: %secondary_status%&8]"
+      status:
+        active: "&aactive"
+        saved: "&esaved"
+        none: "&cnone"
+    remove:
+      invalid-id: "&c'%gun_id%' is not a valid PorticleGun ID."
+      success: "&aRemoved stored data for gun &f%gun_id%&a."
+      not-found: "&eNo stored portals were found for gun &f%gun_id%&e."
+    clearplayer:
+      not-online: "&cPlayer '%player%' is not online."
+      none: "&ePlayer &f%player% &ehas no PorticleGuns in their inventories."
+      cleared: "&aCleared portals for &f%player%&a: %gun_ids%"
+      untouched: "&eNo stored portals found for: %gun_ids%"
+      no-change: "&eNo portal data was changed for &f%player%&e."
+      id-format: "&7%gun_id%"
+    reload:
+      success: "&aPorticleGun data reloaded from disk."
+  lists:
+    default-separator: "&8, &7"
+  menus:
+    porticlegun:
+      title: "&8PorticleGun"
+      filler-name: "&0|"
+    settings:
+      title: "&8Settings"
+      reset-name: "&c&lRemove portals"
+      reset-lore: "&8&o(requires double click)"
+      round-label: "&7Round: %state%"
+      round-on: "&2ON"
+      round-off: "&4OFF"
+  items:
+    porticlegun:
+      name: "&5PorticleGun"
+      lore: "&7Device that creates portals."
+  titles:
+    portal-status: "%primary% %secondary%"
+    portal-status-subtitle: ""
+
+de:
+  commands:
+    general:
+      no-permission: "&cDu hast keine Berechtigung, diesen Befehl zu verwenden."
+      players-only: "&cNur Spieler können das PorticleGun-Menü öffnen."
+      unknown: "&cUnbekannter Unterbefehl. Verfügbar: %subcommands%"
+    admin:
+      no-permission: "&cDu hast keine Berechtigung, PorticleGun-Daten zu verwalten."
+    usage:
+      remove: "&cVerwendung: /%label% remove <gunId>"
+      clearplayer: "&cVerwendung: /%label% clearplayer <spieler>"
+    list:
+      empty: "&eKeine gespeicherten Portalwaffen gefunden."
+      header: "&aGespeicherte Portalwaffen (%count%):"
+      entry: "&7- &f%gun_id% &8[&9Primär: %primary_status%&8, &dSekundär: %secondary_status%&8]"
+      status:
+        active: "&aaktiv"
+        saved: "&egespeichert"
+        none: "&ckeine"
+    remove:
+      invalid-id: "&c'%gun_id%' ist keine gültige PorticleGun-ID."
+      success: "&aGespeicherte Daten für Waffe &f%gun_id%&a entfernt."
+      not-found: "&eFür die Waffe &f%gun_id%&e wurden keine gespeicherten Portale gefunden."
+    clearplayer:
+      not-online: "&cSpieler '%player%' ist nicht online."
+      none: "&eSpieler &f%player% &ehat keine PorticleGuns im Inventar."
+      cleared: "&aPortale für &f%player%&a gelöscht: %gun_ids%"
+      untouched: "&eKeine gespeicherten Portale gefunden für: %gun_ids%"
+      no-change: "&eFür &f%player%&e wurden keine Portaldaten geändert."
+      id-format: "&7%gun_id%"
+    reload:
+      success: "&aPorticleGun-Daten von der Festplatte neu geladen."
+  lists:
+    default-separator: "&8, &7"
+  menus:
+    porticlegun:
+      title: "&8PorticleGun"
+      filler-name: "&0|"
+    settings:
+      title: "&8Einstellungen"
+      reset-name: "&c&lPortale entfernen"
+      reset-lore: "&8&o(benötigt Doppelklick)"
+      round-label: "&7Rund: %state%"
+      round-on: "&2AN"
+      round-off: "&4AUS"
+  items:
+    porticlegun:
+      name: "&5PorticleGun"
+      lore: "&7Gerät zum Erstellen von Portalen."
+  titles:
+    portal-status: "%primary% %secondary%"
+    portal-status-subtitle: ""

@@ -1,6 +1,7 @@
 package eu.nurkert.porticlegun.handlers.item;
 
 import eu.nurkert.porticlegun.builders.ItemBuilder;
+import eu.nurkert.porticlegun.messages.MessageManager;
 import org.bukkit.Material;
 import org.bukkit.event.Listener;
 import org.bukkit.inventory.ItemStack;
@@ -9,11 +10,6 @@ import org.bukkit.inventory.meta.ItemMeta;
 import java.util.Random;
 
 public class ItemHandler implements Listener {
-
-    // uniform name for the PorticleGun
-    public static final String PORTICLE_GUN_NAME = "§5PorticleGun";
-    // uniform description lore for the PorticleGun
-    public static final String PORTICLE_GUN_LORE = "§7Device that creates portals.";
 
     // uniform type for the PorticleGun
     public static final Material PORTICLE_GUN_TYPE = Material.BREWING_STAND;
@@ -27,10 +23,14 @@ public class ItemHandler implements Listener {
         String id = generateGunID();
 
         ItemBuilder builder = new ItemBuilder(PORTICLE_GUN_TYPE);
-        builder.setName(PORTICLE_GUN_NAME);
-        builder.setLore(vanishID(id), PORTICLE_GUN_LORE);
+        builder.setName(getPorticleGunName());
+        builder.setLore(vanishID(id), MessageManager.getMessage("items.porticlegun.lore"));
 
         return builder.build();
+    }
+
+    public static String getPorticleGunName() {
+        return MessageManager.getMessage("items.porticlegun.name");
     }
 
     /**

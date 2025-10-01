@@ -36,7 +36,7 @@ public class RecipeHandler implements Listener {
     public void on(CraftItemEvent event) {
         ItemStack crafted = event.getCurrentItem();
         if (crafted.getType() == Material.BREWING_STAND && crafted.hasItemMeta() &&
-                crafted.getItemMeta().getDisplayName().equals(ItemHandler.PORTICLE_GUN_NAME)) {
+                crafted.getItemMeta().getDisplayName().equals(ItemHandler.getPorticleGunName())) {
             // so not ever portal has the same id
             event.setCurrentItem(ItemHandler.generateNewGun());
         }
