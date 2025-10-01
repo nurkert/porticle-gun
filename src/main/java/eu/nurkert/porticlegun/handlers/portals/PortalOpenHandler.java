@@ -6,10 +6,11 @@ import eu.nurkert.porticlegun.handlers.item.ItemHandler;
 import eu.nurkert.porticlegun.handlers.visualization.PortalCreationAnimation;
 import eu.nurkert.porticlegun.handlers.visualization.TitleHandler;
 import eu.nurkert.porticlegun.handlers.visualization.concrete.PortalVisualizationType;
-import eu.nurkert.porticlegun.portals.PortalTracing;
 import eu.nurkert.porticlegun.portals.Portal;
+import eu.nurkert.porticlegun.portals.PortalTracing;
 import eu.nurkert.porticlegun.portals.PotentialPortal;
 import org.bukkit.Location;
+import org.bukkit.block.Block;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -30,7 +31,7 @@ public class PortalOpenHandler implements Listener {
                 Player player = event.getPlayer();
                 PotentialPortal potential = PortalTracing.tracePortal(player);
                 // check if a potential portal was found
-                if(potential != null) {
+                if(potential != null && hasRequiredBackingBlocks(potential)) {
                     // check if the portal is not placed in a solid block
                     if(!potential.getLocation().getBlock().getType().isSolid()) {
                         // so player can stand where he wants to place portal
@@ -76,5 +77,23 @@ public class PortalOpenHandler implements Listener {
         if(ItemHandler.isValidGun(event.getPlayer().getItemInHand()) != null) {
             event.setCancelled(true);
         }
+    }
+
+    private boolean hasRequiredBackingBlocks(PotentialPortal potential) {
+        Location portalBase = potential.getLocation();
+        Block lowerBacking = portalBase.clone().subtract(potential.getDirection()).getBlock();
+        if (!lowerBacking.getType().isOccluding()) {
+            return false;
+        }
+
+        if (Math.abs(potential.getDirection().getY()) < 0.5) {
+            Location upperPortalLocation = portalBase.clone().add(0, 1, 0);
+            Block upperBacking = upperPortalLocation.subtract(potential.getDirection()).getBlock();
+            if (!upperBacking.getType().isOccluding()) {
+                return false;
+            }
+        }
+
+        return true;
     }
 }
