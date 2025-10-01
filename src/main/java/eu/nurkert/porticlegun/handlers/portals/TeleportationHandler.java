@@ -2,77 +2,73 @@ package eu.nurkert.porticlegun.handlers.portals;
 
 import eu.nurkert.porticlegun.portals.Portal;
 import org.bukkit.Location;
+import org.bukkit.World;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.util.Vector;
 
-import java.util.ArrayList;
+import java.util.Collection;
 
 public class TeleportationHandler implements Listener {
 
     @EventHandler
     public void on(PlayerMoveEvent event) {
-        // check if the player moved to a different block
-        if (event.getFrom().getBlockX() != event.getTo().getBlockX() || event.getFrom().getBlockY() != event.getTo().getBlockY() || event.getFrom().getBlockZ() != event.getTo().getBlockZ()) {
-            Player player = event.getPlayer();
-            ArrayList<Portal> portals = ActivePortalsHandler.getRelevantPortals(player);
-            for (Portal portal : portals) {
-                if (portal.isInPortal(event.getTo()) || (portal.getDirection().getY() == -1.0 && portal.isInPortal(event.getTo().clone().add(0, 1, 0)))) {
-                    if(portal.getLinkedPortal() != null) {
-                        Location destination = portal.getLinkedPortal().getLocation().clone().add(0.5, portal.getLinkedPortal().getDirection().getY() == -1.0 ? -1 : 0, 0.5);
-                        destination.setDirection(portal.getLinkedPortal().getDirection());
-                        Vector velocity = player.getVelocity();
-                        player.teleport(destination);
-                        player.setVelocity(destination.getDirection().multiply(velocity.length()));
-                        break;
-                    }
+        Location to = event.getTo();
+        if (to == null) {
+            return;
+        }
+
+        if (event.getFrom().getBlockX() == to.getBlockX()
+                && event.getFrom().getBlockY() == to.getBlockY()
+                && event.getFrom().getBlockZ() == to.getBlockZ()) {
+            return;
+        }
+
+        Player player = event.getPlayer();
+        World playerWorld = to.getWorld();
+        if (playerWorld == null) {
+            return;
+        }
+
+        Collection<Portal> portals = ActivePortalsHandler.getAllPortals();
+        if (portals.isEmpty()) {
+            return;
+        }
+
+        Location above = null;
+        for (Portal portal : portals) {
+            Location portalLocation = portal.getLocation();
+            if (portalLocation == null || portalLocation.getWorld() != playerWorld) {
+                continue;
+            }
+
+            boolean inPortal = portal.isInPortal(to);
+            if (!inPortal && portal.getDirection().getY() == -1.0) {
+                if (above == null) {
+                    above = to.clone().add(0, 1, 0);
                 }
+                inPortal = portal.isInPortal(above);
             }
-        }
 
-    }
-
-    double[][] expected = {
-            new double[]{26d, 12d, 43d, 12d},
-            new double[]{17d, 10d, 30d, 17d},
-            new double[]{36d, 16d, 59d, 14d}
-    };
-
-    /**
-     * Multiplies two matrices.
-     *
-     * @param firstMatrix  the first matrix
-     * @param secondMatrix the second matrix
-     * @return the result of the multiplication
-     */
-    double[][] multiplyMatrices(double[][] firstMatrix, double[][] secondMatrix) {
-        double[][] result = new double[firstMatrix.length][secondMatrix[0].length];
-
-        for (int row = 0; row < result.length; row++) {
-            for (int col = 0; col < result[row].length; col++) {
-                result[row][col] = multiplyMatricesCell(firstMatrix, secondMatrix, row, col);
+            if (!inPortal) {
+                continue;
             }
-        }
 
-        return result;
-    }
+            Portal linked = portal.getLinkedPortal();
+            if (linked == null) {
+                continue;
+            }
 
-    /**
-     * Multiplies a cell of the result matrix.
-     *
-     * @param firstMatrix  the first matrix
-     * @param secondMatrix the second matrix
-     * @param row          the row of the cell
-     * @param col          the column of the cell
-     * @return the result of the multiplication
-     */
-    double multiplyMatricesCell(double[][] firstMatrix, double[][] secondMatrix, int row, int col) {
-        double cell = 0;
-        for (int i = 0; i < secondMatrix.length; i++) {
-            cell += firstMatrix[row][i] * secondMatrix[i][col];
+            Location destination = linked.getLocation().clone().add(0.5, linked.getDirection().getY() == -1.0 ? -1 : 0, 0.5);
+            destination.setDirection(linked.getDirection());
+
+            Vector velocity = player.getVelocity();
+            double speed = velocity.length();
+            player.teleport(destination);
+            player.setVelocity(destination.getDirection().multiply(speed));
+            break;
         }
-        return cell;
     }
 }
