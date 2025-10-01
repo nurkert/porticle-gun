@@ -10,9 +10,8 @@ import eu.nurkert.porticlegun.handlers.visualization.*;
 import eu.nurkert.porticlegun.portals.Portal;
 import org.bukkit.Bukkit;
 import org.bukkit.command.CommandExecutor;
+import org.bukkit.command.PluginCommand;
 import org.bukkit.event.Listener;
-
-import java.util.Base64;
 
 import static eu.nurkert.porticlegun.PorticleGun.developMode;
 
@@ -20,6 +19,8 @@ public class LoadingHandler {
 
     // Singleton construction
     final private static LoadingHandler instance = new LoadingHandler();
+
+    private final PorticleGunCommand porticleGunCommand = new PorticleGunCommand();
 
     private LoadingHandler() {
         // Private constructor
@@ -40,7 +41,7 @@ public class LoadingHandler {
         register(new RecipeHandler());
         register(new PortalOpenHandler());
         register(new ActivePortalsHandler());
-        register(new PorticleGunCommand());
+        register(porticleGunCommand);
         register(new VisualizationHanlder());
         register(new TeleportationHandler());
         register(new ChangeColorHandler());
@@ -55,7 +56,7 @@ public class LoadingHandler {
     }
 
     private void registerCommands() {
-        register(new PorticleGunCommand(), "porticlegun");
+        register(porticleGunCommand, "porticlegun");
     }
 
     /**
@@ -65,7 +66,12 @@ public class LoadingHandler {
      * @param command  The command to register the executor to
      */
     private void register(CommandExecutor executor, String command) {
-        PorticleGun.getInstance().getCommand(command).setExecutor(executor);
+        PluginCommand pluginCommand = PorticleGun.getInstance().getCommand(command);
+        if (pluginCommand == null) {
+            PorticleGun.getInstance().getLogger().severe("Command '" + command + "' is not registered in plugin.yml");
+            return;
+        }
+        pluginCommand.setExecutor(executor);
     }
 
     /**
@@ -73,35 +79,37 @@ public class LoadingHandler {
      */
     private void loadPortals() {
         if (PersitentHandler.exists("porticleguns")) {
-            PersitentHandler.getSection("porticleguns").forEach(porticlegun -> {
-                String gunID = ItemHandler.useable(porticlegun);
+            for (String porticlegun : PersitentHandler.getSection("porticleguns")) {
+                String gunID;
+                try {
+                    gunID = ItemHandler.useable(porticlegun);
+                } catch (IllegalArgumentException exception) {
+                    PorticleGun.getInstance().getLogger().warning("Skipping corrupted portal gun id: " + porticlegun);
+                    continue;
+                }
                 if (PersitentHandler.exists("porticleguns." + porticlegun + ".primary")) {
-                    PortalColor primaryColor;
+                    PortalColor primaryColor = GunColorHandler.DEFAULT_PRIMARY;
                     if (PersitentHandler.exists("porticleguns." + porticlegun + ".primary.color")) {
-                        primaryColor = PortalColor.valueOf(PersitentHandler.get("porticleguns." + porticlegun + ".primary.color"));
-                    } else {
-                        primaryColor = GunColorHandler.DEFAULT_PRIMARY;
+                        primaryColor = PortalColor.valueOf(PersitentHandler.getString("porticleguns." + porticlegun + ".primary.color"));
                     }
-                    PortalColor secondaryColor;
+                    PortalColor secondaryColor = GunColorHandler.DEFAULT_SECONDARY;
                     if (PersitentHandler.exists("porticleguns." + porticlegun + ".secondary.color")) {
-                        secondaryColor = PortalColor.valueOf(PersitentHandler.get("porticleguns." + porticlegun + ".secondary.color"));
-                    } else {
-                        secondaryColor = GunColorHandler.DEFAULT_SECONDARY;
+                        secondaryColor = PortalColor.valueOf(PersitentHandler.getString("porticleguns." + porticlegun + ".secondary.color"));
                     }
                     GunColorHandler.setColors(gunID, primaryColor, secondaryColor);
 
                     if (PersitentHandler.exists("porticleguns." + porticlegun + ".primary.position")) {
-                        String position = PersitentHandler.get("porticleguns." + porticlegun + ".primary.position");
+                        String position = PersitentHandler.getString("porticleguns." + porticlegun + ".primary.position");
                         Portal primary = new Portal(position, gunID, Portal.PortalType.PRIMARY);
                         ActivePortalsHandler.setPrimaryPortal(gunID, primary);
                     }
                     if (PersitentHandler.exists("porticleguns." + porticlegun + ".secondary.position")) {
-                        String position = PersitentHandler.get("porticleguns." + porticlegun + ".secondary.position");
+                        String position = PersitentHandler.getString("porticleguns." + porticlegun + ".secondary.position");
                         Portal secondary = new Portal(position, gunID, Portal.PortalType.SECONDARY);
                         ActivePortalsHandler.setSecondaryPortal(gunID, secondary);
                     }
                 }
-            });
+            }
         }
     }
 }
