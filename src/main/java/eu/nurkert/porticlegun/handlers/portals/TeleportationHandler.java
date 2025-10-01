@@ -53,14 +53,14 @@ public class TeleportationHandler implements Listener {
         forward.normalize();
 
         Vector auxiliaryAxis = Math.abs(forward.getY()) > 0.999 ? new Vector(0, 0, 1) : new Vector(0, 1, 0);
-        Vector right = forward.clone().crossProduct(auxiliaryAxis);
+        Vector right = auxiliaryAxis.clone().crossProduct(forward);
         if (right.lengthSquared() == 0) {
             auxiliaryAxis = new Vector(1, 0, 0);
-            right = forward.clone().crossProduct(auxiliaryAxis);
+            right = auxiliaryAxis.clone().crossProduct(forward);
         }
         right.normalize();
 
-        Vector up = right.clone().crossProduct(forward).normalize();
+        Vector up = forward.clone().crossProduct(right).normalize();
 
         return new PortalBasis(forward, up, right);
     }
