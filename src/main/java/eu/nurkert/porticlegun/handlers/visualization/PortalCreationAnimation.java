@@ -23,11 +23,11 @@ public final class PortalCreationAnimation {
             return;
         }
 
-        Location center = computePortalCenter(portal);
+        final Location center = computePortalCenter(portal);
         if (center == null) {
             return;
         }
-        World world = center.getWorld();
+        final World world = center.getWorld();
         if (world == null) {
             return;
         }
@@ -49,8 +49,6 @@ public final class PortalCreationAnimation {
         double maxUp = portal.getDirection().getY() == 0.0 ? 0.95 : 0.55;
         int pointsPerTick = 36;
 
-        final Location finalCenter = center;
-        final World finalWorld = world;
         final Vector finalRight = right.clone();
         final Vector finalUp = up.clone();
         final Particle.DustOptions finalDustOptions = dustOptions;
@@ -85,9 +83,12 @@ public final class PortalCreationAnimation {
                     double pulse = Math.sin(angle + progress * Math.PI * 2) * 0.03 * wave;
 
                     Vector offset = finalRight.clone().multiply(x + pulse).add(finalUp.clone().multiply(y - pulse));
-                    Location particleLocation = finalCenter.clone().add(offset);
-                    finalWorld.spawnParticle(Particle.DUST, particleLocation.getX(), particleLocation.getY(), particleLocation.getZ(),
-                            1, 0.0, 0.0, 0.0, 0.0, finalDustOptions);
+                    Location particleLocation = center.clone().add(offset);
+                    world.spawnParticle(
+                            Particle.DUST,
+                            particleLocation.getX(), particleLocation.getY(), particleLocation.getZ(),
+                            1, 0.0, 0.0, 0.0, 0.0, finalDustOptions
+                    );
                 }
 
                 int outlinePoints = 24;
@@ -98,9 +99,12 @@ public final class PortalCreationAnimation {
                     double y = Math.sin(theta * 0.8 + progress * Math.PI) * finalMaxUp * outlineScale;
 
                     Vector offset = finalRight.clone().multiply(x).add(finalUp.clone().multiply(y));
-                    Location outlineLocation = finalCenter.clone().add(offset);
-                    finalWorld.spawnParticle(Particle.END_ROD, outlineLocation.getX(), outlineLocation.getY(), outlineLocation.getZ(),
-                            1, 0.0, 0.0, 0.0, 0.0);
+                    Location outlineLocation = center.clone().add(offset);
+                    world.spawnParticle(
+                            Particle.END_ROD,
+                            outlineLocation.getX(), outlineLocation.getY(), outlineLocation.getZ(),
+                            1, 0.0, 0.0, 0.0, 0.0
+                    );
                 }
 
                 tick++;

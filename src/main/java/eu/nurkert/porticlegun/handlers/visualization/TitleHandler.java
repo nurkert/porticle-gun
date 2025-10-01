@@ -2,6 +2,7 @@ package eu.nurkert.porticlegun.handlers.visualization;
 
 import eu.nurkert.porticlegun.handlers.item.ItemHandler;
 import eu.nurkert.porticlegun.handlers.portals.ActivePortalsHandler;
+import eu.nurkert.porticlegun.messages.MessageManager;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -10,6 +11,8 @@ import org.bukkit.event.inventory.InventoryCloseEvent;
 import org.bukkit.event.player.PlayerItemHeldEvent;
 import org.bukkit.event.player.PlayerSwapHandItemsEvent;
 import org.bukkit.inventory.ItemStack;
+
+import java.util.Map;
 
 public class TitleHandler implements Listener {
 
@@ -62,6 +65,11 @@ public class TitleHandler implements Listener {
         String primary = GunColorHandler.getColors(gunID).getPrimary().getChatColor() + "§o" + (ActivePortalsHandler.hasPrimaryPortal(gunID) ? "§l◀" : "◁");
         String secondary = GunColorHandler.getColors(gunID).getSecondary().getChatColor() + "§o" + (ActivePortalsHandler.hasSecondaryPortal(gunID) ? "§l▶" : "▷");
 
-        player.sendTitle(primary + " " + secondary, "", 0, 20 * 5, 20);
+        String title = MessageManager.getMessage(player, "titles.portal-status", Map.of(
+                "primary", primary,
+                "secondary", secondary
+        ));
+        String subtitle = MessageManager.getMessage(player, "titles.portal-status-subtitle");
+        player.sendTitle(title, subtitle, 0, 20 * 5, 20);
     }
 }
