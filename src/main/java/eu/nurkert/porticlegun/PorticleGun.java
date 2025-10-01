@@ -8,9 +8,9 @@ public final class PorticleGun extends JavaPlugin {
 
     @Override
     public void onEnable() {
-        // Plugin startup logic
-        System.out.println("PorticleGun has been enabled!");
+        plugin = this;
 
+        getLogger().info("PorticleGun has been enabled!");
 
         PersitentHandler.getInstance();
         LoadingHandler.getInstance();
@@ -18,10 +18,6 @@ public final class PorticleGun extends JavaPlugin {
 
     public static boolean developMode = false;
     static PorticleGun plugin;
-
-    public PorticleGun() {
-        plugin = this;
-    }
 
     public static PorticleGun getInstance() {
         return plugin;
