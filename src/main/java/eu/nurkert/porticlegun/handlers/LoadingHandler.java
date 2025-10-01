@@ -7,14 +7,13 @@ import eu.nurkert.porticlegun.handlers.item.ItemHandler;
 import eu.nurkert.porticlegun.handlers.item.RecipeHandler;
 import eu.nurkert.porticlegun.handlers.portals.*;
 import eu.nurkert.porticlegun.handlers.visualization.*;
+import eu.nurkert.porticlegun.handlers.visualization.concrete.PortalVisualizationType;
 import eu.nurkert.porticlegun.portals.Portal;
 import org.bukkit.Bukkit;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.PluginCommand;
 import org.bukkit.command.TabCompleter;
 import org.bukkit.event.Listener;
-
-import java.util.Base64;
 
 import static eu.nurkert.porticlegun.PorticleGun.developMode;
 
@@ -48,7 +47,7 @@ public class LoadingHandler {
         register(porticleGunCommand);
         register(new VisualizationHanlder());
         register(new TeleportationHandler());
-        register(new ChangeColorHandler());
+        register(new SettingsHandler());
         register(new TitleHandler());
         register(new GravityGun());
 
@@ -86,30 +85,32 @@ public class LoadingHandler {
     private void loadPortals() {
         if (PersitentHandler.exists("porticleguns")) {
             PersitentHandler.getSection("porticleguns").forEach(porticlegun -> {
+                String basePath = "porticleguns." + porticlegun;
                 String gunID = ItemHandler.useable(porticlegun);
-                if (PersitentHandler.exists("porticleguns." + porticlegun + ".primary")) {
+                PortalVisualizationType visualizationType = PortalVisualizationType.fromString(PersitentHandler.get(basePath + ".shape"));
+                if (PersitentHandler.exists(basePath + ".primary")) {
                     PortalColor primaryColor;
-                    if (PersitentHandler.exists("porticleguns." + porticlegun + ".primary.color")) {
-                        primaryColor = PortalColor.valueOf(PersitentHandler.get("porticleguns." + porticlegun + ".primary.color"));
+                    if (PersitentHandler.exists(basePath + ".primary.color")) {
+                        primaryColor = PortalColor.valueOf(PersitentHandler.get(basePath + ".primary.color"));
                     } else {
                         primaryColor = GunColorHandler.DEFAULT_PRIMARY;
                     }
                     PortalColor secondaryColor;
-                    if (PersitentHandler.exists("porticleguns." + porticlegun + ".secondary.color")) {
-                        secondaryColor = PortalColor.valueOf(PersitentHandler.get("porticleguns." + porticlegun + ".secondary.color"));
+                    if (PersitentHandler.exists(basePath + ".secondary.color")) {
+                        secondaryColor = PortalColor.valueOf(PersitentHandler.get(basePath + ".secondary.color"));
                     } else {
                         secondaryColor = GunColorHandler.DEFAULT_SECONDARY;
                     }
                     GunColorHandler.setColors(gunID, primaryColor, secondaryColor);
 
-                    if (PersitentHandler.exists("porticleguns." + porticlegun + ".primary.position")) {
-                        String position = PersitentHandler.get("porticleguns." + porticlegun + ".primary.position");
-                        Portal primary = new Portal(position, gunID, Portal.PortalType.PRIMARY);
+                    if (PersitentHandler.exists(basePath + ".primary.position")) {
+                        String position = PersitentHandler.get(basePath + ".primary.position");
+                        Portal primary = new Portal(position, gunID, Portal.PortalType.PRIMARY, visualizationType);
                         ActivePortalsHandler.setPrimaryPortal(gunID, primary);
                     }
-                    if (PersitentHandler.exists("porticleguns." + porticlegun + ".secondary.position")) {
-                        String position = PersitentHandler.get("porticleguns." + porticlegun + ".secondary.position");
-                        Portal secondary = new Portal(position, gunID, Portal.PortalType.SECONDARY);
+                    if (PersitentHandler.exists(basePath + ".secondary.position")) {
+                        String position = PersitentHandler.get(basePath + ".secondary.position");
+                        Portal secondary = new Portal(position, gunID, Portal.PortalType.SECONDARY, visualizationType);
                         ActivePortalsHandler.setSecondaryPortal(gunID, secondary);
                     }
                 }

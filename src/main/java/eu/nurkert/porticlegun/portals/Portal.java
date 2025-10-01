@@ -91,7 +91,7 @@ public class Portal extends PotentialPortal {
         Location loc = getLocation();
         Vector direction = getDirection();
 
-        return this.visualizationType .getParticleLocation(radians, loc, direction);
+        return this.visualizationType.getParticleLocation(radians, loc, direction);
     }
 
     public String getPositionString() {
@@ -99,9 +99,11 @@ public class Portal extends PotentialPortal {
     }
 
     public void saveAll() {
-        PersitentHandler.set("porticleguns." + ItemHandler.saveable(gunID) + "." + type.toString().toLowerCase() + ".position", getPositionString());
+        String basePath = "porticleguns." + ItemHandler.saveable(gunID);
+        PersitentHandler.set(basePath + "." + type.toString().toLowerCase() + ".position", getPositionString());
         PortalColor color = GunColorHandler.getColors(gunID).get(type);
         saveColor(gunID, type, color);
+        PersitentHandler.set(basePath + ".shape", visualizationType.toString());
     }
 
     public static void saveColor(String gunID, PortalType type, PortalColor color) {

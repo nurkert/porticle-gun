@@ -7,7 +7,6 @@ import eu.nurkert.porticlegun.handlers.PersitentHandler;
 import eu.nurkert.porticlegun.handlers.visualization.GunColorHandler;
 import eu.nurkert.porticlegun.handlers.visualization.GunColors;
 import eu.nurkert.porticlegun.handlers.item.ItemHandler;
-import eu.nurkert.porticlegun.handlers.visualization.concrete.PortalVisualization;
 import eu.nurkert.porticlegun.handlers.visualization.concrete.PortalVisualizationType;
 import eu.nurkert.porticlegun.portals.Portal;
 import eu.nurkert.porticlegun.handlers.visualization.PortalColor;
@@ -25,7 +24,6 @@ import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.InventoryView;
 import org.bukkit.inventory.ItemStack;
 
-import javax.sound.sampled.Port;
 import java.util.HashMap;
 
 public class SettingsHandler implements Listener {
