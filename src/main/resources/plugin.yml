@@ -6,6 +6,15 @@ authors: [ nurkert ]
 
 commands:
   porticlegun:
-    description: Get a PorticleGun
-    usage: /porticlegun
+    description: Manage or obtain a PorticleGun
+    usage: /<command> [list|remove <id>|clearplayer <player>|reload]
     permission: porticlegun.command
+    tab-completer: eu.nurkert.porticlegun.commands.PorticleGunCommand
+
+permissions:
+  porticlegun.command:
+    description: Allows using /porticlegun to obtain a gun
+    default: true
+  porticlegun.admin:
+    description: Allows administrative PorticleGun management commands
+    default: op

@@ -10,6 +10,8 @@ import eu.nurkert.porticlegun.handlers.visualization.*;
 import eu.nurkert.porticlegun.portals.Portal;
 import org.bukkit.Bukkit;
 import org.bukkit.command.CommandExecutor;
+import org.bukkit.command.PluginCommand;
+import org.bukkit.command.TabCompleter;
 import org.bukkit.event.Listener;
 
 import java.util.Base64;
@@ -21,8 +23,11 @@ public class LoadingHandler {
     // Singleton construction
     final private static LoadingHandler instance = new LoadingHandler();
 
+    private final PorticleGunCommand porticleGunCommand;
+
     private LoadingHandler() {
         // Private constructor
+        porticleGunCommand = new PorticleGunCommand();
         registerEvents();
         registerCommands();
         loadPortals();
@@ -40,7 +45,7 @@ public class LoadingHandler {
         register(new RecipeHandler());
         register(new PortalOpenHandler());
         register(new ActivePortalsHandler());
-        register(new PorticleGunCommand());
+        register(porticleGunCommand);
         register(new VisualizationHanlder());
         register(new TeleportationHandler());
         register(new ChangeColorHandler());
@@ -55,7 +60,7 @@ public class LoadingHandler {
     }
 
     private void registerCommands() {
-        register(new PorticleGunCommand(), "porticlegun");
+        register(porticleGunCommand, "porticlegun");
     }
 
     /**
@@ -65,7 +70,14 @@ public class LoadingHandler {
      * @param command  The command to register the executor to
      */
     private void register(CommandExecutor executor, String command) {
-        PorticleGun.getInstance().getCommand(command).setExecutor(executor);
+        PluginCommand pluginCommand = PorticleGun.getInstance().getCommand(command);
+        if (pluginCommand == null) {
+            return;
+        }
+        pluginCommand.setExecutor(executor);
+        if (executor instanceof TabCompleter) {
+            pluginCommand.setTabCompleter((TabCompleter) executor);
+        }
     }
 
     /**
@@ -103,5 +115,12 @@ public class LoadingHandler {
                 }
             });
         }
+    }
+
+    public void reload() {
+        PersitentHandler.reload();
+        ActivePortalsHandler.clear();
+        GunColorHandler.clear();
+        loadPortals();
     }
 }

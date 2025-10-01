@@ -31,7 +31,10 @@ public class PersitentHandler {
     }
 
     public static List<String> getSection(String path) {
-        return new ArrayList<String>(config.getConfigurationSection(path).getKeys(false));
+        if (config.getConfigurationSection(path) == null) {
+            return new ArrayList<>();
+        }
+        return new ArrayList<>(config.getConfigurationSection(path).getKeys(false));
     }
 
     public static void set(String path, Object value) {
@@ -45,6 +48,15 @@ public class PersitentHandler {
 
     public static boolean exists(String path) {
         return config.get(path) != null;
+    }
+
+    public static void saveAll() {
+        portalsFile.save();
+    }
+
+    public static void reload() {
+        portalsFile.reload();
+        config = portalsFile.getConfig();
     }
 
     public class PortalsFile {
@@ -89,6 +101,10 @@ public class PersitentHandler {
             } catch (IOException e) {
                 e.printStackTrace();
             }
+        }
+
+        public void reload() {
+            portals = YamlConfiguration.loadConfiguration(portalYML);
         }
     }
 }

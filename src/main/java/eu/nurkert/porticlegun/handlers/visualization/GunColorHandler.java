@@ -53,5 +53,9 @@ public class GunColorHandler {
         getColors(gunID).selectPreviousSecondary(gunID);
     }
 
+    public static void clear() {
+        colors.clear();
+    }
+
 
 }
