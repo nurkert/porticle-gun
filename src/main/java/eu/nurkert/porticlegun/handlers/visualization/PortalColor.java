@@ -3,6 +3,7 @@ package eu.nurkert.porticlegun.handlers.visualization;
 import org.bukkit.ChatColor;
 import org.bukkit.Color;
 import org.bukkit.DyeColor;
+import org.bukkit.Particle;
 
 public enum PortalColor {
     BLACK(ChatColor.BLACK, Color.BLACK, DyeColor.BLACK),
@@ -26,11 +27,13 @@ public enum PortalColor {
     Color bukkitColor;
 
     DyeColor dyeColor;
+    private final Particle.DustOptions dustOptions;
 
     PortalColor(ChatColor color, Color bukkitColor, DyeColor dyeColor) {
         this.color = color;
         this.bukkitColor = bukkitColor;
         this.dyeColor = dyeColor;
+        this.dustOptions = new Particle.DustOptions(bukkitColor, 1);
     }
 
     public ChatColor getChatColor() {
@@ -43,6 +46,10 @@ public enum PortalColor {
 
     public DyeColor getDyeColor() {
         return dyeColor;
+    }
+
+    public Particle.DustOptions getDustOptions() {
+        return dustOptions;
     }
 
     public PortalColor next() {

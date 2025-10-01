@@ -7,8 +7,10 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ThreadLocalRandom;
 
@@ -63,6 +65,8 @@ public class ItemHandler implements Listener {
     private static final char[] STORAGE_ID_CHARACTERS = CHAR_SET_STORAGE.toCharArray();
     private static final int GUN_ID_LENGTH = 10;
     private static final Set<Character> VALID_GUN_ID_CHARACTERS;
+    private static final Map<Character, Character> HIDDEN_TO_STORAGE_MAP;
+    private static final Map<Character, Character> STORAGE_TO_HIDDEN_MAP;
 
     static {
         Set<Character> characters = new HashSet<>();
@@ -70,6 +74,9 @@ public class ItemHandler implements Listener {
             characters.add(character);
         }
         VALID_GUN_ID_CHARACTERS = Collections.unmodifiableSet(characters);
+
+        HIDDEN_TO_STORAGE_MAP = buildTranslationMap(HIDDEN_ID_CHARACTERS, STORAGE_ID_CHARACTERS);
+        STORAGE_TO_HIDDEN_MAP = buildTranslationMap(STORAGE_ID_CHARACTERS, HIDDEN_ID_CHARACTERS);
     }
 
     public static String generateGunID() {
@@ -124,37 +131,37 @@ public class ItemHandler implements Listener {
     }
 
     public static String saveable(String id) {
-        return translateCharacters(id, HIDDEN_ID_CHARACTERS, STORAGE_ID_CHARACTERS);
+        return translateCharacters(id, HIDDEN_TO_STORAGE_MAP);
     }
 
     public static String useable(String id) {
-        return translateCharacters(id, STORAGE_ID_CHARACTERS, HIDDEN_ID_CHARACTERS);
+        return translateCharacters(id, STORAGE_TO_HIDDEN_MAP);
     }
 
-    private static String translateCharacters(String value, char[] source, char[] target) {
-        if (value == null) {
-            throw new IllegalArgumentException("Value may not be null");
-        }
+    private static Map<Character, Character> buildTranslationMap(char[] source, char[] target) {
         if (source.length != target.length) {
             throw new IllegalStateException("Source and target character sets must have the same length");
         }
-        StringBuilder encoded = new StringBuilder(value.length());
-        for (char c : value.toCharArray()) {
-            int index = indexOf(source, c);
-            if (index < 0) {
-                throw new IllegalArgumentException("Unexpected character '" + c + "' for translation");
-            }
-            encoded.append(target[index]);
+        Map<Character, Character> map = new HashMap<>(source.length);
+        for (int i = 0; i < source.length; i++) {
+            map.put(source[i], target[i]);
         }
-        return encoded.toString();
+        return Collections.unmodifiableMap(map);
     }
 
-    private static int indexOf(char[] array, char value) {
-        for (int i = 0; i < array.length; i++) {
-            if (array[i] == value) {
-                return i;
-            }
+    private static String translateCharacters(String value, Map<Character, Character> translationMap) {
+        if (value == null) {
+            throw new IllegalArgumentException("Value may not be null");
         }
-        return -1;
+        StringBuilder encoded = new StringBuilder(value.length());
+        for (int i = 0; i < value.length(); i++) {
+            char c = value.charAt(i);
+            Character mapped = translationMap.get(c);
+            if (mapped == null) {
+                throw new IllegalArgumentException("Unexpected character '" + c + "' for translation");
+            }
+            encoded.append(mapped);
+        }
+        return encoded.toString();
     }
 }

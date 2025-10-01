@@ -1,11 +1,13 @@
 package eu.nurkert.porticlegun.handlers.portals;
 
 import eu.nurkert.porticlegun.portals.Portal;
+import org.bukkit.Location;
 import org.bukkit.entity.Player;
 import org.bukkit.event.Listener;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -14,6 +16,28 @@ public class ActivePortalsHandler implements Listener {
 
     private static final Map<String, Portal> primaryPortals = new HashMap<>();
     private static final Map<String, Portal> secondaryPortals = new HashMap<>();
+    private static final List<Portal> portalCache = new ArrayList<>();
+    private static final Collection<Portal> READ_ONLY_PORTALS = Collections.unmodifiableList(portalCache);
+    private static boolean cacheDirty = true;
+
+    private static void markCacheDirty() {
+        cacheDirty = true;
+    }
+
+    private static void rebuildCacheIfNeeded() {
+        if (!cacheDirty) {
+            return;
+        }
+        portalCache.clear();
+        portalCache.addAll(primaryPortals.values());
+        portalCache.addAll(secondaryPortals.values());
+        cacheDirty = false;
+    }
+
+    private static Collection<Portal> getPortalCache() {
+        rebuildCacheIfNeeded();
+        return READ_ONLY_PORTALS;
+    }
 
     public static void setPrimaryPortal(String gunID, Portal portal) {
         Portal previous = primaryPortals.put(gunID, portal);
@@ -25,6 +49,7 @@ public class ActivePortalsHandler implements Listener {
             portal.setLinkedPortal(secondary);
             secondary.setLinkedPortal(portal);
         }
+        markCacheDirty();
     }
 
     public static void setSecondaryPortal(String gunID, Portal portal) {
@@ -37,12 +62,16 @@ public class ActivePortalsHandler implements Listener {
             portal.setLinkedPortal(primary);
             primary.setLinkedPortal(portal);
         }
+        markCacheDirty();
     }
 
     public static void removePrimaryPortal(String gunID) {
         Portal portal = primaryPortals.remove(gunID);
         if (portal != null && portal.getLinkedPortal() != null) {
             portal.getLinkedPortal().setLinkedPortal(null);
+        }
+        if (portal != null) {
+            markCacheDirty();
         }
     }
 
@@ -54,6 +83,9 @@ public class ActivePortalsHandler implements Listener {
         Portal portal = secondaryPortals.remove(gunID);
         if (portal != null && portal.getLinkedPortal() != null) {
             portal.getLinkedPortal().setLinkedPortal(null);
+        }
+        if (portal != null) {
+            markCacheDirty();
         }
     }
 
@@ -69,8 +101,8 @@ public class ActivePortalsHandler implements Listener {
         return secondaryPortals.get(gunID);
     }
 
-    public static List<Portal> getAllPortal() {
-        return mergePortals(primaryPortals.values(), secondaryPortals.values());
+    public static Collection<Portal> getAllPortals() {
+        return getPortalCache();
     }
 
     /**
@@ -78,13 +110,21 @@ public class ActivePortalsHandler implements Listener {
      * @return all portals that are relevant to the player
      */
     public static List<Portal> getRelevantPortals(Player player) {
-        return getAllPortal();
-    }
-
-    private static List<Portal> mergePortals(Collection<Portal> primary, Collection<Portal> secondary) {
-        List<Portal> portals = new ArrayList<>(primary.size() + secondary.size());
-        portals.addAll(primary);
-        portals.addAll(secondary);
-        return portals;
+        Collection<Portal> portals = getPortalCache();
+        if (portals.isEmpty()) {
+            return Collections.emptyList();
+        }
+        List<Portal> relevant = new ArrayList<>();
+        String worldName = player.getWorld().getName();
+        for (Portal portal : portals) {
+            if (portal == null) {
+                continue;
+            }
+            Location location = portal.getLocation();
+            if (location != null && location.getWorld() != null && location.getWorld().getName().equals(worldName)) {
+                relevant.add(portal);
+            }
+        }
+        return relevant;
     }
 }
