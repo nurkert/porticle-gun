@@ -2,8 +2,8 @@ package eu.nurkert.porticlegun.handlers.portals;
 
 import eu.nurkert.porticlegun.handlers.AudioHandler;
 import eu.nurkert.porticlegun.handlers.PersitentHandler;
-import eu.nurkert.porticlegun.handlers.visualization.GunColorHandler;
 import eu.nurkert.porticlegun.handlers.item.ItemHandler;
+import eu.nurkert.porticlegun.handlers.visualization.PortalCreationAnimation;
 import eu.nurkert.porticlegun.handlers.visualization.TitleHandler;
 import eu.nurkert.porticlegun.handlers.visualization.concrete.PortalVisualizationType;
 import eu.nurkert.porticlegun.portals.PortalTracing;
@@ -43,11 +43,13 @@ public class PortalOpenHandler implements Listener {
                                 Portal primary = new Portal(potential, gunID, Portal.PortalType.PRIMARY, visualizationType);
                                 ActivePortalsHandler.setPrimaryPortal(gunID, primary);
                                 primary.saveAll();
+                                PortalCreationAnimation.play(primary);
                             } else if(action == Action.RIGHT_CLICK_AIR || action == Action.RIGHT_CLICK_BLOCK) {
                                 PortalVisualizationType visualizationType = PortalVisualizationType.fromString(PersitentHandler.get("porticleguns." + ItemHandler.saveable(gunID) + ".shape"));
                                 Portal secondary = new Portal(potential, gunID, Portal.PortalType.SECONDARY, visualizationType);
                                 ActivePortalsHandler.setSecondaryPortal(gunID, secondary);
                                 secondary.saveAll();
+                                PortalCreationAnimation.play(secondary);
                             }
                             TitleHandler.sendPortalStatus(player, gunID);
                             AudioHandler.playSound(player, AudioHandler.PortalSound.PORTAL_OPEN);
