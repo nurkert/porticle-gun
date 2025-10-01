@@ -149,8 +149,8 @@ public class GravityGun implements Listener {
                                         }
 
 					AudioHandler.playSound(player.getLocation(), AudioHandler.PortalSound.GRAB_BLOCK);
-					FallingBlock fallingblock = (FallingBlock) block.getLocation().getWorld()
-							.spawnFallingBlock(block.getLocation().add(0.5, 0, 0.5), block.getType(), block.getData());
+                                        FallingBlock fallingblock = (FallingBlock) block.getLocation().getWorld()
+                                                        .spawnFallingBlock(block.getLocation().add(0.5, 0, 0.5), block.getBlockData());
 
 					if (block.getType() == Material.SPAWNER) {
 //						spawner.put(player.getUniqueId().toString(),
