@@ -32,7 +32,7 @@ public class VisualizationHanlder implements Listener {
                     for(Player player : Bukkit.getOnlinePlayers()) {
                         Particle.DustOptions dustOptions = new Particle.DustOptions(color, 1);
                         for(Vector loc : locs) {
-                            player.spawnParticle(Particle.REDSTONE, loc.getX(), loc.getY(), loc.getZ(), 1, dustOptions);
+                            player.spawnParticle(Particle.DUST, loc.getX(), loc.getY(), loc.getZ(), 1, dustOptions);
                         }
                         //player.getWorld().spawnParticle(Particle.NOTE, player.getLocation(), 1, null);
 

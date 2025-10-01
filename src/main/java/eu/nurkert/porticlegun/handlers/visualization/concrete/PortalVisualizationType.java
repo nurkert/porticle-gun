@@ -19,8 +19,11 @@ public enum PortalVisualizationType {
     }
 
     public static PortalVisualizationType fromString(String type) {
-        for(PortalVisualizationType portalVisualizationType : PortalVisualizationType.values()) {
-            if(portalVisualizationType.name().equalsIgnoreCase(type)) {
+        if (type == null) {
+            return PortalVisualizationType.RECTANGULAR;
+        }
+        for (PortalVisualizationType portalVisualizationType : PortalVisualizationType.values()) {
+            if (portalVisualizationType.name().equalsIgnoreCase(type)) {
                 return portalVisualizationType;
             }
         }
