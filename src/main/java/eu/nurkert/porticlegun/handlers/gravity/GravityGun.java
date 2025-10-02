@@ -3,6 +3,7 @@ package eu.nurkert.porticlegun.handlers.gravity;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 
 import eu.nurkert.porticlegun.PorticleGun;
@@ -35,6 +36,8 @@ import org.bukkit.util.Vector;
 
 public class GravityGun implements Listener {
 
+        private static GravityGun instance;
+
         HashMap<Player, Entity> players;
         HashMap<Entity, Location> entitys;
         HashMap<Entity, EntityType> spawner;
@@ -43,12 +46,17 @@ public class GravityGun implements Listener {
         private final Set<Material> blacklist;
 
         public GravityGun(Collection<Material> blockBlacklist) {
+                instance = this;
                 entitys = new HashMap<Entity, Location>();
                 players = new HashMap<Player, Entity>();
                 spawner = new HashMap<Entity, EntityType>();
                 blacklist = new HashSet<>();
                 updateBlockBlacklist(blockBlacklist);
                 init();
+        }
+
+        public static GravityGun getInstance() {
+                return instance;
         }
 
         public void updateBlockBlacklist(Collection<Material> blockBlacklist) {
@@ -84,6 +92,44 @@ public class GravityGun implements Listener {
                 if (task != null) {
                         task.cancel();
                 }
+                if (instance == this) {
+                        instance = null;
+                }
+        }
+
+        public boolean releaseEntity(Entity entity) {
+                return releaseEntity(entity, true);
+        }
+
+        public boolean releaseEntitySilently(Entity entity) {
+                return releaseEntity(entity, false);
+        }
+
+        private boolean releaseEntity(Entity entity, boolean playSound) {
+                if (entity == null || !entitys.containsKey(entity)) {
+                        return false;
+                }
+
+                Player owner = null;
+                for (Map.Entry<Player, Entity> entry : players.entrySet()) {
+                        if (entry.getValue().equals(entity)) {
+                                owner = entry.getKey();
+                                break;
+                        }
+                }
+
+                entitys.remove(entity);
+                entity.setFallDistance(0F);
+
+                if (owner != null) {
+                        players.remove(owner);
+                        if (playSound) {
+                                AudioHandler.playSound(owner.getLocation(), AudioHandler.PortalSound.LET_BLOCK);
+                        }
+                        spawner.remove(owner.getUniqueId().toString());
+                }
+
+                return true;
         }
 
         @EventHandler
