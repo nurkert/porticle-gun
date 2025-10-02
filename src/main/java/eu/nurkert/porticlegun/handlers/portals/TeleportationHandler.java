@@ -3,6 +3,7 @@ package eu.nurkert.porticlegun.handlers.portals;
 import eu.nurkert.porticlegun.PorticleGun;
 import eu.nurkert.porticlegun.handlers.gravity.GravityGun;
 import eu.nurkert.porticlegun.portals.Portal;
+import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.LivingEntity;
@@ -21,11 +22,13 @@ import java.util.UUID;
 
 public class TeleportationHandler implements Listener {
 
-    private static final long TELEPORT_COOLDOWN_MS = 200;
+    private static final long TELEPORT_COOLDOWN_MS = 1000;
 
     private final Map<UUID, Long> teleportCooldown;
+    private final Map<UUID, Portal> portalReentryLock;
     public TeleportationHandler() {
         teleportCooldown = new HashMap<>();
+        portalReentryLock = new HashMap<>();
         new BukkitRunnable() {
             @Override
             public void run() {
@@ -49,10 +52,16 @@ public class TeleportationHandler implements Listener {
         Player player = event.getPlayer();
         ArrayList<Portal> portals = ActivePortalsHandler.getRelevantPortals(player);
         for (Portal portal : portals) {
-            if (isEntityInPortal(portal, event.getTo())) {
+            boolean inPortal = isEntityInPortal(portal, event.getTo());
+            if (inPortal) {
+                if (isPortalLocked(player, portal)) {
+                    continue;
+                }
                 if (teleportEntityThroughPortal(player, portal)) {
                     break;
                 }
+            } else {
+                clearPortalLockIfMatches(player, portal);
             }
         }
 
@@ -86,8 +95,14 @@ public class TeleportationHandler implements Listener {
                     continue;
                 }
 
-                if (isEntityInPortal(portal, entity.getLocation())) {
+                boolean inPortal = isEntityInPortal(portal, entity.getLocation());
+                if (inPortal) {
+                    if (isPortalLocked(entity, portal)) {
+                        continue;
+                    }
                     teleportEntityThroughPortal(entity, portal);
+                } else {
+                    clearPortalLockIfMatches(entity, portal);
                 }
             }
         }
@@ -96,6 +111,14 @@ public class TeleportationHandler implements Listener {
     private void cleanupCooldowns() {
         long now = System.currentTimeMillis();
         teleportCooldown.entrySet().removeIf(entry -> now - entry.getValue() > TELEPORT_COOLDOWN_MS * 10);
+        portalReentryLock.entrySet().removeIf(entry -> {
+            Portal lockedPortal = entry.getValue();
+            if (lockedPortal == null || lockedPortal.getLocation() == null || lockedPortal.getLocation().getWorld() == null) {
+                return true;
+            }
+            Entity entity = Bukkit.getEntity(entry.getKey());
+            return entity == null || !entity.isValid();
+        });
     }
 
     private boolean teleportEntityThroughPortal(Entity entity, Portal portal) {
@@ -145,6 +168,7 @@ public class TeleportationHandler implements Listener {
         entity.setVelocity(transformedVelocity);
         entity.setFallDistance(0F);
 
+        setPortalLock(entity, linkedPortal);
         setCooldown(entity);
         return true;
     }
@@ -159,6 +183,26 @@ public class TeleportationHandler implements Listener {
 
     private void setCooldown(Entity entity) {
         teleportCooldown.put(entity.getUniqueId(), System.currentTimeMillis());
+    }
+
+    private boolean isPortalLocked(Entity entity, Portal portal) {
+        Portal lockedPortal = portalReentryLock.get(entity.getUniqueId());
+        return lockedPortal != null && lockedPortal == portal;
+    }
+
+    private void clearPortalLockIfMatches(Entity entity, Portal portal) {
+        Portal lockedPortal = portalReentryLock.get(entity.getUniqueId());
+        if (lockedPortal != null && lockedPortal == portal) {
+            portalReentryLock.remove(entity.getUniqueId());
+        }
+    }
+
+    private void setPortalLock(Entity entity, Portal portal) {
+        if (portal == null) {
+            portalReentryLock.remove(entity.getUniqueId());
+            return;
+        }
+        portalReentryLock.put(entity.getUniqueId(), portal);
     }
 
     private boolean isEntityInPortal(Portal portal, Location location) {
