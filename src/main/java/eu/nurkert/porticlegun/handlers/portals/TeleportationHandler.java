@@ -1,48 +1,181 @@
 package eu.nurkert.porticlegun.handlers.portals;
 
+import eu.nurkert.porticlegun.PorticleGun;
+import eu.nurkert.porticlegun.handlers.gravity.GravityGun;
 import eu.nurkert.porticlegun.portals.Portal;
 import org.bukkit.Location;
+import org.bukkit.entity.Entity;
+import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerMoveEvent;
+import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.util.Vector;
 
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.UUID;
 
 public class TeleportationHandler implements Listener {
 
+    private static final long TELEPORT_COOLDOWN_MS = 200;
+
+    private final Map<UUID, Long> teleportCooldown;
+    public TeleportationHandler() {
+        teleportCooldown = new HashMap<>();
+        new BukkitRunnable() {
+            @Override
+            public void run() {
+                tickEntityTeleports();
+            }
+        }.runTaskTimer(PorticleGun.getInstance(), 1L, 1L);
+    }
+
     @EventHandler
     public void on(PlayerMoveEvent event) {
-        // check if the player moved to a different block
-        if (event.getFrom().getBlockX() != event.getTo().getBlockX() || event.getFrom().getBlockY() != event.getTo().getBlockY() || event.getFrom().getBlockZ() != event.getTo().getBlockZ()) {
-            Player player = event.getPlayer();
-            ArrayList<Portal> portals = ActivePortalsHandler.getRelevantPortals(player);
-            for (Portal portal : portals) {
-                if (portal.isInPortal(event.getTo()) || (portal.getDirection().getY() == -1.0 && portal.isInPortal(event.getTo().clone().add(0, 1, 0)))) {
-                    if(portal.getLinkedPortal() != null) {
-                        Vector preTeleportVelocity = player.getVelocity().clone();
-                        Vector preTeleportLook = player.getLocation().getDirection().clone();
+        if (event.getTo() == null) {
+            return;
+        }
 
-                        Portal linkedPortal = portal.getLinkedPortal();
+        if (event.getFrom().getBlockX() == event.getTo().getBlockX()
+                && event.getFrom().getBlockY() == event.getTo().getBlockY()
+                && event.getFrom().getBlockZ() == event.getTo().getBlockZ()) {
+            return;
+        }
 
-                        PortalBasis sourceBasis = createPortalBasis(portal.getDirection());
-                        PortalBasis destinationBasis = createPortalBasis(linkedPortal.getDirection());
-
-                        Vector transformedVelocity = transformVector(preTeleportVelocity, sourceBasis, destinationBasis);
-                        Vector transformedLook = transformVector(preTeleportLook, sourceBasis, destinationBasis).normalize();
-
-                        Location destination = linkedPortal.getLocation().clone().add(0.5, linkedPortal.getDirection().getY() == -1.0 ? -1 : 0, 0.5);
-                        destination.setDirection(transformedLook);
-
-                        player.teleport(destination);
-                        player.setVelocity(transformedVelocity);
-                        break;
-                    }
+        Player player = event.getPlayer();
+        ArrayList<Portal> portals = ActivePortalsHandler.getRelevantPortals(player);
+        for (Portal portal : portals) {
+            if (isEntityInPortal(portal, event.getTo())) {
+                if (teleportEntityThroughPortal(player, portal)) {
+                    break;
                 }
             }
         }
 
+    }
+
+    private void tickEntityTeleports() {
+        cleanupCooldowns();
+
+        for (Portal portal : ActivePortalsHandler.getAllPortal()) {
+            Portal linked = portal.getLinkedPortal();
+            if (linked == null) {
+                continue;
+            }
+
+            Location portalLocation = portal.getLocation();
+            if (portalLocation.getWorld() == null) {
+                continue;
+            }
+
+            Collection<Entity> nearbyEntities = portalLocation.getWorld().getNearbyEntities(portalLocation, 1.0, 1.5, 1.0);
+            for (Entity entity : nearbyEntities) {
+                if (entity instanceof Player) {
+                    continue;
+                }
+
+                if (!entity.isValid() || entity.isDead()) {
+                    continue;
+                }
+
+                if (!entity.getWorld().equals(portalLocation.getWorld())) {
+                    continue;
+                }
+
+                if (isEntityInPortal(portal, entity.getLocation())) {
+                    teleportEntityThroughPortal(entity, portal);
+                }
+            }
+        }
+    }
+
+    private void cleanupCooldowns() {
+        long now = System.currentTimeMillis();
+        teleportCooldown.entrySet().removeIf(entry -> now - entry.getValue() > TELEPORT_COOLDOWN_MS * 10);
+    }
+
+    private boolean teleportEntityThroughPortal(Entity entity, Portal portal) {
+        if (entity == null || portal == null) {
+            return false;
+        }
+
+        if (isOnCooldown(entity)) {
+            return false;
+        }
+
+        Portal linkedPortal = portal.getLinkedPortal();
+        if (linkedPortal == null || linkedPortal.getLocation().getWorld() == null) {
+            return false;
+        }
+
+        Vector preTeleportVelocity = entity.getVelocity().clone();
+        Vector preTeleportLook = null;
+        if (entity instanceof LivingEntity) {
+            preTeleportLook = ((LivingEntity) entity).getLocation().getDirection().clone();
+        }
+
+        PortalBasis sourceBasis = createPortalBasis(portal.getDirection());
+        PortalBasis destinationBasis = createPortalBasis(linkedPortal.getDirection());
+
+        Vector transformedVelocity = transformVector(preTeleportVelocity, sourceBasis, destinationBasis);
+
+        Location destination = linkedPortal.getLocation().clone().add(0.5, linkedPortal.getDirection().getY() == -1.0 ? -1 : 0, 0.5);
+
+        if (preTeleportLook != null) {
+            Vector transformedLook = transformVector(preTeleportLook, sourceBasis, destinationBasis);
+            if (transformedLook.lengthSquared() > 0) {
+                destination.setDirection(transformedLook);
+            }
+        }
+
+        GravityGun gravityGun = GravityGun.getInstance();
+        if (gravityGun != null) {
+            gravityGun.releaseEntitySilently(entity);
+        }
+
+        boolean teleported = entity.teleport(destination);
+        if (!teleported) {
+            return false;
+        }
+
+        entity.setVelocity(transformedVelocity);
+        entity.setFallDistance(0F);
+
+        setCooldown(entity);
+        return true;
+    }
+
+    private boolean isOnCooldown(Entity entity) {
+        Long lastTeleport = teleportCooldown.get(entity.getUniqueId());
+        if (lastTeleport == null) {
+            return false;
+        }
+        return System.currentTimeMillis() - lastTeleport < TELEPORT_COOLDOWN_MS;
+    }
+
+    private void setCooldown(Entity entity) {
+        teleportCooldown.put(entity.getUniqueId(), System.currentTimeMillis());
+    }
+
+    private boolean isEntityInPortal(Portal portal, Location location) {
+        if (location == null) {
+            return false;
+        }
+
+        if (portal.isInPortal(location)) {
+            return true;
+        }
+
+        if (portal.getDirection().getY() == -1.0) {
+            Location upper = location.clone().add(0, 1, 0);
+            return portal.isInPortal(upper);
+        }
+
+        return false;
     }
 
     static PortalBasis createPortalBasis(Vector direction) {
