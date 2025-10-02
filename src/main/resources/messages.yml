@@ -38,13 +38,6 @@ en:
     porticlegun:
       title: "&8PorticleGun"
       filler-name: "&0|"
-      rename-jar-name: "&bRename plugin jar"
-      rename-jar-lore: "&7Click to rename the jar to &f%target%&7.\n&8Requires file system access."
-      rename-jar-success: "&aRenamed plugin jar to &f%target%&a."
-      rename-jar-already: "&eThe plugin jar already matches the data folder name."
-      rename-jar-conflict: "&cAnother file named &f%target% &calready exists. Remove or rename it first."
-      rename-jar-error: "&cCould not rename the plugin jar. Check the console for details."
-      rename-jar-unavailable: "&cThe plugin jar location could not be determined while running from this environment."
     settings:
       title: "&8Settings"
       reset-name: "&c&lRemove portals"
@@ -98,13 +91,6 @@ de:
     porticlegun:
       title: "&8PorticleGun"
       filler-name: "&0|"
-      rename-jar-name: "&bPlugin-Jar umbenennen"
-      rename-jar-lore: "&7Klicke, um die Jar in &f%target%&7 umzubenennen.\n&8Benötigt Dateisystem-Zugriff."
-      rename-jar-success: "&aPlugin-Jar in &f%target% &aumbenannt."
-      rename-jar-already: "&eDie Plugin-Jar heißt bereits wie der Datenordner."
-      rename-jar-conflict: "&cEine Datei namens &f%target% &cist bereits vorhanden. Bitte zuerst entfernen oder umbenennen."
-      rename-jar-error: "&cDie Plugin-Jar konnte nicht umbenannt werden. Siehe Konsole für Details."
-      rename-jar-unavailable: "&cDer Speicherort der Plugin-Jar konnte in dieser Umgebung nicht ermittelt werden."
     settings:
       title: "&8Einstellungen"
       reset-name: "&c&lPortale entfernen"

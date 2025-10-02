@@ -8,8 +8,6 @@ import eu.nurkert.porticlegun.handlers.item.ItemHandler;
 import eu.nurkert.porticlegun.handlers.portals.ActivePortalsHandler;
 import eu.nurkert.porticlegun.messages.MessageManager;
 import eu.nurkert.porticlegun.portals.Portal;
-import eu.nurkert.porticlegun.util.PluginJarRenamer;
-import eu.nurkert.porticlegun.util.PluginJarRenamer.RenameResult;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.command.Command;
@@ -41,7 +39,6 @@ public class PorticleGunCommand implements CommandExecutor, Listener, TabComplet
 
     private static final String COMMAND_PERMISSION = "porticlegun.command";
     private static final String ADMIN_PERMISSION = "porticlegun.admin";
-    private static final int QUICK_RENAME_SLOT = 0;
     private static final List<String> ADMIN_SUBCOMMANDS = Arrays.asList("list", "remove", "clearplayer", "reload");
 
     public PorticleGunCommand() {
@@ -105,64 +102,17 @@ public class PorticleGunCommand implements CommandExecutor, Listener, TabComplet
     private Inventory createMenu(Player player) {
         Inventory inventory = Bukkit.createInventory(null, InventoryType.DROPPER,
                 MessageManager.getMessage(player, "menus.porticlegun.title"));
-        ItemStack filler = createFiller(player);
+        ItemStack filler = new ItemBuilder(Material.BLACK_STAINED_GLASS_PANE)
+                .setName(MessageManager.getMessage(player, "menus.porticlegun.filler-name"))
+                .build();
         for (int i = 0; i < inventory.getSize(); i++) {
             if (i == 4) {
                 continue;
             }
             inventory.setItem(i, filler.clone());
         }
-        ItemStack renameItem = createQuickRenameItem(player);
-        if (renameItem != null) {
-            inventory.setItem(QUICK_RENAME_SLOT, renameItem);
-        }
         inventory.setItem(4, ItemHandler.generateNewGun());
         return inventory;
-    }
-
-    private ItemStack createFiller(Player player) {
-        return new ItemBuilder(Material.BLACK_STAINED_GLASS_PANE)
-                .setName(MessageManager.getMessage(player, "menus.porticlegun.filler-name"))
-                .build();
-    }
-
-    private ItemStack createQuickRenameItem(Player player) {
-        if (!player.hasPermission(ADMIN_PERMISSION)) {
-            return null;
-        }
-        if (!PluginJarRenamer.isRenameAvailable(PorticleGun.getInstance())) {
-            return null;
-        }
-
-        String target = PluginJarRenamer.getTargetFileName(PorticleGun.getInstance());
-        String name = MessageManager.getMessage(player, "menus.porticlegun.rename-jar-name",
-                Map.of("target", target));
-        String loreRaw = MessageManager.getMessage(player, "menus.porticlegun.rename-jar-lore",
-                Map.of("target", target));
-
-        ItemBuilder builder = new ItemBuilder(Material.NAME_TAG)
-                .setName(name);
-        String[] lore = splitLore(loreRaw);
-        if (lore.length > 0) {
-            builder.setLore(lore);
-        }
-        return builder.build();
-    }
-
-    private String[] splitLore(String loreRaw) {
-        if (loreRaw == null || loreRaw.isEmpty()) {
-            return new String[0];
-        }
-        return loreRaw.split("\n");
-    }
-
-    private void updateRenameSlot(Inventory inventory, Player player) {
-        ItemStack renameItem = createQuickRenameItem(player);
-        if (renameItem != null) {
-            inventory.setItem(QUICK_RENAME_SLOT, renameItem);
-        } else {
-            inventory.setItem(QUICK_RENAME_SLOT, createFiller(player));
-        }
     }
 
     private boolean ensureAdmin(CommandSender sender) {
@@ -395,44 +345,8 @@ public class PorticleGunCommand implements CommandExecutor, Listener, TabComplet
                 event.setCancelled(true);
                 if (event.getRawSlot() == 4) {
                     event.setCursor(ItemHandler.generateNewGun());
-                } else if (event.getRawSlot() == QUICK_RENAME_SLOT && event.getWhoClicked() instanceof Player) {
-                    handleQuickRename((Player) event.getWhoClicked(), event.getInventory());
                 }
             }
-        }
-    }
-
-    private void handleQuickRename(Player player, Inventory inventory) {
-        if (!player.hasPermission(ADMIN_PERMISSION)) {
-            player.sendMessage(MessageManager.getMessage(player, "commands.admin.no-permission"));
-            return;
-        }
-
-        PorticleGun plugin = PorticleGun.getInstance();
-        String target = PluginJarRenamer.getTargetFileName(plugin);
-        Map<String, String> placeholders = Map.of("target", target);
-        RenameResult result = PluginJarRenamer.renameToDataFolder(plugin);
-
-        switch (result) {
-            case SUCCESS:
-                player.sendMessage(MessageManager.getMessage(player, "menus.porticlegun.rename-jar-success", placeholders));
-                player.closeInventory();
-                break;
-            case ALREADY_MATCHED:
-                player.sendMessage(MessageManager.getMessage(player, "menus.porticlegun.rename-jar-already", placeholders));
-                updateRenameSlot(inventory, player);
-                break;
-            case CONFLICT:
-                player.sendMessage(MessageManager.getMessage(player, "menus.porticlegun.rename-jar-conflict", placeholders));
-                break;
-            case UNAVAILABLE:
-                player.sendMessage(MessageManager.getMessage(player, "menus.porticlegun.rename-jar-unavailable"));
-                updateRenameSlot(inventory, player);
-                break;
-            case ERROR:
-            default:
-                player.sendMessage(MessageManager.getMessage(player, "menus.porticlegun.rename-jar-error"));
-                break;
         }
     }
 
