@@ -61,10 +61,12 @@ public class LoadingHandler {
     private void updateGravityGunRegistration() {
         if (ConfigManager.isGravityGunEnabled()) {
             if (gravityGun == null) {
-                gravityGun = new GravityGun(ConfigManager.getGravityGunBlockBlacklist());
+                gravityGun = new GravityGun(ConfigManager.getGravityGunBlockBlacklist(),
+                        ConfigManager.isGravityGunPlayerCaptureEnabled());
                 register(gravityGun);
             } else {
                 gravityGun.updateBlockBlacklist(ConfigManager.getGravityGunBlockBlacklist());
+                gravityGun.setAllowPlayerCapture(ConfigManager.isGravityGunPlayerCaptureEnabled());
             }
         } else if (gravityGun != null) {
             gravityGun.shutdown();

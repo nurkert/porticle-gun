@@ -28,6 +28,7 @@ import org.bukkit.event.player.PlayerItemHeldEvent;
 import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.event.player.PlayerTeleportEvent;
+import org.bukkit.event.player.PlayerToggleSneakEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.metadata.FixedMetadataValue;
 import org.bukkit.scheduler.BukkitRunnable;
@@ -44,13 +45,15 @@ public class GravityGun implements Listener {
         BukkitTask task;
 
         private final Set<Material> blacklist;
+        private boolean allowPlayerCapture;
 
-        public GravityGun(Collection<Material> blockBlacklist) {
+        public GravityGun(Collection<Material> blockBlacklist, boolean allowPlayerCapture) {
                 instance = this;
                 entitys = new HashMap<Entity, Location>();
                 players = new HashMap<Player, Entity>();
                 spawner = new HashMap<Entity, EntityType>();
                 blacklist = new HashSet<>();
+                this.allowPlayerCapture = allowPlayerCapture;
                 updateBlockBlacklist(blockBlacklist);
                 init();
         }
@@ -68,6 +71,10 @@ public class GravityGun implements Listener {
                                 }
                         }
                 }
+        }
+
+        public void setAllowPlayerCapture(boolean allowPlayerCapture) {
+                this.allowPlayerCapture = allowPlayerCapture;
         }
 
         private void init() {
@@ -179,15 +186,26 @@ public class GravityGun implements Listener {
 
 					Location loc = playersLook(player);
 
-					for (Entity entity : loc.getChunk().getEntities()) {
-						if (entity instanceof LivingEntity && entity.getLocation().distance(loc) < 1.5
-								&& entity.getType() != EntityType.PLAYER) {
-							entitys.put(entity, playersLook(player));
-							players.put(player, entity);
-							AudioHandler.playSound(player.getLocation(), AudioHandler.PortalSound.GRAB_BLOCK);
-							return;
-						}
-					}
+                                        for (Entity entity : loc.getChunk().getEntities()) {
+                                                if (!(entity instanceof LivingEntity)) {
+                                                        continue;
+                                                }
+
+                                                if (entity.equals(player) || entitys.containsKey(entity)) {
+                                                        continue;
+                                                }
+
+                                                if (entity.getType() == EntityType.PLAYER && !allowPlayerCapture) {
+                                                        continue;
+                                                }
+
+                                                if (entity.getLocation().distance(loc) < 1.5) {
+                                                        entitys.put(entity, playersLook(player));
+                                                        players.put(player, entity);
+                                                        AudioHandler.playSound(player.getLocation(), AudioHandler.PortalSound.GRAB_BLOCK);
+                                                        return;
+                                                }
+                                        }
 
                                         if (blacklist.contains(block.getType()) || block.isLiquid()) {
                                                 AudioHandler.playSound(event.getPlayer(), AudioHandler.PortalSound.DENY);
@@ -227,15 +245,17 @@ public class GravityGun implements Listener {
 	}
 
 	@EventHandler
-	public void on(PlayerTeleportEvent event) {
-		Player player = event.getPlayer();
-		if (players.containsKey(player)) {
-			entitys.remove(players.get(player));
-			players.remove(player);
-			if (spawner.containsKey(player.getUniqueId().toString()))
-				spawner.remove(player.getUniqueId().toString());
-		}
-	}
+        public void on(PlayerTeleportEvent event) {
+                Player player = event.getPlayer();
+                if (players.containsKey(player)) {
+                        entitys.remove(players.get(player));
+                        players.remove(player);
+                        if (spawner.containsKey(player.getUniqueId().toString()))
+                                spawner.remove(player.getUniqueId().toString());
+                } else if (entitys.containsKey(player)) {
+                        releaseEntitySilently(player);
+                }
+        }
 
 	@EventHandler
 	public void on(EntityDamageEvent event) {
@@ -291,27 +311,36 @@ public class GravityGun implements Listener {
 	}
 
 	@EventHandler
-	public void on(PlayerQuitEvent event) {
-		Player player = event.getPlayer();
-		if (players.containsKey(player)) {
-			entitys.remove(players.get(player));
-			players.remove(player);
-			if (spawner.containsKey(player.getUniqueId().toString()))
-				spawner.remove(player.getUniqueId().toString());
-		}
-	}
+        public void on(PlayerQuitEvent event) {
+                Player player = event.getPlayer();
+                if (players.containsKey(player)) {
+                        entitys.remove(players.get(player));
+                        players.remove(player);
+                        if (spawner.containsKey(player.getUniqueId().toString()))
+                                spawner.remove(player.getUniqueId().toString());
+                } else if (entitys.containsKey(player)) {
+                        releaseEntitySilently(player);
+                }
+        }
 
 	@EventHandler
-	public void on(PlayerMoveEvent event) {
-		if (players.containsKey(event.getPlayer()))
-			entitys.put(players.get(event.getPlayer()), playersLook(event.getPlayer()));
-	}
+        public void on(PlayerMoveEvent event) {
+                if (players.containsKey(event.getPlayer()))
+                        entitys.put(players.get(event.getPlayer()), playersLook(event.getPlayer()));
+        }
 
-	private Location playersLook(Player player) {
-		return player.getEyeLocation()
-				.add(player.getEyeLocation().add(0, 0.75, 0).getDirection().normalize().multiply(3.0D))
-				.subtract(0, 0.2, 0);
-	}
+        @EventHandler
+        public void on(PlayerToggleSneakEvent event) {
+                if (event.isSneaking() && entitys.containsKey(event.getPlayer())) {
+                        releaseEntity(event.getPlayer());
+                }
+        }
+
+        private Location playersLook(Player player) {
+                return player.getEyeLocation()
+                                .add(player.getEyeLocation().add(0, 0.75, 0).getDirection().normalize().multiply(3.0D))
+                                .subtract(0, 0.2, 0);
+        }
 
 //	@EventHandler
 //	public void on(PlayerInteractAtEntityEvent event) {
