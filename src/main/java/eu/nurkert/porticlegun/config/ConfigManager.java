@@ -16,6 +16,7 @@ public final class ConfigManager {
     private static final int DEFAULT_MAX_PLAYER_DISTANCE = 100;
     private static final int DEFAULT_MAX_BLOCK_TRACE = 100;
     private static final boolean DEFAULT_GRAVITY_GUN_ENABLED = true;
+    private static final boolean DEFAULT_GRAVITY_GUN_ALLOW_PLAYER_CAPTURE = false;
     private static final Set<Material> DEFAULT_GRAVITY_GUN_BLOCK_BLACKLIST =
             Collections.unmodifiableSet(EnumSet.of(Material.AIR, Material.CHEST));
 
@@ -23,6 +24,7 @@ public final class ConfigManager {
     private static int maxPlayerDistance = DEFAULT_MAX_PLAYER_DISTANCE;
     private static int maxBlockTrace = DEFAULT_MAX_BLOCK_TRACE;
     private static boolean gravityGunEnabled = DEFAULT_GRAVITY_GUN_ENABLED;
+    private static boolean gravityGunAllowPlayerCapture = DEFAULT_GRAVITY_GUN_ALLOW_PLAYER_CAPTURE;
     private static final Set<Material> gravityGunBlockBlacklist = EnumSet.copyOf(DEFAULT_GRAVITY_GUN_BLOCK_BLACKLIST);
 
     private ConfigManager() {
@@ -43,6 +45,7 @@ public final class ConfigManager {
         maxPlayerDistance = ensurePositive(config.getInt("portal.max-player-distance", DEFAULT_MAX_PLAYER_DISTANCE), DEFAULT_MAX_PLAYER_DISTANCE);
         maxBlockTrace = ensurePositive(config.getInt("portal.max-block-trace", DEFAULT_MAX_BLOCK_TRACE), DEFAULT_MAX_BLOCK_TRACE);
         gravityGunEnabled = config.getBoolean("gravity-gun.enabled", DEFAULT_GRAVITY_GUN_ENABLED);
+        gravityGunAllowPlayerCapture = config.getBoolean("gravity-gun.allow-player-capture", DEFAULT_GRAVITY_GUN_ALLOW_PLAYER_CAPTURE);
         loadGravityGunBlacklist(config.getStringList("gravity-gun.block-blacklist"));
     }
 
@@ -90,6 +93,10 @@ public final class ConfigManager {
 
     public static boolean isGravityGunEnabled() {
         return gravityGunEnabled;
+    }
+
+    public static boolean isGravityGunPlayerCaptureEnabled() {
+        return gravityGunAllowPlayerCapture;
     }
 
     public static Set<Material> getGravityGunBlockBlacklist() {
