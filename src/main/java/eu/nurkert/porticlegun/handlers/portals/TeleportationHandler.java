@@ -3,6 +3,7 @@ package eu.nurkert.porticlegun.handlers.portals;
 import eu.nurkert.porticlegun.PorticleGun;
 import eu.nurkert.porticlegun.handlers.gravity.GravityGun;
 import eu.nurkert.porticlegun.portals.Portal;
+import eu.nurkert.porticlegun.util.WorldGuardIntegration;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.entity.Entity;
@@ -132,6 +133,11 @@ public class TeleportationHandler implements Listener {
 
         Portal linkedPortal = portal.getLinkedPortal();
         if (linkedPortal == null || linkedPortal.getLocation().getWorld() == null) {
+            return false;
+        }
+
+        if (PorticleGun.isWorldGuardEnabled()
+                && !WorldGuardIntegration.canUsePortal(entity, portal.getLocation(), linkedPortal.getLocation())) {
             return false;
         }
 

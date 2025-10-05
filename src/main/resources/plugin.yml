@@ -3,6 +3,7 @@ version: v1.2.2-SNAPSHOT
 main: eu.nurkert.porticlegun.PorticleGun
 api-version: 1.19
 authors: [ nurkert ]
+softdepend: [WorldGuard]
 
 commands:
   porticlegun:

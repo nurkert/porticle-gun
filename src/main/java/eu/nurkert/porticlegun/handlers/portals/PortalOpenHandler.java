@@ -1,5 +1,6 @@
 package eu.nurkert.porticlegun.handlers.portals;
 
+import eu.nurkert.porticlegun.PorticleGun;
 import eu.nurkert.porticlegun.handlers.AudioHandler;
 import eu.nurkert.porticlegun.handlers.PersitentHandler;
 import eu.nurkert.porticlegun.handlers.item.ItemHandler;
@@ -9,6 +10,7 @@ import eu.nurkert.porticlegun.handlers.visualization.concrete.PortalVisualizatio
 import eu.nurkert.porticlegun.portals.Portal;
 import eu.nurkert.porticlegun.portals.PortalTracing;
 import eu.nurkert.porticlegun.portals.PotentialPortal;
+import eu.nurkert.porticlegun.util.WorldGuardIntegration;
 import org.bukkit.Location;
 import org.bukkit.block.Block;
 import org.bukkit.entity.Player;
@@ -37,6 +39,10 @@ public class PortalOpenHandler implements Listener {
                         // so player can stand where he wants to place portal
                         Location playersHight = potential.getLocation().clone().add(0, potential.getDirection().getY() != 0.0 ? potential.getDirection().getY() : 1, 0);
                         if(!playersHight.getBlock().getType().isSolid()) {
+                            if (PorticleGun.isWorldGuardEnabled() && !WorldGuardIntegration.canCreatePortal(player, potential.getLocation(), potential.getDirection())) {
+                                AudioHandler.playSound(player, AudioHandler.PortalSound.DENY);
+                                return;
+                            }
                             Action action = event.getAction();
 
                             if(action == Action.LEFT_CLICK_AIR || action == Action.LEFT_CLICK_BLOCK) {
