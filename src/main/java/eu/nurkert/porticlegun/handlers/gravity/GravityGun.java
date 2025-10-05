@@ -13,6 +13,7 @@ import java.util.Set;
 import eu.nurkert.porticlegun.PorticleGun;
 import eu.nurkert.porticlegun.handlers.AudioHandler;
 import eu.nurkert.porticlegun.handlers.item.ItemHandler;
+import eu.nurkert.porticlegun.util.WorldGuardIntegration;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
@@ -217,11 +218,21 @@ public class GravityGun implements Listener {
                                                 }
 
                                                 if (entity.getLocation().distance(loc) < 1.5) {
+                                                        if (PorticleGun.isWorldGuardEnabled()
+                                                                        && !WorldGuardIntegration.canUseGravityGun(player, entity.getLocation())) {
+                                                                continue;
+                                                        }
                                                         entitys.put(entity, playersLook(player));
                                                         players.put(player, entity);
                                                         AudioHandler.playSound(player.getLocation(), AudioHandler.PortalSound.GRAB_BLOCK);
                                                         return;
                                                 }
+                                        }
+
+                                        if (PorticleGun.isWorldGuardEnabled()
+                                                        && !WorldGuardIntegration.canUseGravityGun(player, block.getLocation())) {
+                                                AudioHandler.playSound(event.getPlayer(), AudioHandler.PortalSound.DENY);
+                                                return;
                                         }
 
                                         if (blacklist.contains(block.getType()) || block.isLiquid()) {
