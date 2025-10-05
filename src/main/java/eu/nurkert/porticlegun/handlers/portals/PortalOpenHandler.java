@@ -1,14 +1,18 @@
 package eu.nurkert.porticlegun.handlers.portals;
 
+import eu.nurkert.porticlegun.config.ConfigManager;
 import eu.nurkert.porticlegun.handlers.AudioHandler;
 import eu.nurkert.porticlegun.handlers.PersitentHandler;
 import eu.nurkert.porticlegun.handlers.item.ItemHandler;
+import eu.nurkert.porticlegun.handlers.visualization.GunColorHandler;
 import eu.nurkert.porticlegun.handlers.visualization.PortalCreationAnimation;
+import eu.nurkert.porticlegun.handlers.visualization.PortalShotAnimation;
 import eu.nurkert.porticlegun.handlers.visualization.TitleHandler;
 import eu.nurkert.porticlegun.handlers.visualization.concrete.PortalVisualizationType;
 import eu.nurkert.porticlegun.portals.Portal;
 import eu.nurkert.porticlegun.portals.PortalTracing;
 import eu.nurkert.porticlegun.portals.PotentialPortal;
+import org.bukkit.Color;
 import org.bukkit.Location;
 import org.bukkit.block.Block;
 import org.bukkit.entity.Player;
@@ -23,44 +27,55 @@ public class PortalOpenHandler implements Listener {
 
     @EventHandler
     public void on(PlayerInteractEvent event) {
-        // check if it is possible to place portal
-        if(event.getItem() != null && !event.getPlayer().isSneaking()) {
-            // check if player is holding a gun
-            String gunID = ItemHandler.isValidGun(event.getItem());
-            if(gunID != null) {
-                Player player = event.getPlayer();
-                PotentialPortal potential = PortalTracing.tracePortal(player);
-                // check if a potential portal was found
-                if(potential != null && hasRequiredBackingBlocks(potential)) {
-                    // check if the portal is not placed in a solid block
-                    if(!potential.getLocation().getBlock().getType().isSolid()) {
-                        // so player can stand where he wants to place portal
-                        Location playersHight = potential.getLocation().clone().add(0, potential.getDirection().getY() != 0.0 ? potential.getDirection().getY() : 1, 0);
-                        if(!playersHight.getBlock().getType().isSolid()) {
-                            Action action = event.getAction();
-
-                            if(action == Action.LEFT_CLICK_AIR || action == Action.LEFT_CLICK_BLOCK) {
-                                PortalVisualizationType visualizationType = PortalVisualizationType.fromString(PersitentHandler.get("porticleguns." + ItemHandler.saveable(gunID) + ".shape"));
-                                Portal primary = new Portal(potential, gunID, Portal.PortalType.PRIMARY, visualizationType);
-                                ActivePortalsHandler.setPrimaryPortal(gunID, primary);
-                                primary.saveAll();
-                                PortalCreationAnimation.play(primary);
-                            } else if(action == Action.RIGHT_CLICK_AIR || action == Action.RIGHT_CLICK_BLOCK) {
-                                PortalVisualizationType visualizationType = PortalVisualizationType.fromString(PersitentHandler.get("porticleguns." + ItemHandler.saveable(gunID) + ".shape"));
-                                Portal secondary = new Portal(potential, gunID, Portal.PortalType.SECONDARY, visualizationType);
-                                ActivePortalsHandler.setSecondaryPortal(gunID, secondary);
-                                secondary.saveAll();
-                                PortalCreationAnimation.play(secondary);
-                            }
-                            TitleHandler.sendPortalStatus(player, gunID);
-                            AudioHandler.playSound(player, AudioHandler.PortalSound.PORTAL_OPEN);
-                            return;
-                        }
-                    }
-                }
-                AudioHandler.playSound(player, AudioHandler.PortalSound.DENY);
-            }
+        if(event.getItem() == null || event.getPlayer().isSneaking()) {
+            return;
         }
+
+        String gunID = ItemHandler.isValidGun(event.getItem());
+        if(gunID == null) {
+            return;
+        }
+
+        Player player = event.getPlayer();
+        Action action = event.getAction();
+        if(!isPortalShotAction(action)) {
+            return;
+        }
+
+        Portal.PortalType portalType = isPrimaryAction(action) ? Portal.PortalType.PRIMARY : Portal.PortalType.SECONDARY;
+        Color beamColor = GunColorHandler.getColors(gunID).get(portalType).getBukkitColor();
+
+        PotentialPortal traced = PortalTracing.tracePortal(player);
+        PotentialPortal targetPortal = traced != null ? clonePotentialPortal(traced) : null;
+        Location targetLocation = targetPortal != null ? PortalCreationAnimation.computePortalCenter(targetPortal) : computeFallbackTarget(player);
+
+        Runnable failureAction = () -> AudioHandler.playSound(player, AudioHandler.PortalSound.DENY);
+
+        if (targetPortal == null || targetLocation == null) {
+            PortalShotAnimation.play(player, targetLocation, beamColor, false, null, failureAction);
+            return;
+        }
+
+        Runnable successAction = () -> {
+            if (!canPlacePortal(targetPortal)) {
+                failureAction.run();
+                return;
+            }
+            PortalVisualizationType visualizationType = PortalVisualizationType.fromString(PersitentHandler.get("porticleguns." + ItemHandler.saveable(gunID) + ".shape"));
+            Portal portal = new Portal(targetPortal, gunID, portalType, visualizationType);
+            if (portalType == Portal.PortalType.PRIMARY) {
+                ActivePortalsHandler.setPrimaryPortal(gunID, portal);
+            } else {
+                ActivePortalsHandler.setSecondaryPortal(gunID, portal);
+            }
+            portal.saveAll();
+            PortalCreationAnimation.play(portal);
+            TitleHandler.sendPortalStatus(player, gunID);
+            AudioHandler.playSound(player, AudioHandler.PortalSound.PORTAL_OPEN);
+        };
+
+        boolean canPlace = canPlacePortal(targetPortal);
+        PortalShotAnimation.play(player, targetLocation, beamColor, canPlace, successAction, failureAction);
     }
 
 
@@ -95,5 +110,42 @@ public class PortalOpenHandler implements Listener {
         }
 
         return true;
+    }
+
+    private boolean canPlacePortal(PotentialPortal potential) {
+        if (potential == null) {
+            return false;
+        }
+        if (!hasRequiredBackingBlocks(potential)) {
+            return false;
+        }
+        if (potential.getLocation().getBlock().getType().isSolid()) {
+            return false;
+        }
+        Location playersHeight = potential.getLocation().clone().add(0,
+                potential.getDirection().getY() != 0.0 ? potential.getDirection().getY() : 1, 0);
+        return !playersHeight.getBlock().getType().isSolid();
+    }
+
+    private PotentialPortal clonePotentialPortal(PotentialPortal original) {
+        Location location = original.getLocation().clone();
+        return new PotentialPortal(location, original.getDirection().clone());
+    }
+
+    private boolean isPortalShotAction(Action action) {
+        return action == Action.LEFT_CLICK_AIR
+                || action == Action.LEFT_CLICK_BLOCK
+                || action == Action.RIGHT_CLICK_AIR
+                || action == Action.RIGHT_CLICK_BLOCK;
+    }
+
+    private boolean isPrimaryAction(Action action) {
+        return action == Action.LEFT_CLICK_AIR || action == Action.LEFT_CLICK_BLOCK;
+    }
+
+    private Location computeFallbackTarget(Player player) {
+        Location eye = player.getEyeLocation().clone();
+        double maxDistance = ConfigManager.getPortalMaxTargetDistance();
+        return eye.add(eye.getDirection().normalize().multiply(maxDistance));
     }
 }

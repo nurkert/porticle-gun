@@ -4,6 +4,7 @@ import eu.nurkert.porticlegun.PorticleGun;
 import eu.nurkert.porticlegun.handlers.portals.ActivePortalsHandler;
 import eu.nurkert.porticlegun.handlers.visualization.GunColorHandler;
 import eu.nurkert.porticlegun.portals.Portal;
+import eu.nurkert.porticlegun.portals.PotentialPortal;
 import eu.nurkert.porticlegun.handlers.visualization.concrete.PortalVisualizationType;
 import org.bukkit.Color;
 import org.bukkit.Location;
@@ -202,7 +203,7 @@ public final class PortalCreationAnimation {
                 0.1);
     }
 
-    private static Location computePortalCenter(Portal portal) {
+    public static Location computePortalCenter(PotentialPortal portal) {
         Location base = portal.getLocation().clone();
         Vector direction = portal.getDirection();
         if (direction.getY() == 0.0) {
