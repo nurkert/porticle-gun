@@ -3,6 +3,7 @@ package eu.nurkert.porticlegun.handlers.visualization;
 import eu.nurkert.porticlegun.PorticleGun;
 import eu.nurkert.porticlegun.handlers.portals.ActivePortalsHandler;
 import eu.nurkert.porticlegun.handlers.visualization.GunColorHandler;
+import eu.nurkert.porticlegun.handlers.visualization.PortalGeometry;
 import eu.nurkert.porticlegun.portals.Portal;
 import eu.nurkert.porticlegun.handlers.visualization.concrete.PortalVisualizationType;
 import org.bukkit.Color;
@@ -27,7 +28,7 @@ public final class PortalCreationAnimation {
             return;
         }
 
-        final Location center = computePortalCenter(portal);
+        final Location center = PortalGeometry.computePortalCenter(portal);
         if (center == null) {
             return;
         }
@@ -200,19 +201,6 @@ public final class PortalCreationAnimation {
                 (random.nextDouble() - 0.5) * spreadUp,
                 (random.nextDouble() - 0.5) * spreadRight,
                 0.1);
-    }
-
-    private static Location computePortalCenter(Portal portal) {
-        Location base = portal.getLocation().clone();
-        Vector direction = portal.getDirection();
-        if (direction.getY() == 0.0) {
-            return base.add(0.5 - 0.4 * direction.getX(), 1.0, 0.5 - 0.4 * direction.getZ());
-        } else if (direction.getY() < 0.0) {
-            return base.add(0.5, 0.9, 0.5);
-        } else if (direction.getY() > 0.0) {
-            return base.add(0.5, 0.1, 0.5);
-        }
-        return base;
     }
 
     private static boolean isPortalStillActive(Portal portal) {
