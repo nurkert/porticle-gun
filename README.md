@@ -21,6 +21,16 @@ For even more information please visit the [plugin page](https://www.spigotmc.or
 
 The plugin ships with a `config.yml` that can be used to tweak runtime behaviour without touching the code. After editing the file you can apply your changes with `/porticlegun reload`.
 
+### WorldGuard integration
+
+PorticleGun automatically hooks into [WorldGuard](https://enginehub.org/worldguard) when the plugin is available on the server. The integration registers three custom region flags that let you limit where players may use the different features:
+
+* `porticlegun-portal-create` – Controls if players can open new portals inside a region. When the flag is denied the gun will not fire and no blocks are changed.
+* `porticlegun-portal-use` – Determines whether entities are allowed to travel through existing portals that touch the region. Disabling the flag prevents teleportation in both directions.
+* `porticlegun-gravity-gun` – Blocks players from picking up or moving blocks and entities with the gravity gun while inside the region.
+
+All three flags default to `ALLOW`, so existing regions continue to work unchanged after installing PorticleGun. To restrict the behaviour simply set the respective flag to `DENY` on the regions in question.
+
 ### Gravity Gun
 
 * `gravity-gun.enabled` – Set to `false` to completely disable the gravity gun event listeners and background tasks.
