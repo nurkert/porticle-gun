@@ -2,16 +2,19 @@ package eu.nurkert.porticlegun.commands;
 
 import eu.nurkert.porticlegun.PorticleGun;
 import eu.nurkert.porticlegun.builders.ItemBuilder;
+import eu.nurkert.porticlegun.config.ConfigManager;
 import eu.nurkert.porticlegun.handlers.LoadingHandler;
 import eu.nurkert.porticlegun.handlers.PersitentHandler;
 import eu.nurkert.porticlegun.handlers.item.ItemHandler;
 import eu.nurkert.porticlegun.handlers.portals.ActivePortalsHandler;
 import eu.nurkert.porticlegun.messages.MessageManager;
 import eu.nurkert.porticlegun.portals.Portal;
+import eu.nurkert.porticlegun.portals.Portal.PortalType;
 import eu.nurkert.porticlegun.util.PluginJarRenamer;
 import eu.nurkert.porticlegun.util.PluginJarRenamer.RenameResult;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
+import org.bukkit.Location;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
@@ -25,6 +28,7 @@ import org.bukkit.event.inventory.InventoryType;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.PlayerInventory;
+import org.bukkit.util.Vector;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -43,6 +47,7 @@ public class PorticleGunCommand implements CommandExecutor, Listener, TabComplet
     private static final String ADMIN_PERMISSION = "porticlegun.admin";
     private static final int QUICK_RENAME_SLOT = 0;
     private static final List<String> ADMIN_SUBCOMMANDS = Arrays.asList("list", "remove", "clearplayer", "reload");
+    private static final List<String> GENERAL_SUBCOMMANDS = Collections.singletonList("removeportal");
 
     public PorticleGunCommand() {
     }
@@ -71,6 +76,27 @@ public class PorticleGunCommand implements CommandExecutor, Listener, TabComplet
 
         String subCommand = args[0].toLowerCase(Locale.ROOT);
         switch (subCommand) {
+            case "removeportal":
+                if (!(sender instanceof Player)) {
+                    sender.sendMessage(MessageManager.getMessage(sender, "commands.general.players-only"));
+                    return true;
+                }
+                Player player = (Player) sender;
+                if (!player.hasPermission(COMMAND_PERMISSION)) {
+                    player.sendMessage(MessageManager.getMessage(player, "commands.general.no-permission"));
+                    return true;
+                }
+                boolean includeLinked = false;
+                if (args.length >= 2) {
+                    if (isLinkedRemovalOption(args[1])) {
+                        includeLinked = true;
+                    } else {
+                        player.sendMessage(MessageManager.getMessage(player, "commands.usage.removeportal", Map.of("label", label)));
+                        return true;
+                    }
+                }
+                handleRemovePortal(player, includeLinked);
+                return true;
             case "list":
                 if (!ensureAdmin(sender)) return true;
                 handleList(sender);
@@ -97,7 +123,7 @@ public class PorticleGunCommand implements CommandExecutor, Listener, TabComplet
                 return true;
             default:
                 sender.sendMessage(MessageManager.getMessage(sender, "commands.general.unknown", Map.of(
-                        "subcommands", String.join(", ", ADMIN_SUBCOMMANDS))));
+                        "subcommands", String.join(", ", getAvailableSubcommands(sender)))));
                 return true;
         }
     }
@@ -341,6 +367,123 @@ public class PorticleGunCommand implements CommandExecutor, Listener, TabComplet
         return modified;
     }
 
+    private void handleRemovePortal(Player player, boolean includeLinked) {
+        Portal portal = findPortalPlayerLooksAt(player);
+        if (portal == null) {
+            player.sendMessage(MessageManager.getMessage(player, "commands.removeportal.no-target"));
+            return;
+        }
+
+        Portal linkedPortal = portal.getLinkedPortal();
+        PortalType type = portal.getType();
+        removeActivePortal(portal);
+
+        if (includeLinked) {
+            if (linkedPortal != null) {
+                PortalType linkedType = linkedPortal.getType();
+                removeActivePortal(linkedPortal);
+                player.sendMessage(MessageManager.getMessage(player, "commands.removeportal.removed-linked", Map.of(
+                        "type", getPortalTypeName(player, type),
+                        "linked_type", getPortalTypeName(player, linkedType)
+                )));
+            } else {
+                player.sendMessage(MessageManager.getMessage(player, "commands.removeportal.linked-not-found", Map.of(
+                        "type", getPortalTypeName(player, type)
+                )));
+            }
+        } else {
+            player.sendMessage(MessageManager.getMessage(player, "commands.removeportal.removed-single", Map.of(
+                    "type", getPortalTypeName(player, type)
+            )));
+        }
+    }
+
+    private Portal findPortalPlayerLooksAt(Player player) {
+        Location eyeLocation = player.getEyeLocation();
+        Vector viewDirection = eyeLocation.getDirection().normalize();
+        double maxDistance = ConfigManager.getPortalMaxTargetDistance();
+
+        Portal bestPortal = null;
+        double bestDistance = Double.MAX_VALUE;
+
+        for (Portal portal : ActivePortalsHandler.getRelevantPortals(player)) {
+            if (portal == null || portal.getLocation() == null || portal.getLocation().getWorld() == null) {
+                continue;
+            }
+            if (!portal.getLocation().getWorld().equals(eyeLocation.getWorld())) {
+                continue;
+            }
+
+            Vector toPortal = portal.getLocation().toVector().subtract(eyeLocation.toVector());
+            double distance = toPortal.length();
+            if (distance == 0 || distance > maxDistance) {
+                continue;
+            }
+
+            Vector directionToPortal = toPortal.clone().normalize();
+            double alignment = viewDirection.dot(directionToPortal);
+            if (alignment < 0.995D) {
+                continue;
+            }
+
+            if (distance < bestDistance) {
+                bestDistance = distance;
+                bestPortal = portal;
+            }
+        }
+
+        return bestPortal;
+    }
+
+    private void removeActivePortal(Portal portal) {
+        if (portal == null) {
+            return;
+        }
+
+        Portal linkedPortal = portal.getLinkedPortal();
+        portal.delete();
+        if (portal.getType() == PortalType.PRIMARY) {
+            ActivePortalsHandler.removePrimaryPortal(portal.getGunID());
+        } else {
+            ActivePortalsHandler.removeSecondaryPortal(portal.getGunID());
+        }
+        if (linkedPortal != null) {
+            linkedPortal.setLinkedPortal(null);
+        }
+    }
+
+    private String getPortalTypeName(CommandSender sender, PortalType type) {
+        String key = type == PortalType.PRIMARY ? "commands.removeportal.type.primary" : "commands.removeportal.type.secondary";
+        return MessageManager.getMessage(sender, key);
+    }
+
+    private boolean isLinkedRemovalOption(String argument) {
+        if (argument == null) {
+            return false;
+        }
+        String normalized = argument.toLowerCase(Locale.ROOT);
+        return normalized.equals("linked")
+                || normalized.equals("both")
+                || normalized.equals("all")
+                || normalized.equals("verlinkt")
+                || normalized.equals("beide");
+    }
+
+    private List<String> getAvailableSubcommands(CommandSender sender) {
+        List<String> subcommands = new ArrayList<>();
+        if (hasGeneralSuggestions(sender)) {
+            subcommands.addAll(GENERAL_SUBCOMMANDS);
+        }
+        if (hasAdminSuggestions(sender)) {
+            subcommands.addAll(ADMIN_SUBCOMMANDS);
+        }
+        return subcommands;
+    }
+
+    private boolean hasGeneralSuggestions(CommandSender sender) {
+        return sender instanceof Player && ((Player) sender).hasPermission(COMMAND_PERMISSION);
+    }
+
     private void handleReload(CommandSender sender) {
         PorticleGun.getInstance().reloadConfig();
         LoadingHandler.getInstance().reload();
@@ -350,17 +493,30 @@ public class PorticleGunCommand implements CommandExecutor, Listener, TabComplet
     @Override
     public List<String> onTabComplete(CommandSender sender, Command command, String alias, String[] args) {
         if (args.length == 1) {
-            if (!hasAdminSuggestions(sender)) {
-                return Collections.emptyList();
-            }
             String prefix = args[0].toLowerCase(Locale.ROOT);
-            return ADMIN_SUBCOMMANDS.stream()
+            List<String> options = new ArrayList<>();
+            if (hasGeneralSuggestions(sender)) {
+                options.addAll(GENERAL_SUBCOMMANDS);
+            }
+            if (hasAdminSuggestions(sender)) {
+                options.addAll(ADMIN_SUBCOMMANDS);
+            }
+            return options.stream()
                     .filter(option -> option.startsWith(prefix))
                     .collect(Collectors.toList());
         }
 
-        if (args.length == 2 && hasAdminSuggestions(sender)) {
+        if (args.length == 2) {
             String sub = args[0].toLowerCase(Locale.ROOT);
+            if (sub.equals("removeportal") && hasGeneralSuggestions(sender)) {
+                String prefix = args[1].toLowerCase(Locale.ROOT);
+                return Arrays.asList("linked", "both", "all").stream()
+                        .filter(option -> option.startsWith(prefix))
+                        .collect(Collectors.toList());
+            }
+            if (!hasAdminSuggestions(sender)) {
+                return Collections.emptyList();
+            }
             if (sub.equals("remove")) {
                 if (!PersitentHandler.exists("porticleguns")) {
                     return Collections.emptyList();

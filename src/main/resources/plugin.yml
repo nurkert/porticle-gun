@@ -7,7 +7,7 @@ authors: [ nurkert ]
 commands:
   porticlegun:
     description: Manage or obtain a PorticleGun
-    usage: /<command> [list|remove <id>|clearplayer <player>|reload]
+    usage: /<command> [removeportal [linked]|list|remove <id>|clearplayer <player>|reload]
     permission: porticlegun.command
     tab-completer: eu.nurkert.porticlegun.commands.PorticleGunCommand
 

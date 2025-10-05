@@ -9,6 +9,7 @@ en:
     admin:
       no-permission: "&cYou do not have permission to manage PorticleGun data."
     usage:
+      removeportal: "&cUsage: /%label% removeportal [linked]"
       remove: "&cUsage: /%label% remove <gunId>"
       clearplayer: "&cUsage: /%label% clearplayer <player>"
     list:
@@ -23,6 +24,14 @@ en:
       invalid-id: "&c'%gun_id%' is not a valid PorticleGun ID."
       success: "&aRemoved stored data for gun &f%gun_id%&a."
       not-found: "&eNo stored portals were found for gun &f%gun_id%&e."
+    removeportal:
+      no-target: "&eNo active portal found at your target."
+      removed-single: "&aRemoved the %type% portal."
+      removed-linked: "&aRemoved the %type% portal and its linked %linked_type% portal."
+      linked-not-found: "&eNo linked portal was found. Only removed the %type% portal."
+      type:
+        primary: "primary"
+        secondary: "secondary"
     clearplayer:
       not-online: "&cPlayer '%player%' is not online."
       none: "&ePlayer &f%player% &ehas no PorticleGuns in their inventories."
@@ -69,6 +78,7 @@ de:
     admin:
       no-permission: "&cDu hast keine Berechtigung, PorticleGun-Daten zu verwalten."
     usage:
+      removeportal: "&cVerwendung: /%label% removeportal [verlinkt]"
       remove: "&cVerwendung: /%label% remove <gunId>"
       clearplayer: "&cVerwendung: /%label% clearplayer <spieler>"
     list:
@@ -83,6 +93,14 @@ de:
       invalid-id: "&c'%gun_id%' ist keine gültige PorticleGun-ID."
       success: "&aGespeicherte Daten für Waffe &f%gun_id%&a entfernt."
       not-found: "&eFür die Waffe &f%gun_id%&e wurden keine gespeicherten Portale gefunden."
+    removeportal:
+      no-target: "&eKein aktives Portal an deinem Ziel gefunden."
+      removed-single: "&aDas %type%-Portal wurde entfernt."
+      removed-linked: "&aDas %type%-Portal und sein verlinktes %linked_type%-Portal wurden entfernt."
+      linked-not-found: "&eKein verlinktes Portal gefunden. Nur das %type%-Portal wurde entfernt."
+      type:
+        primary: "Primär"
+        secondary: "Sekundär"
     clearplayer:
       not-online: "&cSpieler '%player%' ist nicht online."
       none: "&eSpieler &f%player% &ehat keine PorticleGuns im Inventar."
