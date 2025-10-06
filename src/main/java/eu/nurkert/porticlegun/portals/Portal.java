@@ -21,12 +21,15 @@ public class Portal extends PotentialPortal {
 
     PortalVisualizationType visualizationType;
 
+    private long visualizationResumeTimeMillis;
+
     public Portal(Location location, Vector direction, String gunID, PortalType type, PortalVisualizationType visualizationType) {
         super(location, direction);
         this.gunID = gunID;
         this.linkedPortal = null;
         this.type = type;
         this.visualizationType = visualizationType;
+        this.visualizationResumeTimeMillis = 0L;
     }
 
     public Portal(PotentialPortal potential, String gunID, PortalType type, PortalVisualizationType visualizationType) {
@@ -35,6 +38,7 @@ public class Portal extends PotentialPortal {
         this.type = type;
         this.linkedPortal = null;
         this.visualizationType = visualizationType;
+        this.visualizationResumeTimeMillis = 0L;
     }
 
     public Portal(String position, String gunID, PortalType type, PortalVisualizationType visualizationType) {
@@ -43,6 +47,7 @@ public class Portal extends PotentialPortal {
         this.type = type;
         this.linkedPortal = null;
         this.visualizationType = visualizationType;
+        this.visualizationResumeTimeMillis = 0L;
     }
 
     private static Location extractLocation(String from) {
@@ -79,6 +84,18 @@ public class Portal extends PotentialPortal {
     public PortalVisualizationType toggleVisualizationType() {
         this.visualizationType = this.visualizationType.getNext();
         return this.visualizationType;
+    }
+
+    public void delayVisualizationByTicks(int ticks) {
+        if (ticks <= 0) {
+            this.visualizationResumeTimeMillis = 0L;
+            return;
+        }
+        this.visualizationResumeTimeMillis = System.currentTimeMillis() + ticks * 50L;
+    }
+
+    public boolean isVisualizationReady() {
+        return System.currentTimeMillis() >= this.visualizationResumeTimeMillis;
     }
 
     /**

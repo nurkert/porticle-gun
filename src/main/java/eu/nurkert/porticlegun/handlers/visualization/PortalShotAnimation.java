@@ -110,15 +110,13 @@ public final class PortalShotAnimation {
             return;
         }
 
-        double sparks = success ? 24 : 12;
-        for (int i = 0; i < sparks; i++) {
-            double angle = (Math.PI * 2 / sparks) * i;
-            Vector offset = right.clone().multiply(Math.cos(angle) * IMPACT_RADIUS)
-                    .add(up.clone().multiply(Math.sin(angle) * IMPACT_RADIUS));
-            Location particleLocation = impactPoint.clone().add(offset);
-            if (success) {
-                world.spawnParticle(Particle.END_ROD, particleLocation, 1, 0.0, 0.0, 0.0, 0.0);
-            } else {
+        if (!success) {
+            int sparks = 12;
+            for (int i = 0; i < sparks; i++) {
+                double angle = (Math.PI * 2 / sparks) * i;
+                Vector offset = right.clone().multiply(Math.cos(angle) * IMPACT_RADIUS)
+                        .add(up.clone().multiply(Math.sin(angle) * IMPACT_RADIUS));
+                Location particleLocation = impactPoint.clone().add(offset);
                 world.spawnParticle(Particle.CLOUD, particleLocation, 1, 0.0, 0.0, 0.0, 0.01);
             }
         }
