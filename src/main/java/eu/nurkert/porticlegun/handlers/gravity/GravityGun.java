@@ -200,7 +200,12 @@ public class GravityGun implements Listener {
 					players.get(player).setFallDistance(0F);
 					players.remove(player);
 				} else {
-					Block block = player.getTargetBlock((HashSet<Material>) null, 4);
+                                        Block block = player.getTargetBlockExact(4);
+
+                                        if (block == null || block.getType() == Material.AIR) {
+                                                AudioHandler.playSound(player, AudioHandler.PortalSound.DENY);
+                                                return;
+                                        }
 
 					Location loc = playersLook(player);
 
