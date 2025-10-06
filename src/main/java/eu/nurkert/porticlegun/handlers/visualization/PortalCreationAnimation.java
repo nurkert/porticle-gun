@@ -17,7 +17,7 @@ import java.util.concurrent.ThreadLocalRandom;
 
 public final class PortalCreationAnimation {
 
-    private static final int ANIMATION_DURATION_TICKS = 30;
+    public static final int ANIMATION_DURATION_TICKS = 30;
     private static final double GOLDEN_ANGLE = Math.PI * (3 - Math.sqrt(5));
 
     private PortalCreationAnimation() {
@@ -36,6 +36,8 @@ public final class PortalCreationAnimation {
         if (world == null) {
             return;
         }
+
+        portal.delayVisualizationByTicks(ANIMATION_DURATION_TICKS);
 
         Vector normal = portal.getDirection().clone().normalize();
         Vector reference = Math.abs(normal.getY()) < 0.99 ? new Vector(0, 1, 0) : new Vector(1, 0, 0);
