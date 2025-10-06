@@ -12,6 +12,6 @@
 gravity-gun:
   enabled: true
   allow-player-capture: false
+  allow-chest-capture: true
   block-blacklist:
     - AIR
-    - CHEST
