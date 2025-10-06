@@ -23,12 +23,20 @@ import org.bukkit.event.block.Action;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
+import org.bukkit.inventory.EquipmentSlot;
+import org.bukkit.metadata.MetadataValue;
 import org.bukkit.util.Vector;
+
+import java.util.List;
 
 public class PortalOpenHandler implements Listener {
 
     @EventHandler
     public void on(PlayerInteractEvent event) {
+        if (event.getHand() != EquipmentSlot.HAND) {
+            return;
+        }
+
         // check if it is possible to place portal
         if(event.getItem() == null || event.getPlayer().isSneaking()) {
             return;
@@ -46,6 +54,10 @@ public class PortalOpenHandler implements Listener {
         }
 
         Player player = event.getPlayer();
+        if (isRecentGravityGunDrop(player) && (action == Action.LEFT_CLICK_AIR || action == Action.LEFT_CLICK_BLOCK)) {
+            return;
+        }
+
         PotentialPortal traced = PortalTracing.tracePortal(player);
         PotentialPortal snapshot = clonePotential(traced);
 
@@ -149,5 +161,31 @@ public class PortalOpenHandler implements Listener {
         TitleHandler.sendPortalStatus(player, gunID);
         AudioHandler.playSound(player, AudioHandler.PortalSound.PORTAL_OPEN);
         return true;
+    }
+
+    private boolean isRecentGravityGunDrop(Player player) {
+        if (player == null || !player.hasMetadata("portalgun-drop")) {
+            return false;
+        }
+
+        List<MetadataValue> metadata = player.getMetadata("portalgun-drop");
+        long now = System.currentTimeMillis();
+        for (MetadataValue value : metadata) {
+            if (value == null || value.getOwningPlugin() != PorticleGun.getInstance()) {
+                continue;
+            }
+
+            String raw = value.asString();
+            try {
+                long timestamp = Long.parseLong(raw);
+                if (now - timestamp < 200) {
+                    return true;
+                }
+            } catch (NumberFormatException ignored) {
+                // Ignore malformed values from other plugins
+            }
+        }
+
+        return false;
     }
 }
