@@ -17,8 +17,9 @@ public final class ConfigManager {
     private static final int DEFAULT_MAX_BLOCK_TRACE = 100;
     private static final boolean DEFAULT_GRAVITY_GUN_ENABLED = true;
     private static final boolean DEFAULT_GRAVITY_GUN_ALLOW_PLAYER_CAPTURE = false;
+    private static final boolean DEFAULT_GRAVITY_GUN_ALLOW_CHEST_CAPTURE = true;
     private static final Set<Material> DEFAULT_GRAVITY_GUN_BLOCK_BLACKLIST =
-            Collections.unmodifiableSet(EnumSet.of(Material.AIR, Material.CHEST));
+            Collections.unmodifiableSet(EnumSet.of(Material.AIR));
 
     private static int maxTargetDistance = DEFAULT_MAX_TARGET_DISTANCE;
     private static int maxPlayerDistance = DEFAULT_MAX_PLAYER_DISTANCE;
@@ -46,14 +47,18 @@ public final class ConfigManager {
         maxBlockTrace = ensurePositive(config.getInt("portal.max-block-trace", DEFAULT_MAX_BLOCK_TRACE), DEFAULT_MAX_BLOCK_TRACE);
         gravityGunEnabled = config.getBoolean("gravity-gun.enabled", DEFAULT_GRAVITY_GUN_ENABLED);
         gravityGunAllowPlayerCapture = config.getBoolean("gravity-gun.allow-player-capture", DEFAULT_GRAVITY_GUN_ALLOW_PLAYER_CAPTURE);
-        loadGravityGunBlacklist(config.getStringList("gravity-gun.block-blacklist"));
+        boolean allowChestCapture = config.getBoolean("gravity-gun.allow-chest-capture", DEFAULT_GRAVITY_GUN_ALLOW_CHEST_CAPTURE);
+        loadGravityGunBlacklist(config.getStringList("gravity-gun.block-blacklist"), allowChestCapture);
     }
 
-    private static void loadGravityGunBlacklist(Collection<String> configuredEntries) {
+    private static void loadGravityGunBlacklist(Collection<String> configuredEntries, boolean allowChestCapture) {
         gravityGunBlockBlacklist.clear();
 
         if (configuredEntries == null || configuredEntries.isEmpty()) {
             gravityGunBlockBlacklist.addAll(DEFAULT_GRAVITY_GUN_BLOCK_BLACKLIST);
+            if (!allowChestCapture) {
+                gravityGunBlockBlacklist.add(Material.CHEST);
+            }
             return;
         }
 
@@ -72,6 +77,12 @@ public final class ConfigManager {
 
         if (gravityGunBlockBlacklist.isEmpty()) {
             gravityGunBlockBlacklist.addAll(DEFAULT_GRAVITY_GUN_BLOCK_BLACKLIST);
+        }
+
+        if (allowChestCapture) {
+            gravityGunBlockBlacklist.remove(Material.CHEST);
+        } else {
+            gravityGunBlockBlacklist.add(Material.CHEST);
         }
     }
 

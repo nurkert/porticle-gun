@@ -35,6 +35,7 @@ All three flags default to `ALLOW`, so existing regions continue to work unchang
 
 * `gravity-gun.enabled` – Set to `false` to completely disable the gravity gun event listeners and background tasks.
 * `gravity-gun.block-blacklist` – A list of Bukkit material names that players are prevented from picking up with the gravity gun.
+* `gravity-gun.allow-chest-capture` – Controls whether the gravity gun may pick up chests even if they appear in legacy configuration files.
 
 ## Localization
 
