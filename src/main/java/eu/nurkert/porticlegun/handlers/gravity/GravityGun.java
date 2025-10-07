@@ -3,6 +3,7 @@ package eu.nurkert.porticlegun.handlers.gravity;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -19,6 +20,7 @@ import org.bukkit.Material;
 import org.bukkit.block.Block;
 import org.bukkit.block.Container;
 import org.bukkit.block.CreatureSpawner;
+import org.bukkit.entity.BlockDisplay;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.FallingBlock;
@@ -49,6 +51,7 @@ public class GravityGun implements Listener {
         HashMap<Player, Entity> players;
         HashMap<Entity, Location> entitys;
         HashMap<Entity, EntityType> spawner;
+        HashMap<Entity, BlockDisplay> visualDisplays;
         BukkitTask task;
 
         private final Set<Material> blacklist;
@@ -57,12 +60,15 @@ public class GravityGun implements Listener {
         private static final String METADATA_BINDED_UUID = "binded_uuid";
         private static final String METADATA_SPAWNER_TYPE = "spawner_type";
         private static final String METADATA_CONTAINER_ITEMS = "gravity_gun_container_items";
+        private static final Set<Material> VISUAL_FALLBACK_BLOCKS = EnumSet.of(Material.CHEST, Material.TRAPPED_CHEST,
+                        Material.ENDER_CHEST);
 
         public GravityGun(Collection<Material> blockBlacklist, boolean allowPlayerCapture) {
                 instance = this;
                 entitys = new HashMap<Entity, Location>();
                 players = new HashMap<Player, Entity>();
                 spawner = new HashMap<Entity, EntityType>();
+                visualDisplays = new HashMap<>();
                 blacklist = new HashSet<>();
                 this.allowPlayerCapture = allowPlayerCapture;
                 updateBlockBlacklist(blockBlacklist);
@@ -108,7 +114,10 @@ public class GravityGun implements Listener {
                                         Vector direction = plV.subtract(spV).normalize()
                                                         .multiply(entry.getValue().distance(entity.getLocation()) / 2);
                                         entity.setVelocity(direction);
+                                        updateVisualDisplay(entity);
                                 }
+
+                                updateRemainingVisualDisplays();
                         }
                 }.runTaskTimer(PorticleGun.getInstance(), 0, 1);
         }
@@ -247,7 +256,10 @@ public class GravityGun implements Listener {
 
 					AudioHandler.playSound(player.getLocation(), AudioHandler.PortalSound.GRAB_BLOCK);
                                         FallingBlock fallingblock = (FallingBlock) block.getLocation().getWorld()
-                                                        .spawnFallingBlock(block.getLocation().add(0.5, 0, 0.5), block.getBlockData());
+                                                        .spawnFallingBlock(block.getLocation().add(0.5, 0, 0.5),
+                                                                        block.getBlockData());
+
+                                        createVisualDisplayIfNeeded(block, fallingblock);
 
 					storeContainerInventory(block, fallingblock);
 
@@ -329,6 +341,8 @@ public class GravityGun implements Listener {
                                 spawner.setSpawnedType(type);
                                 spawner.update();
                         }
+
+                        removeVisualDisplay(event.getEntity());
 
                         if (event.getEntity().hasMetadata(METADATA_CONTAINER_ITEMS)) {
                                 restoreContainerInventory(event.getBlock(), event.getEntity());
@@ -440,26 +454,97 @@ public class GravityGun implements Listener {
 		}
 	}
 
-	private void handleEntityRemoval(Entity entity) {
-		if (entity == null) {
-			return;
-		}
+        private void handleEntityRemoval(Entity entity) {
+                if (entity == null) {
+                        return;
+                }
 
-		dropContainerItems(entity);
+                dropContainerItems(entity);
+                removeVisualDisplay(entity);
 
-		Player owner = null;
-		for (Map.Entry<Player, Entity> entry : new ArrayList<>(players.entrySet())) {
-			if (entry.getValue().equals(entity)) {
-				owner = entry.getKey();
-				break;
-			}
-		}
+                Player owner = null;
+                for (Map.Entry<Player, Entity> entry : new ArrayList<>(players.entrySet())) {
+                        if (entry.getValue().equals(entity)) {
+                                owner = entry.getKey();
+                                break;
+                        }
+                }
 
-		if (owner != null) {
-			players.remove(owner);
-			spawner.remove(owner.getUniqueId().toString());
-		}
-	}
+                if (owner != null) {
+                        players.remove(owner);
+                        spawner.remove(owner.getUniqueId().toString());
+                }
+        }
+
+        private void createVisualDisplayIfNeeded(Block block, FallingBlock fallingBlock) {
+                if (!VISUAL_FALLBACK_BLOCKS.contains(block.getType())) {
+                        return;
+                }
+
+                BlockDisplay display = block.getWorld().spawn(block.getLocation().add(0.5, 0, 0.5), BlockDisplay.class,
+                                spawned -> {
+                                        spawned.setBlock(block.getBlockData());
+                                        spawned.setGravity(false);
+                                        spawned.setInvulnerable(true);
+                                        spawned.setPersistent(false);
+                                });
+
+                visualDisplays.put(fallingBlock, display);
+        }
+
+        private void updateVisualDisplay(Entity entity) {
+                BlockDisplay display = visualDisplays.get(entity);
+                if (display == null) {
+                        return;
+                }
+
+                if (entity == null || !entity.isValid() || entity.isDead()) {
+                        removeVisualDisplay(entity);
+                        return;
+                }
+
+                if (!display.isValid() || display.isDead()) {
+                        visualDisplays.remove(entity);
+                        return;
+                }
+
+                display.teleport(entity.getLocation());
+        }
+
+        private void updateRemainingVisualDisplays() {
+                Iterator<Map.Entry<Entity, BlockDisplay>> iterator = visualDisplays.entrySet().iterator();
+                while (iterator.hasNext()) {
+                        Map.Entry<Entity, BlockDisplay> entry = iterator.next();
+                        Entity entity = entry.getKey();
+                        BlockDisplay display = entry.getValue();
+
+                        if (entity == null || !entity.isValid() || entity.isDead()) {
+                                if (display != null && display.isValid()) {
+                                        display.remove();
+                                }
+                                iterator.remove();
+                                continue;
+                        }
+
+                        if (display == null || !display.isValid() || display.isDead()) {
+                                iterator.remove();
+                                continue;
+                        }
+
+                        display.teleport(entity.getLocation());
+                }
+        }
+
+        private void removeVisualDisplay(Entity entity) {
+                if (entity == null) {
+                        return;
+                }
+
+                BlockDisplay display = visualDisplays.remove(entity);
+                if (display != null && display.isValid()) {
+                        display.remove();
+                }
+        }
 
 	private void dropContainerItems(Entity entity) {
 		ItemStack[] storedItems = getStoredContainerItems(entity);
