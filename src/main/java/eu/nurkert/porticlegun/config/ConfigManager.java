@@ -1,6 +1,7 @@
 package eu.nurkert.porticlegun.config;
 
 import eu.nurkert.porticlegun.PorticleGun;
+import eu.nurkert.porticlegun.handlers.visualization.PortalColor;
 import org.bukkit.Material;
 import org.bukkit.configuration.file.FileConfiguration;
 
@@ -49,6 +50,7 @@ public final class ConfigManager {
         gravityGunAllowPlayerCapture = config.getBoolean("gravity-gun.allow-player-capture", DEFAULT_GRAVITY_GUN_ALLOW_PLAYER_CAPTURE);
         boolean allowChestCapture = config.getBoolean("gravity-gun.allow-chest-capture", DEFAULT_GRAVITY_GUN_ALLOW_CHEST_CAPTURE);
         loadGravityGunBlacklist(config.getStringList("gravity-gun.block-blacklist"), allowChestCapture);
+        loadCustomPortalColors(config);
     }
 
     private static void loadGravityGunBlacklist(Collection<String> configuredEntries, boolean allowChestCapture) {
@@ -84,6 +86,10 @@ public final class ConfigManager {
         } else {
             gravityGunBlockBlacklist.add(Material.CHEST);
         }
+    }
+
+    private static void loadCustomPortalColors(FileConfiguration config) {
+        PortalColor.reloadCustomColors(config.getMapList("portal.custom-colors"), PorticleGun.getInstance().getLogger());
     }
 
     private static int ensurePositive(int value, int fallback) {
