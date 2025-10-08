@@ -37,6 +37,21 @@ All three flags default to `ALLOW`, so existing regions continue to work unchang
 * `gravity-gun.block-blacklist` – A list of Bukkit material names that players are prevented from picking up with the gravity gun.
 * `gravity-gun.allow-chest-capture` – Controls whether the gravity gun may pick up chests even if they appear in legacy configuration files.
 
+### Portal colours
+
+PorticleGun now supports custom colour definitions for portal beams, banners, and chat formatting. The default `config.yml` already lists the built-in palette so you can tweak particle RGB values, chat formatting, or banner dyes directly. Add new entries under the `portal.custom-colors` list to extend the rotation:
+
+```yaml
+portal:
+  custom-colors:
+    - name: cosmic_blue
+      particle-color: "#3366FF"
+      chat-color: "#3366FF" # optional, falls back to the particle colour when omitted
+      banner-dye: BLUE       # optional, must be a vanilla DyeColor name
+```
+
+Each entry requires a unique `name` and at least a `particle-color`. Colours can be specified as hex strings (`#RRGGBB`) or as `DyeColor` names. Minecraft banners only support the 16 vanilla dye colours, so `banner-dye` values must match a valid `DyeColor`. When you omit the field the plugin automatically picks the nearest dye colour to your particle colour so the preview banner stays close to what players will see in-game. Edit the shipped defaults to override the standard colours or append additional entries, then run `/porticlegun reload` to apply the new palette.
+
 ## Localization
 
 Player-facing text is stored in `messages.yml`. The file is copied to the plugin's data folder on first start, so you can adjust translations without rebuilding the plugin.

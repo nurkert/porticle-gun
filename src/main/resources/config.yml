@@ -15,3 +15,68 @@ gravity-gun:
   allow-chest-capture: true
   block-blacklist:
     - AIR
+
+portal:
+  custom-colors:
+    # Default colour palette. Edit the entries to tweak particle, chat, or banner colours
+    # or append additional blocks to extend the list. Run "/porticlegun reload" to apply.
+    - name: black
+      particle-color: "#000000"
+      chat-color: BLACK
+      banner-dye: BLACK
+    - name: dark_blue
+      particle-color: "#0000AA"
+      chat-color: DARK_BLUE
+      banner-dye: BLUE
+    - name: dark_green
+      particle-color: "#008000"
+      chat-color: DARK_GREEN
+      banner-dye: GREEN
+    - name: dark_aqua
+      particle-color: "#00FFFF"
+      chat-color: DARK_AQUA
+      banner-dye: CYAN
+    - name: dark_red
+      particle-color: "#FF0000"
+      chat-color: DARK_RED
+      banner-dye: RED
+    - name: dark_purple
+      particle-color: "#800080"
+      chat-color: DARK_PURPLE
+      banner-dye: PURPLE
+    - name: gold
+      particle-color: "#FFA500"
+      chat-color: GOLD
+      banner-dye: ORANGE
+    - name: dark_gray
+      particle-color: "#555555"
+      chat-color: DARK_GRAY
+      banner-dye: GRAY
+    - name: blue
+      particle-color: "#0000FF"
+      chat-color: BLUE
+      banner-dye: LIGHT_BLUE
+    - name: green
+      particle-color: "#00FF00"
+      chat-color: GREEN
+      banner-dye: LIME
+    - name: aqua
+      particle-color: "#008080"
+      chat-color: AQUA
+      banner-dye: LIGHT_BLUE
+    - name: red
+      particle-color: "#800000"
+      chat-color: RED
+      banner-dye: PINK
+    - name: light_purple
+      particle-color: "#FF00FF"
+      chat-color: LIGHT_PURPLE
+      banner-dye: MAGENTA
+    - name: yellow
+      particle-color: "#FFFF00"
+      chat-color: YELLOW
+      banner-dye: YELLOW
+    - name: white
+      particle-color: "#FFFFFF"
+      chat-color: WHITE
+      banner-dye: WHITE
