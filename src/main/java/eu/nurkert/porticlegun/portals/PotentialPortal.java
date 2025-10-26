@@ -22,10 +22,21 @@ public class PotentialPortal {
     }
 
     public boolean isInPortal(Location loc) {
-        if (loc == null) {
-            return false; // or handle the null case appropriately
+        if (loc == null || this.location == null) {
+            return false;
         }
-        return this.location.getBlockX() == loc.getBlockX() && this.location.getBlockY() == loc.getBlockY() && this.location.getBlockZ() == loc.getBlockZ();
+
+        if (this.location.getWorld() == null || loc.getWorld() == null) {
+            return false;
+        }
+
+        if (!this.location.getWorld().equals(loc.getWorld())) {
+            return false;
+        }
+
+        return this.location.getBlockX() == loc.getBlockX()
+                && this.location.getBlockY() == loc.getBlockY()
+                && this.location.getBlockZ() == loc.getBlockZ();
     }
 
     public void setLocation(Location location) {

@@ -1,6 +1,7 @@
 package eu.nurkert.porticlegun.handlers.portals;
 
 import eu.nurkert.porticlegun.portals.Portal;
+import org.bukkit.Location;
 import org.bukkit.entity.Player;
 import org.bukkit.event.Listener;
 
@@ -69,6 +70,28 @@ public class ActivePortalsHandler implements Listener {
      * @return all portals that are relevant to the player
      */
     public static ArrayList<Portal> getRelevantPortals(Player player) {
-        return getAllPortal();
+        ArrayList<Portal> relevant = new ArrayList<>();
+        if (player == null || player.getWorld() == null) {
+            return relevant;
+        }
+
+        for (Portal portal : getAllPortal()) {
+            if (portal == null) {
+                continue;
+            }
+
+            Location portalLocation = portal.getLocation();
+            if (portalLocation == null || portalLocation.getWorld() == null) {
+                continue;
+            }
+
+            if (!portalLocation.getWorld().equals(player.getWorld())) {
+                continue;
+            }
+
+            relevant.add(portal);
+        }
+
+        return relevant;
     }
 }
