@@ -53,6 +53,10 @@ public class TeleportationHandler implements Listener {
         Player player = event.getPlayer();
         ArrayList<Portal> portals = ActivePortalsHandler.getRelevantPortals(player);
         for (Portal portal : portals) {
+            if (!isPortalVisualizationActive(portal) || !isPortalVisualizationActive(portal.getLinkedPortal())) {
+                clearPortalLockIfMatches(player, portal);
+                continue;
+            }
             boolean inPortal = isEntityInPortal(portal, event.getTo());
             if (inPortal) {
                 if (isPortalLocked(player, portal)) {
@@ -72,6 +76,9 @@ public class TeleportationHandler implements Listener {
         cleanupCooldowns();
 
         for (Portal portal : ActivePortalsHandler.getAllPortal()) {
+            if (!isPortalVisualizationActive(portal) || !isPortalVisualizationActive(portal.getLinkedPortal())) {
+                continue;
+            }
             Portal linked = portal.getLinkedPortal();
             if (linked == null) {
                 continue;
@@ -132,7 +139,7 @@ public class TeleportationHandler implements Listener {
         }
 
         Portal linkedPortal = portal.getLinkedPortal();
-        if (linkedPortal == null || linkedPortal.getLocation().getWorld() == null) {
+        if (!isPortalVisualizationActive(portal) || !isPortalVisualizationActive(linkedPortal)) {
             return false;
         }
 
@@ -212,7 +219,7 @@ public class TeleportationHandler implements Listener {
     }
 
     private boolean isEntityInPortal(Portal portal, Location location) {
-        if (location == null) {
+        if (!isPortalVisualizationActive(portal) || location == null) {
             return false;
         }
 
@@ -226,6 +233,19 @@ public class TeleportationHandler implements Listener {
         }
 
         return false;
+    }
+
+    private boolean isPortalVisualizationActive(Portal portal) {
+        if (portal == null) {
+            return false;
+        }
+
+        if (!portal.isVisualizationReady()) {
+            return false;
+        }
+
+        Location location = portal.getLocation();
+        return location != null && location.getWorld() != null;
     }
 
     static PortalBasis createPortalBasis(Vector direction) {

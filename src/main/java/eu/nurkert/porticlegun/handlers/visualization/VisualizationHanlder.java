@@ -4,7 +4,6 @@ import eu.nurkert.porticlegun.PorticleGun;
 import eu.nurkert.porticlegun.handlers.portals.ActivePortalsHandler;
 import eu.nurkert.porticlegun.portals.Portal;
 import org.bukkit.*;
-import org.bukkit.entity.Player;
 import org.bukkit.event.Listener;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.util.Vector;
@@ -29,19 +28,25 @@ public class VisualizationHanlder implements Listener {
                     if (!portal.isVisualizationReady()) {
                         continue;
                     }
-                    double radians = Math.toRadians(System.currentTimeMillis() / 5);
-                    Vector[] locs = {portal.getParticleLocation(radians) , portal.getParticleLocation(radians + Math.PI)};
-                    Color color = GunColorHandler.getColors(portal.getGunID()).get(portal.getType()).getBukkitColor();
-                    for(Player player : Bukkit.getOnlinePlayers()) {
-                        Particle.DustOptions dustOptions = new Particle.DustOptions(color, 1);
-                        for(Vector loc : locs) {
-                            player.spawnParticle(Particle.DUST, loc.getX(), loc.getY(), loc.getZ(), 1, dustOptions);
-                        }
-                        //player.getWorld().spawnParticle(Particle.NOTE, player.getLocation(), 1, null);
 
-
+                    Location portalLocation = portal.getLocation();
+                    if (portalLocation == null) {
+                        continue;
                     }
 
+                    World world = portalLocation.getWorld();
+                    if (world == null) {
+                        continue;
+                    }
+
+                    double radians = Math.toRadians(System.currentTimeMillis() / 5);
+                    Vector[] locs = {portal.getParticleLocation(radians), portal.getParticleLocation(radians + Math.PI)};
+                    Color color = GunColorHandler.getColors(portal.getGunID()).get(portal.getType()).getBukkitColor();
+                    Particle.DustOptions dustOptions = new Particle.DustOptions(color, 1);
+                    for (Vector loc : locs) {
+                        Location particleLocation = new Location(world, loc.getX(), loc.getY(), loc.getZ());
+                        world.spawnParticle(Particle.DUST, particleLocation, 1, 0.0, 0.0, 0.0, 0.0, dustOptions);
+                    }
                 }
             }
         }.runTaskTimer(PorticleGun.getInstance(), 0, 1);
