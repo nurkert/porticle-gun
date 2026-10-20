@@ -31,7 +31,7 @@ jobs:
       - name: Smoke test on Paper 1.21.4 with Geyser and Floodgate
         run: scripts/smoke-test.sh "$(ls target/PorticleGun-*.jar | head -n 1)" 1.21.4 geyser
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: PorticleGun-${{ github.sha }}
           path: |
