@@ -190,10 +190,10 @@ Reihenfolge = Priorität. Unter jedem Punkt: Problem, Lösungsansatz, Notizen be
   - Ansatz: Einheitlich Spaces, toten Code entfernen. Als eigener Commit ohne Logikänderung.
   - Notizen: Auskommentierten Altcode in `GravityGun` und `PorticleGunCommand` entfernt, leeren `else`-Zweig gelöscht. Einrückung über Spotless (siehe PG-17) vereinheitlicht, keine Tabs mehr im Projekt.
 
-- [ ] **PG-11 Keine Tests, obwohl Surefire eingerichtet ist**
+- [x] **PG-11 Keine Tests, obwohl Surefire eingerichtet ist**
   - Ort: `handlers/portals/TeleportationHandler.java:229` (`createPortalBasis`/`transformVector`)
   - Ansatz: JUnit 5 ergänzen, Tests für Wand→Wand, Wand→Boden, Boden→Decke und Erhaltung des Betrags.
-  - Notizen:
+  - Notizen: JUnit 5 eingebunden. `TeleportationHandlerTest` (6 Tests): Basen orthonormal für alle 6 Richtungen, Eintrittsgeschwindigkeit verlässt das Zielportal für alle 36 Richtungspaare, Betrag bleibt erhalten, Höhenanteil bleibt bei Wand→Wand, Boden→Wand und Boden→Boden. `PorticleGunTest` (2 Tests) für die Versionsprüfung. Alle 8 grün über `mvn verify`.
 
 - [ ] **PG-12 Entity-Teleport-Check skaliert linear mit der Portalanzahl**
   - Ort: `handlers/portals/TeleportationHandler.java:70` (`tickEntityTeleports`)
