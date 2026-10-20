@@ -29,7 +29,7 @@ public class ActivePortalsHandler implements Listener {
     }
 
     public static void removePrimaryPortal(String gunID) {
-        primaryPortals.remove(gunID);
+        unlink(primaryPortals.remove(gunID));
     }
 
     public static boolean hasPrimaryPortal(String gunID) {
@@ -37,7 +37,43 @@ public class ActivePortalsHandler implements Listener {
     }
 
     public static void removeSecondaryPortal(String gunID) {
-        secondaryPortals.remove(gunID);
+        unlink(secondaryPortals.remove(gunID));
+    }
+
+    private static void unlink(Portal removed) {
+        if (removed != null && removed.getLinkedPortal() != null) {
+            removed.getLinkedPortal().setLinkedPortal(null);
+        }
+    }
+
+    /**
+     * Closes a portal: removes it from the active portals, from portals.yml and from its linked portal.
+     */
+    public static void closePortal(Portal portal) {
+        if (portal == null) {
+            return;
+        }
+        portal.delete();
+        if (portal.getType() == Portal.PortalType.PRIMARY) {
+            if (primaryPortals.get(portal.getGunID()) == portal) {
+                removePrimaryPortal(portal.getGunID());
+            }
+        } else if (secondaryPortals.get(portal.getGunID()) == portal) {
+            removeSecondaryPortal(portal.getGunID());
+        }
+    }
+
+    /**
+     * Closes both portals of a gun, see {@link #closePortal(Portal)}.
+     *
+     * @return whether at least one portal was open
+     */
+    public static boolean closePortals(String gunID) {
+        Portal primary = primaryPortals.get(gunID);
+        Portal secondary = secondaryPortals.get(gunID);
+        closePortal(primary);
+        closePortal(secondary);
+        return primary != null || secondary != null;
     }
 
     public static boolean hasSecondaryPortal(String gunID) {

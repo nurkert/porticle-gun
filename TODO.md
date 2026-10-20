@@ -19,11 +19,11 @@ Reihenfolge = Priorität. Unter jedem Punkt: Problem, Lösungsansatz, Notizen be
   - Ansatz: `onDisable()` ergänzen: gehaltene Blöcke an aktueller Position absetzen (inkl. Inventar und Spawner-Typ), BlockDisplays entfernen, Portale speichern.
   - Notizen: `PorticleGun.onDisable()` ruft `LoadingHandler.shutdown()` und speichert die Portaldatei. `GravityGun.shutdown()` setzt jeden getragenen Block an seiner Position (oder bis 4 Blöcke darüber) wieder ein, inkl. Spawner-Typ und Kisteninhalt. Ist kein Platz, fallen Block und Inhalt als Items raus. Gefangene Entities werden freigelassen, BlockDisplays entfernt. Nicht im Spiel getestet, nur Build.
 
-- [ ] **PG-03 Portale schließen im Settings-Menü wird nicht gespeichert**
+- [x] **PG-03 Portale schließen im Settings-Menü wird nicht gespeichert**
   - Ort: `handlers/portals/SettingsHandler.java:61`
   - Problem: Der Doppelklick entfernt Portale nur aus der Map, nicht aus `portals.yml`. Nach Reload oder Neustart sind sie wieder da.
   - Ansatz: Gemeinsame Methode `ActivePortalsHandler.closePortals(gunID)`, die Speicher, Verlinkung und Datei konsistent aufräumt. Auch von `PorticleGunCommand.removeGunData` nutzen.
-  - Notizen:
+  - Notizen: Neue Methoden `ActivePortalsHandler.closePortal(portal)` und `closePortals(gunID)` räumen Speicher, Datei und Verlinkung gemeinsam auf. `removePrimary/SecondaryPortal` lösen jetzt auch die Verlinkung des Partnerportals. Settings-Doppelklick, `removeGunData` und das Entfernen einzelner Portale per Command nutzen alle diesen Weg. Am GUI selbst (Layout, Slots, Doppelklick) hat sich nichts geändert.
 
 - [ ] **PG-14 Bedrock-Spieler über Geyser/Floodgate sauber unterstützen**
   - Ziel: Bedrock-Spieler (Handy, Konsole, Win10) können Portal Gun, Einstellungen und Gravity Gun genauso nutzen wie Java-Spieler.
