@@ -357,7 +357,6 @@ public class PorticleGunCommand implements CommandExecutor, Listener, TabComplet
         String encodedId = ItemHandler.saveable(gunId);
         if (PersistentHandler.exists("porticleguns." + encodedId)) {
             PersistentHandler.set("porticleguns." + encodedId, null);
-            PersistentHandler.saveAll();
             modified = true;
         }
 

@@ -121,11 +121,11 @@ Reihenfolge = Priorität. Unter jedem Punkt: Problem, Lösungsansatz, Notizen be
   - Ansatz: Portale mit fehlender Welt zurückstellen und bei `WorldLoadEvent` nachladen, nie mit null-Welt speichern. Multiverse-Core als `softdepend` eintragen.
   - Notizen: Portale, deren Welt beim Laden noch fehlt, werden zurückgestellt und bei `WorldLoadEvent` aktiviert, außer der Spieler hat in der Zwischenzeit schon ein neues Portal geschossen. `Portal.saveAll()` speichert nie mit null-Welt. `Multiverse-Core` als `softdepend` eingetragen.
 
-- [ ] **PG-06 Jeder `set()` schreibt `portals.yml` synchron auf die Platte**
+- [x] **PG-06 Jeder `set()` schreibt `portals.yml` synchron auf die Platte**
   - Ort: `handlers/PersitentHandler.java:39`
   - Problem: Ganze YAML-Datei wird bei jedem Aufruf im Main-Thread gespeichert, ein Portalschuss = 3–4 Schreibvorgänge.
   - Ansatz: Dirty-Flag plus verzögertes Speichern (im Main-Thread serialisieren, asynchron schreiben). Synchron in `onDisable` (hängt mit PG-02 zusammen).
-  - Notizen:
+  - Notizen: `set()` markiert nur noch als geändert. 1 s nach der ersten Änderung wird der Inhalt im Main-Thread serialisiert und asynchron geschrieben (über temporäre Datei plus atomarem Move, damit eine halb geschriebene Datei nicht möglich ist). Eine Snapshot-Nummer verhindert, dass ein älterer Async-Schreibvorgang einen neueren überschreibt. `saveAll()` schreibt synchron (in `onDisable` und vor `reload`). Erzwungene Sofort-Saves in `Portal.delete()` und im Command entfernt.
 
 - [x] **PG-07 Build-Artefakte und IDE-Dateien sind eingecheckt**
   - Ort: `target/`, `.idea/`, `.DS_Store`, `PorticleGun.iml`
