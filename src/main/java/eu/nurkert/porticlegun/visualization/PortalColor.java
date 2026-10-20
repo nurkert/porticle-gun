@@ -1,4 +1,4 @@
-package eu.nurkert.porticlegun.handlers.visualization;
+package eu.nurkert.porticlegun.visualization;
 
 import java.util.ArrayList;
 import java.util.Collections;

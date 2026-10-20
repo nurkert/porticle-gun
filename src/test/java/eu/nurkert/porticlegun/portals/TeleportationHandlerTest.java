@@ -1,4 +1,4 @@
-package eu.nurkert.porticlegun.handlers.portals;
+package eu.nurkert.porticlegun.portals;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 

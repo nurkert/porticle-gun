@@ -1,8 +1,7 @@
-package eu.nurkert.porticlegun.handlers.portals;
+package eu.nurkert.porticlegun.portals;
 
 import eu.nurkert.porticlegun.PorticleGun;
-import eu.nurkert.porticlegun.handlers.gravity.GravityGun;
-import eu.nurkert.porticlegun.portals.Portal;
+import eu.nurkert.porticlegun.gravity.GravityGun;
 import eu.nurkert.porticlegun.util.WorldGuardIntegration;
 import java.util.ArrayList;
 import java.util.Collection;

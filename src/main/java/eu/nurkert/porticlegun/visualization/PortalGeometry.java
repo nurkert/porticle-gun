@@ -1,4 +1,4 @@
-package eu.nurkert.porticlegun.handlers.visualization;
+package eu.nurkert.porticlegun.visualization;
 
 import eu.nurkert.porticlegun.portals.Portal;
 import eu.nurkert.porticlegun.portals.PotentialPortal;

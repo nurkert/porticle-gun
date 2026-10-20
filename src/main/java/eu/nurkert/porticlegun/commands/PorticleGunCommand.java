@@ -1,13 +1,13 @@
 package eu.nurkert.porticlegun.commands;
 
+import eu.nurkert.porticlegun.LoadingHandler;
 import eu.nurkert.porticlegun.PorticleGun;
 import eu.nurkert.porticlegun.builders.ItemBuilder;
 import eu.nurkert.porticlegun.config.ConfigManager;
-import eu.nurkert.porticlegun.handlers.LoadingHandler;
-import eu.nurkert.porticlegun.handlers.PersistentHandler;
-import eu.nurkert.porticlegun.handlers.item.ItemHandler;
-import eu.nurkert.porticlegun.handlers.portals.ActivePortalsHandler;
+import eu.nurkert.porticlegun.item.ItemHandler;
 import eu.nurkert.porticlegun.messages.MessageManager;
+import eu.nurkert.porticlegun.persistence.PersistentHandler;
+import eu.nurkert.porticlegun.portals.ActivePortalsHandler;
 import eu.nurkert.porticlegun.portals.Portal;
 import eu.nurkert.porticlegun.portals.Portal.PortalType;
 import eu.nurkert.porticlegun.util.PluginJarRenamer;

@@ -1,8 +1,8 @@
-package eu.nurkert.porticlegun.handlers.gravity;
+package eu.nurkert.porticlegun.gravity;
 
 import eu.nurkert.porticlegun.PorticleGun;
-import eu.nurkert.porticlegun.handlers.AudioHandler;
-import eu.nurkert.porticlegun.handlers.item.ItemHandler;
+import eu.nurkert.porticlegun.audio.AudioHandler;
+import eu.nurkert.porticlegun.item.ItemHandler;
 import eu.nurkert.porticlegun.util.WorldGuardIntegration;
 import java.util.ArrayList;
 import java.util.Arrays;

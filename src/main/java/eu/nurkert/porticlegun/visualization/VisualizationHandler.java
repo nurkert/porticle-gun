@@ -1,7 +1,7 @@
-package eu.nurkert.porticlegun.handlers.visualization;
+package eu.nurkert.porticlegun.visualization;
 
 import eu.nurkert.porticlegun.PorticleGun;
-import eu.nurkert.porticlegun.handlers.portals.ActivePortalsHandler;
+import eu.nurkert.porticlegun.portals.ActivePortalsHandler;
 import eu.nurkert.porticlegun.portals.Portal;
 import java.util.ArrayList;
 import org.bukkit.Color;
