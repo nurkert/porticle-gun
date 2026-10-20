@@ -4,6 +4,7 @@ import eu.nurkert.porticlegun.commands.PorticleGunCommand;
 import eu.nurkert.porticlegun.config.ConfigManager;
 import eu.nurkert.porticlegun.gravity.GravityGun;
 import eu.nurkert.porticlegun.item.ItemHandler;
+import eu.nurkert.porticlegun.item.LegacyGunMigration;
 import eu.nurkert.porticlegun.item.RecipeHandler;
 import eu.nurkert.porticlegun.messages.MessageManager;
 import eu.nurkert.porticlegun.persistence.PersistentHandler;
@@ -57,6 +58,7 @@ public class LoadingHandler implements Listener {
 
     private void registerEvents() {
         register(new RecipeHandler());
+        register(new LegacyGunMigration());
         register(new PortalOpenHandler());
         register(new ActivePortalsHandler());
         register(porticleGunCommand.getMenu());

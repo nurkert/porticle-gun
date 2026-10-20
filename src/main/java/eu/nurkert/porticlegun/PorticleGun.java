@@ -3,6 +3,7 @@ package eu.nurkert.porticlegun;
 import eu.nurkert.porticlegun.config.ConfigManager;
 import eu.nurkert.porticlegun.messages.MessageManager;
 import eu.nurkert.porticlegun.persistence.PersistentHandler;
+import eu.nurkert.porticlegun.util.BedrockSupport;
 import eu.nurkert.porticlegun.util.WorldGuardIntegration;
 import org.bukkit.Bukkit;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -26,6 +27,7 @@ public final class PorticleGun extends JavaPlugin {
         PersistentHandler.getInstance();
         MessageManager.init(this);
         LoadingHandler.getInstance();
+        BedrockSupport.init(this);
         worldGuardEnabled = false;
         try {
             Class.forName("com.sk89q.worldguard.WorldGuard");

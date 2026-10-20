@@ -3,6 +3,7 @@ package eu.nurkert.porticlegun.visualization;
 import eu.nurkert.porticlegun.item.ItemHandler;
 import eu.nurkert.porticlegun.messages.MessageManager;
 import eu.nurkert.porticlegun.portals.ActivePortalsHandler;
+import eu.nurkert.porticlegun.util.BedrockSupport;
 import java.util.Map;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -61,10 +62,17 @@ public class TitleHandler implements Listener {
     }
 
     public static void sendPortalStatus(Player player, String gunID) {
-        String primary = GunColorHandler.getColors(gunID).getPrimary().getChatColor() + "§o"
-                + (ActivePortalsHandler.hasPrimaryPortal(gunID) ? "§l◀" : "◁");
-        String secondary = GunColorHandler.getColors(gunID).getSecondary().getChatColor() + "§o"
-                + (ActivePortalsHandler.hasSecondaryPortal(gunID) ? "§l▶" : "▷");
+        String primaryColor = GunColorHandler.getColors(gunID).getPrimary().getChatColor();
+        String secondaryColor = GunColorHandler.getColors(gunID).getSecondary().getChatColor();
+        boolean primaryOpen = ActivePortalsHandler.hasPrimaryPortal(gunID);
+        boolean secondaryOpen = ActivePortalsHandler.hasSecondaryPortal(gunID);
+
+        // the left marker belongs to the button on the left: the mouse's left click, but a controller's left trigger
+        // fires the secondary portal
+        boolean mirrored = BedrockSupport.hasMirroredTriggers(player);
+        String primary = leftMarker(mirrored ? secondaryColor : primaryColor, mirrored ? secondaryOpen : primaryOpen);
+        String secondary =
+                rightMarker(mirrored ? primaryColor : secondaryColor, mirrored ? primaryOpen : secondaryOpen);
 
         String title = MessageManager.getMessage(
                 player,
@@ -74,5 +82,13 @@ public class TitleHandler implements Listener {
                         "secondary", secondary));
         String subtitle = MessageManager.getMessage(player, "titles.portal-status-subtitle");
         player.sendTitle(title, subtitle, 0, 20 * 5, 20);
+    }
+
+    private static String leftMarker(String color, boolean open) {
+        return color + "§o" + (open ? "§l◀" : "◁");
+    }
+
+    private static String rightMarker(String color, boolean open) {
+        return color + "§o" + (open ? "§l▶" : "▷");
     }
 }

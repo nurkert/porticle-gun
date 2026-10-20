@@ -25,19 +25,20 @@ Reihenfolge = Priorität. Unter jedem Punkt: Problem, Lösungsansatz, Notizen be
   - Ansatz: Gemeinsame Methode `ActivePortalsHandler.closePortals(gunID)`, die Speicher, Verlinkung und Datei konsistent aufräumt. Auch von `PorticleGunCommand.removeGunData` nutzen.
   - Notizen: Neue Methoden `ActivePortalsHandler.closePortal(portal)` und `closePortals(gunID)` räumen Speicher, Datei und Verlinkung gemeinsam auf. `removePrimary/SecondaryPortal` lösen jetzt auch die Verlinkung des Partnerportals. Settings-Doppelklick, `removeGunData` und das Entfernen einzelner Portale per Command nutzen alle diesen Weg. Am GUI selbst (Layout, Slots, Doppelklick) hat sich nichts geändert.
 
-- [ ] **PG-14 Bedrock-Spieler über Geyser/Floodgate sauber unterstützen**
+- [~] **PG-14 Bedrock-Spieler über Geyser/Floodgate sauber unterstützen**
   - Ziel: Bedrock-Spieler (Handy, Konsole, Win10) können Portal Gun, Einstellungen und Gravity Gun genauso nutzen wie Java-Spieler.
   - Grundlage:
-    - [ ] Floodgate-API als `provided`/optional einbinden, `softdepend: [floodgate, Geyser-Spigot]`. Hilfsklasse `BedrockSupport.isBedrock(player)`, die ohne Floodgate einfach `false` liefert (gleiches Muster wie `WorldGuardIntegration`)
-    - [ ] Testumgebung: lokaler Paper-Server mit Geyser + Floodgate, Test mit Bedrock-Client (Desktop und Touch)
+    - [x] Floodgate-API als `provided`/optional einbinden, `softdepend: [floodgate, Geyser-Spigot]`. Hilfsklasse `BedrockSupport.isBedrock(player)`, die ohne Floodgate einfach `false` liefert (gleiches Muster wie `WorldGuardIntegration`)
+    - [x] Testumgebung: lokaler Paper-Server mit Geyser + Floodgate (`scripts/dev-server.sh`), CI-Smoke-Test mit Geyser + Floodgate
+    - [ ] **Du:** Test mit Bedrock-Client (Desktop, Touch, Controller) auf `scripts/dev-server.sh`, Port 19132
   - Steuerung (`handlers/portals/PortalOpenHandler.java`):
     - [ ] Primärportal hängt an `LEFT_CLICK_AIR`. Bedrock-Clients schicken Linksklick in die Luft nicht zuverlässig, auf Touch-Geräten praktisch gar nicht. Prüfen, was über Geyser ankommt, und für Bedrock eine alternative Belegung bauen (z. B. Fallback über `PlayerAnimationEvent` oder Umschalten Primär/Sekundär per Hand-Tausch bzw. Hotbar-Geste)
     - [ ] Sneak + Rechtsklick (Settings) und Sneak-Gesten der Gravity Gun mit Bedrock-Touch-Steuerung testen (Sneak ist dort ein Umschalter)
   - Einstellungs-GUI (`handlers/portals/SettingsHandler.java`) – **gesperrt, erst mit dem User besprechen:**
     - [!] Das Dropper-Inventar mit Slot-Klicks und „Doppelklick innerhalb 500 ms“ ist auf Touch kaum bedienbar. Für Bedrock-Spieler stattdessen ein natives Formular über die Floodgate/Cumulus-Forms-API anzeigen (Farben wählen, Form wechseln, Portale schließen mit Bestätigung)
   - Gun-Erkennung (`handlers/item/ItemHandler.java:92`):
-    - [ ] Die Gun-ID steckt als `§`-codierte hochgestellte Unicode-Zeichen in der ersten Lore-Zeile. Bedrock interpretiert einige `§`-Codes anders (z. B. `§m`/`§n` als Farben) und rendert die Sonderzeichen evtl. als Kästchen. Prüfen, wie das über Geyser aussieht
-    - [ ] Unabhängig davon die ID in den `PersistentDataContainer` verschieben (robuster für alle Spieler). Migration für bestehende Guns: alte Lore-ID beim ersten Halten auslesen und übertragen
+    - [x] Die Gun-ID steckt als `§`-codierte hochgestellte Unicode-Zeichen in der ersten Lore-Zeile. Bedrock interpretiert einige `§`-Codes anders (z. B. `§m`/`§n` als Farben) und rendert die Sonderzeichen evtl. als Kästchen. Prüfen, wie das über Geyser aussieht
+    - [x] Unabhängig davon die ID in den `PersistentDataContainer` verschieben (robuster für alle Spieler). Migration für bestehende Guns: alte Lore-ID beim ersten Halten auslesen und übertragen
   - Darstellung:
     - [ ] Farbige `DUST`-Partikel der Portale: prüfen, ob Geyser die Farben korrekt auf Bedrock überträgt, sonst Ersatz-Partikel für Bedrock
     - [ ] Gravity Gun nutzt `BlockDisplay`-Entities. Prüfen, wie Geyser Display-Entities darstellt, ggf. für Bedrock-Zuschauer auf FallingBlock-only zurückfallen
@@ -45,15 +46,15 @@ Reihenfolge = Priorität. Unter jedem Punkt: Problem, Lösungsansatz, Notizen be
   - Teleport:
     - [ ] Teleport mit übernommener Geschwindigkeit (`TeleportationHandler`) auf Bedrock testen: Ruckeln oder verlorener Schwung durch Geysers Bewegungsübersetzung?
   - Doku:
-    - [ ] README-Abschnitt „Bedrock / Geyser“ mit Steuerung für Bedrock-Spieler
-  - Notizen:
+    - [ ] README-Abschnitt „Bedrock / Geyser“ (kommt mit PG-18) mit Steuerung für Bedrock-Spieler
+  - Notizen: Erledigt ist alles, was ohne Bedrock-Client geht: `BedrockSupport`/`FloodgateBridge` (Floodgate optional, ohne Floodgate gelten alle als Java-Spieler, Eingabemodus wird bei jeder Abfrage neu gelesen). Die Gun-ID liegt jetzt im PersistentDataContainer, neue Guns haben keine versteckte Lore-Zeile mehr. Alte Guns funktionieren weiter und werden beim Join, Slot-Wechsel und Öffnen von Inventaren automatisch umgestellt. Die CI testet zusätzlich mit echtem Geyser + Floodgate. **Offen, weil nur mit Bedrock-Client prüfbar:** Linksklick in die Luft (CraftBukkit macht aus dem Arm-Schwung-Paket ein `LEFT_CLICK_AIR`; ob Geyser das bei Touch schickt, muss ein Test zeigen), Sneak-Gesten, Partikelfarben, BlockDisplay, Titel und Teleport-Gefühl. Das Bedrock-Formular für die Einstellungen ist gesperrt (GUI-Regel). Die versteckte ID im Namen der Glasscheibe im Settings-GUI ist GUI-intern und bleibt deshalb unverändert.
 
-- [ ] **PG-15 Bedrock-Controller: Schultertasten passen nicht zu den Farbseiten (Spielermeldung)**
+- [x] **PG-15 Bedrock-Controller: Schultertasten passen nicht zu den Farbseiten (Spielermeldung)**
   - Ort: `handlers/visualization/TitleHandler.java:65`, `handlers/portals/SettingsHandler.java:142`, `handlers/portals/PortalOpenHandler.java`
   - Problem: Die Anzeige geht von der Maus aus. Primär (Linksklick) wird links angezeigt (`◀` im Titel, Slot 3 im Menü), Sekundär (Rechtsklick) rechts (`▶`, Slot 5). Auf dem Bedrock-Controller ist es umgekehrt: der **rechte** Trigger (RT/R2) ist Angreifen und damit Linksklick, also Primär; der **linke** Trigger (LT/L2) ist Benutzen, also Sekundär. Für Controller-Spieler wirken Seiten und Farben dadurch vertauscht. In der Git-History gibt es dazu noch keinen Fix-Versuch.
   - Ansatz: Über Floodgate den Eingabemodus abfragen (`FloodgatePlayer#getInputMode()`: CONTROLLER / TOUCH / KEYBOARD_MOUSE). Bei CONTROLLER die Anzeige spiegeln: im Titel Sekundär links und Primär rechts. Das Einstellungs-GUI wird dabei **nicht** angefasst (Slot-Tausch im Menü nur nach Rücksprache). Das Schussverhalten bleibt gleich, damit die Farbe zur Taste passt. Input-Modus kann sich mitten im Spiel ändern, also bei jeder Anzeige neu abfragen. Touch separat prüfen (gehört zu PG-14).
   - Hängt ab von: PG-14 (Floodgate-Grundlage)
-  - Notizen:
+  - Notizen: Der Titel beim Halten bzw. nach einem Schuss wird für Bedrock-Spieler im Controller-Modus gespiegelt: Links (◀) steht jetzt das Sekundärportal (linker Trigger), rechts (▶) das Primärportal (rechter Trigger), jeweils in seiner Farbe. Der Eingabemodus wird bei jeder Anzeige neu von Floodgate abgefragt. Schussverhalten unverändert. Das Einstellungs-GUI wurde nicht angefasst (GUI-Regel). **Bitte mit einem Controller-Spieler gegentesten.**
 
 - [x] **PG-16 Gravity Gun: gehaltene Blöcke verschwinden (Spielermeldung Bedrock)**
   - Ort: `handlers/gravity/GravityGun.java:98` (Tick-Task), `:258` (Spawn des FallingBlock), `:479` (`createVisualDisplayIfNeeded`)

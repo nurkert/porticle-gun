@@ -2,14 +2,16 @@
 # Starts a real Paper server with the plugin, waits until it is up, stops it again
 # and fails if PorticleGun did not enable cleanly or logged errors.
 #
-# usage: scripts/smoke-test.sh <plugin.jar> [minecraft-version]
+# usage: scripts/smoke-test.sh <plugin.jar> [minecraft-version] [geyser]
+#   geyser: also install Geyser and Floodgate and check that Bedrock support is enabled
 set -euo pipefail
 
 PLUGIN_JAR="$(cd "$(dirname "$1")" && pwd)/$(basename "$1")"
 MC_VERSION="${2:-1.21.4}"
+WITH_GEYSER="${3:-}"
 STARTUP_TIMEOUT=300
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-WORK="$ROOT/run/smoke-$MC_VERSION"
+WORK="$ROOT/run/smoke-$MC_VERSION${WITH_GEYSER:+-$WITH_GEYSER}"
 CACHE="$ROOT/run/cache"
 
 mkdir -p "$CACHE"
@@ -31,6 +33,12 @@ if [ ! -f "$PAPER_JAR" ]; then
 fi
 
 cp "$PLUGIN_JAR" "$WORK/plugins/"
+if [ "$WITH_GEYSER" = "geyser" ]; then
+    for project in geyser floodgate; do
+        curl -fsSL -o "$WORK/plugins/$project.jar" \
+            "https://download.geysermc.org/v2/projects/$project/versions/latest/builds/latest/downloads/spigot"
+    done
+fi
 echo "eula=true" >"$WORK/eula.txt"
 cat >"$WORK/server.properties" <<PROPS
 online-mode=false
@@ -69,6 +77,9 @@ fail() {
 grep -q "Done (" "$LOG" || fail "server did not finish starting within ${STARTUP_TIMEOUT}s"
 grep -q "\[PorticleGun\] PorticleGun has been enabled" "$LOG" || fail "PorticleGun was not enabled"
 grep -q "Disabling PorticleGun" "$LOG" || fail "PorticleGun was not disabled on shutdown"
+if [ "$WITH_GEYSER" = "geyser" ]; then
+    grep -q "Floodgate detected - Bedrock support enabled" "$LOG" || fail "Bedrock support was not enabled with Floodgate installed"
+fi
 grep -q "No stored portal guns found" "$LOG" || fail "/porticlegun list did not answer"
 grep -q "PorticleGun data reloaded from disk" "$LOG" || fail "/porticlegun reload did not succeed"
 if grep -n -E "Error occurred while (enabling|disabling) PorticleGun|Could not load 'plugins/PorticleGun" "$LOG"; then
@@ -78,4 +89,4 @@ if grep -n -B2 -A8 -E "^\s+at eu\.nurkert\.porticlegun\." "$LOG"; then
     fail "an exception was thrown from PorticleGun code"
 fi
 
-echo "Smoke test passed on Paper $MC_VERSION"
+echo "Smoke test passed on Paper $MC_VERSION${WITH_GEYSER:+ with Geyser and Floodgate}"
