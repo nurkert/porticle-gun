@@ -1,0 +1,29 @@
+{
+  "format_version": 2,
+  "header": {
+    "name": "PorticleGun",
+    "description": "3D portal gun for PorticleGun (Geyser)",
+    "uuid": "6f2a1c3e-8b4d-4e7a-9c15-2d8f0b7e4a61",
+    "version": [
+      1,
+      0,
+      0
+    ],
+    "min_engine_version": [
+      1,
+      21,
+      0
+    ]
+  },
+  "modules": [
+    {
+      "type": "resources",
+      "uuid": "a3d95b72-1e6c-4f08-b2a4-7c9e5d13f8b0",
+      "version": [
+        1,
+        0,
+        0
+      ]
+    }
+  ]
+}

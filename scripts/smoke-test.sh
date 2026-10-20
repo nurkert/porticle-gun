@@ -79,6 +79,8 @@ grep -q "\[PorticleGun\] PorticleGun has been enabled" "$LOG" || fail "PorticleG
 grep -q "Disabling PorticleGun" "$LOG" || fail "PorticleGun was not disabled on shutdown"
 if [ "$WITH_GEYSER" = "geyser" ]; then
     grep -q "Floodgate detected - Bedrock support enabled" "$LOG" || fail "Bedrock support was not enabled with Floodgate installed"
+    grep -q "Installed the PorticleGun Bedrock pack" "$LOG" || fail "the Bedrock pack was not installed into Geyser"
+    [ -f "$WORK/plugins/Geyser-Spigot/packs/porticlegun.mcpack" ] || fail "porticlegun.mcpack missing in Geyser's packs folder"
 fi
 grep -q "No stored portal guns found" "$LOG" || fail "/porticlegun list did not answer"
 grep -q "PorticleGun data reloaded from disk" "$LOG" || fail "/porticlegun reload did not succeed"

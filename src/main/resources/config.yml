@@ -9,6 +9,26 @@
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
  # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
+# 3D model of the gun for Java players (resource pack, needs Minecraft 1.21.4+ clients).
+# It is sent in addition to the server resource pack and does not replace any vanilla files,
+# so it works next to other packs. Players who decline it see a brewing stand.
+resource-pack:
+  enabled: true
+  # true: players have to accept the pack to join
+  required: false
+  # Leave empty to download the pack from the GitHub release of this plugin version.
+  # Set your own URL (and its SHA-1) to host the pack yourself or for development builds.
+  url: ""
+  sha1: ""
+  # optional message shown in the download prompt
+  prompt: ""
+
+# 3D model of the gun for Bedrock players connected through Geyser.
+bedrock:
+  # Copy the Bedrock pack and the Geyser item mapping into plugins/Geyser-Spigot on startup.
+  # If Geyser runs on a proxy, copy porticlegun.mcpack and porticlegun_mappings.json there by hand.
+  install-pack: true
+
 gravity-gun:
   enabled: true
   allow-player-capture: false

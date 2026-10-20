@@ -88,25 +88,26 @@ Reihenfolge = Priorität. Unter jedem Punkt: Problem, Lösungsansatz, Notizen be
     - [ ] Bedrock: gleiche Funktionen als Floodgate-Formular (siehe PG-14), gleiche Struktur und Begriffe wie im Java-Menü
   - Notizen:
 
-- [ ] **PG-20 Eigenes 3D-Modell der Portal Gun für Java und Bedrock (Resource-Pack als Overlay)**
+- [~] **PG-20 Eigenes 3D-Modell der Portal Gun für Java und Bedrock (Resource-Pack als Overlay)**
   - Ziel: Wer die Gun hält, sieht ein aus Quadern modelliertes 3D-Modell statt eines Braustands, auf Java und über Geyser auf Bedrock. Das Pack funktioniert zusätzlich zu anderen Resource-Packs und ersetzt keine Vanilla-Dateien.
   - Java:
-    - [ ] Server-/API-Mindestversion auf 1.21.4 anheben (Voraussetzung für die `item_model`-Komponente, aktuell wird gegen 1.21.1 gebaut, siehe PG-08)
-    - [ ] Gun-Item bekommt `ItemMeta#setItemModel(porticlegun:portal_gun)`. Basis-Material bleibt der Braustand als Fallback für Spieler ohne Pack oder mit älterem Client
-    - [ ] Pack mit eigenem Namespace `porticlegun` (`assets/porticlegun/items/portal_gun.json`, `models/item/portal_gun.json`, eigene Texturen). Keine Vanilla-Datei wird überschrieben, damit gibt es keine Konflikte mit anderen Packs
-    - [ ] Modell aus Quader-Elementen bauen: weißer Korpus, dunkler Griff, drei Klauen vorne, leuchtender Kern. `display`-Transformationen für erste Person, dritte Person, GUI, Boden und Rahmen
-    - [ ] Kern in der aktuellen Portalfarbe einfärben: `tints` mit Quelle `minecraft:custom_model_data`, Farben über die `CustomModelData`-Komponente am Item setzen (beim Farbwechsel und nach jedem Schuss aktualisieren)
-    - [ ] Pack zusätzlich zum Server-Pack an Spieler schicken: `Player#addResourcePack(uuid, url, sha1, prompt, force)` (mehrere Packs stapelbar ab 1.20.3). In der Config: an/aus, Pflicht ja/nein, eigene URL
-    - [ ] Hosting des Packs festlegen (offene Frage an den User): als Asset am GitHub-Release (baut die CI aus PG-13 inkl. SHA-1) oder über einen im Plugin eingebauten Mini-Webserver (braucht freien Port, geht bei vielen Hostern nicht)
+    - [x] Server-/API-Mindestversion auf 1.21.4 anheben (Voraussetzung für die `item_model`-Komponente, aktuell wird gegen 1.21.1 gebaut, siehe PG-08)
+    - [x] Gun-Item bekommt `ItemMeta#setItemModel(porticlegun:portal_gun)`. Basis-Material bleibt der Braustand als Fallback für Spieler ohne Pack oder mit älterem Client
+    - [x] Pack mit eigenem Namespace `porticlegun` (`assets/porticlegun/items/portal_gun.json`, `models/item/portal_gun.json`, eigene Texturen). Keine Vanilla-Datei wird überschrieben, damit gibt es keine Konflikte mit anderen Packs
+    - [x] Modell aus Quader-Elementen bauen: weißer Korpus, dunkler Griff, drei Klauen vorne, leuchtender Kern. `display`-Transformationen für erste Person, dritte Person, GUI, Boden und Rahmen
+    - [x] Kern in der aktuellen Portalfarbe einfärben: `tints` mit Quelle `minecraft:custom_model_data`, Farben über die `CustomModelData`-Komponente am Item setzen (beim Farbwechsel und nach jedem Schuss aktualisieren)
+    - [x] Pack zusätzlich zum Server-Pack an Spieler schicken: `Player#addResourcePack(uuid, url, sha1, prompt, force)` (mehrere Packs stapelbar ab 1.20.3). In der Config: an/aus, Pflicht ja/nein, eigene URL
+    - [x] Hosting des Packs festlegen (entschieden: GitHub-Release): als Asset am GitHub-Release (baut die CI aus PG-13 inkl. SHA-1) oder über einen im Plugin eingebauten Mini-Webserver (braucht freien Port, geht bei vielen Hostern nicht)
   - Bedrock (Geyser):
-    - [ ] Bedrock-Pack (`.mcpack`) mit Attachable und Geometrie für das 3D-Modell in der Hand, plus Icon für das Inventar. Erzeugung prüfen: GeyserMCs Tool „Rainbow“ bzw. Java→Bedrock-Konverter, oder eigenes Skript im Build
-    - [ ] Geyser-Custom-Item-Mapping (Custom Items API v2, Zuordnung über `item_model` `porticlegun:portal_gun`)
-    - [ ] Verteilung klären: Plugin legt Pack und Mapping beim ersten Start in `plugins/Geyser-Spigot/packs` bzw. `custom_mappings` ab und meldet, dass Geyser neu starten muss. Bei Geyser auf einem Proxy (Velocity/Bungee) muss der Admin die Dateien selbst kopieren. Prüfen, ob das sauber über die Geyser-API zur Laufzeit geht
-    - [ ] Prüfen, ob sich die Farbeinfärbung auf Bedrock umsetzen lässt (ggf. eine Modellvariante pro Farbe)
+    - [x] Bedrock-Pack (`.mcpack`) mit Attachable und Geometrie für das 3D-Modell in der Hand, plus Icon für das Inventar. Erzeugung prüfen: GeyserMCs Tool „Rainbow“ bzw. Java→Bedrock-Konverter, oder eigenes Skript im Build
+    - [x] Geyser-Custom-Item-Mapping (Custom Items API v2, Zuordnung über `item_model` `porticlegun:portal_gun`)
+    - [x] Verteilung klären: Plugin legt Pack und Mapping beim ersten Start in `plugins/Geyser-Spigot/packs` bzw. `custom_mappings` ab und meldet, dass Geyser neu starten muss. Bei Geyser auf einem Proxy (Velocity/Bungee) muss der Admin die Dateien selbst kopieren. Prüfen, ob das sauber über die Geyser-API zur Laufzeit geht
+    - [x] Prüfen, ob sich die Farbeinfärbung auf Bedrock umsetzen lässt (nein, siehe Notiz) (ggf. eine Modellvariante pro Farbe)
   - Build:
-    - [ ] Pack-Quellen unter `src/main/resourcepack/` (Java) und `src/main/bedrockpack/`. Maven/CI packt beide als Zip, berechnet SHA-1 und legt sie dem Release bei
+    - [x] Pack-Quellen unter `src/main/resourcepack/` (Java) und `src/main/bedrockpack/`. Maven/CI packt beide als Zip, berechnet SHA-1 und legt sie dem Release bei
+  - [ ] **Du:** Modell ingame ansehen (Java: Hand, dritte Person, Inventar, Rahmen; Bedrock: Hand und Inventar) und Lage/Größe ggf. anpassen lassen
   - Doku: Abschnitt in README und `docs/resourcepack.md` (siehe PG-18)
-  - Notizen:
+  - Notizen: Generator `scripts/generate_resourcepack.py` erzeugt aus **einer** Modelldefinition (13 Quader: Korpus, schräger Griff, Leuchtstreifen, Kernring, Emitter, drei Klauen) das Java-Modell, die Bedrock-Geometrie mit Attachable und Animationen, die Textur, das Inventar-Icon, Manifest und Geyser-Mapping. Mit `--preview` rendert er Seiten-, Drauf- und Frontansicht zur Kontrolle. Java: Item-Modell `porticlegun:portal_gun`, Kernring und Emitter leuchten in der Primärfarbe, der Streifen oben in der Sekundärfarbe (über die Farben der `custom_model_data`-Komponente, wird beim Join, Slot-Wechsel und Schließen von Inventaren aktualisiert). Der Braustand bleibt als Fallback. Das Pack geht per `addResourcePack` zusätzlich zu anderen Packs an Java-Spieler, standardmäßig vom passenden GitHub-Release, SHA-1 beim Build eingebettet. Dev-Builds senden es nur mit eigener URL. Bedrock: PorticleGun lädt vor Geyser (`loadbefore`) und kopiert Pack und Mapping in `onLoad`, deshalb klappt es **schon beim ersten Start ohne Neustart**. Getestet: Geyser meldet mit Mapping 2 statt 1 Custom-Items, in CI abgesichert. Bedrock kann keine Item-Tints, dort leuchtet die Gun fest in Orange/Blau. Release hängt Jar, Java-Pack, Bedrock-Pack und Mapping an. **Nicht prüfbar ohne Client:** wie das Modell in der Hand sitzt. Die Display-Werte für Java sind von Vanilla `handheld` abgeleitet, die Bedrock-Animationswerte sind Startwerte und müssen sehr wahrscheinlich nachjustiert werden.
 
 ## P2 – Robustheit / Performance
 

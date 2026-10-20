@@ -1,0 +1,93 @@
+{
+  "format_version": "1.8.0",
+  "animations": {
+    "animation.porticlegun.portal_gun.firstperson_main_hand": {
+      "loop": true,
+      "bones": {
+        "porticlegun_root": {
+          "rotation": [
+            90,
+            60,
+            -40
+          ],
+          "position": [
+            4,
+            10,
+            4
+          ],
+          "scale": [
+            1.2,
+            1.2,
+            1.2
+          ]
+        }
+      }
+    },
+    "animation.porticlegun.portal_gun.firstperson_off_hand": {
+      "loop": true,
+      "bones": {
+        "porticlegun_root": {
+          "rotation": [
+            90,
+            -60,
+            40
+          ],
+          "position": [
+            -4,
+            10,
+            4
+          ],
+          "scale": [
+            1.2,
+            1.2,
+            1.2
+          ]
+        }
+      }
+    },
+    "animation.porticlegun.portal_gun.thirdperson_main_hand": {
+      "loop": true,
+      "bones": {
+        "porticlegun_root": {
+          "rotation": [
+            90,
+            90,
+            0
+          ],
+          "position": [
+            0,
+            13,
+            -3
+          ],
+          "scale": [
+            0.8,
+            0.8,
+            0.8
+          ]
+        }
+      }
+    },
+    "animation.porticlegun.portal_gun.thirdperson_off_hand": {
+      "loop": true,
+      "bones": {
+        "porticlegun_root": {
+          "rotation": [
+            90,
+            -90,
+            0
+          ],
+          "position": [
+            0,
+            13,
+            -3
+          ],
+          "scale": [
+            0.8,
+            0.8,
+            0.8
+          ]
+        }
+      }
+    }
+  }
+}
