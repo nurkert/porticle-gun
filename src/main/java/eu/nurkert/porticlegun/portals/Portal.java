@@ -1,7 +1,7 @@
 package eu.nurkert.porticlegun.portals;
 
 import eu.nurkert.porticlegun.PorticleGun;
-import eu.nurkert.porticlegun.handlers.PersitentHandler;
+import eu.nurkert.porticlegun.handlers.PersistentHandler;
 import eu.nurkert.porticlegun.handlers.item.ItemHandler;
 import eu.nurkert.porticlegun.handlers.visualization.GunColorHandler;
 import eu.nurkert.porticlegun.handlers.visualization.PortalColor;
@@ -117,19 +117,19 @@ public class Portal extends PotentialPortal {
 
     public void saveAll() {
         String basePath = "porticleguns." + ItemHandler.saveable(gunID);
-        PersitentHandler.set(basePath + "." + type.toString().toLowerCase() + ".position", getPositionString());
+        PersistentHandler.set(basePath + "." + type.toString().toLowerCase() + ".position", getPositionString());
         PortalColor color = GunColorHandler.getColors(gunID).get(type);
         saveColor(gunID, type, color);
-        PersitentHandler.set(basePath + ".shape", visualizationType.toString());
+        PersistentHandler.set(basePath + ".shape", visualizationType.toString());
     }
 
     public static void saveColor(String gunID, PortalType type, PortalColor color) {
-        PersitentHandler.set("porticleguns." + ItemHandler.saveable(gunID) + "." + type.toString().toLowerCase() + ".color", color.toString());
+        PersistentHandler.set("porticleguns." + ItemHandler.saveable(gunID) + "." + type.toString().toLowerCase() + ".color", color.toString());
     }
 
     public void delete() {
-        PersitentHandler.set("porticleguns." + ItemHandler.saveable(gunID) + "." + type.toString().toLowerCase(), null);
-        PersitentHandler.saveAll(); // Ensure the changes are saved
+        PersistentHandler.set("porticleguns." + ItemHandler.saveable(gunID) + "." + type.toString().toLowerCase(), null);
+        PersistentHandler.saveAll(); // Ensure the changes are saved
     }
 
 

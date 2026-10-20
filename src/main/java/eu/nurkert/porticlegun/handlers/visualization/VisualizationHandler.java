@@ -13,9 +13,9 @@ import org.bukkit.util.Vector;
 
 import java.util.ArrayList;
 
-public class VisualizationHanlder implements Listener {
+public class VisualizationHandler implements Listener {
 
-    public VisualizationHanlder() {
+    public VisualizationHandler() {
          visualizePortals();
     }
 

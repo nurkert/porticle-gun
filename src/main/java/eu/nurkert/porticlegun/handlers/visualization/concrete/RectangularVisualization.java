@@ -3,7 +3,7 @@ package eu.nurkert.porticlegun.handlers.visualization.concrete;
 import org.bukkit.Location;
 import org.bukkit.util.Vector;
 
-public class RectangularVisualisation implements  PortalVisualization {
+public class RectangularVisualization implements PortalVisualization {
     @Override
     public Vector getParticleLocation(double radians, Location loc, Vector direction) {
         double x = 0, y = 0, z = 0;

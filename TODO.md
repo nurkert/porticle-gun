@@ -180,10 +180,10 @@ Reihenfolge = Priorität. Unter jedem Punkt: Problem, Lösungsansatz, Notizen be
   - Ansatz: Version nur in der pom pflegen, per `${project.version}` filtern. `api-version` auf echte Mindestversion setzen.
   - Notizen: pom ist jetzt einzige Versionsquelle (`1.3.0-SNAPSHOT`), plugin.yml bekommt `${project.version}` per Filtering (Filtering nur noch für plugin.yml). spigot-api auf 1.21.4, `api-version: '1.21'`, zusätzlich Laufzeitprüfung in `onEnable`: unter 1.21.4 deaktiviert sich das Plugin mit klarer Meldung. Ungenutzte Maven-Repos (sonatype, papermc, jitpack) entfernt.
 
-- [ ] **PG-09 Tippfehler in Klassennamen**
+- [x] **PG-09 Tippfehler in Klassennamen**
   - Ort: `PersitentHandler`, `VisualizationHanlder`
   - Ansatz: In `PersistentHandler` und `VisualizationHandler` umbenennen, Referenzen anpassen.
-  - Notizen:
+  - Notizen: `PersistentHandler`, `VisualizationHandler` umbenannt, zusätzlich `RectangularVisualisation` → `RectangularVisualization` (einheitlich US-Schreibweise wie `EllipticVisualization`).
 
 - [ ] **PG-10 GravityGun: gemischte Einrückung und auskommentierter Altcode**
   - Ort: `handlers/gravity/GravityGun.java`
