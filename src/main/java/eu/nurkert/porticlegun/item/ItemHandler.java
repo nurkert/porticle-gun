@@ -3,11 +3,15 @@ package eu.nurkert.porticlegun.item;
 import eu.nurkert.porticlegun.PorticleGun;
 import eu.nurkert.porticlegun.builders.ItemBuilder;
 import eu.nurkert.porticlegun.messages.MessageManager;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Random;
 import org.bukkit.Material;
+import org.bukkit.NamespacedKey;
 import org.bukkit.event.Listener;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
+import org.bukkit.persistence.PersistentDataType;
 
 public class ItemHandler implements Listener {
 
@@ -24,9 +28,17 @@ public class ItemHandler implements Listener {
 
         ItemBuilder builder = new ItemBuilder(PORTICLE_GUN_TYPE);
         builder.setName(getPorticleGunName());
-        builder.setLore(vanishID(id), MessageManager.getMessage("items.porticlegun.lore"));
+        builder.setLore(MessageManager.getMessage("items.porticlegun.lore"));
 
-        return builder.build();
+        ItemStack gun = builder.build();
+        ItemMeta meta = gun.getItemMeta();
+        meta.getPersistentDataContainer().set(gunIdKey(), PersistentDataType.STRING, id);
+        gun.setItemMeta(meta);
+        return gun;
+    }
+
+    private static NamespacedKey gunIdKey() {
+        return new NamespacedKey(PorticleGun.getInstance(), "gun_id");
     }
 
     public static String getPorticleGunName() {
@@ -44,11 +56,47 @@ public class ItemHandler implements Listener {
         if (itemStack.getType() != PORTICLE_GUN_TYPE) return null;
         if (!itemStack.hasItemMeta()) return null;
         ItemMeta meta = itemStack.getItemMeta();
-        assert meta != null;
-        if (!meta.hasLore()) return null;
-        String id = revealID(meta.getLore().get(0));
-        if (!isValidGunID(id)) return null;
+        String id = meta.getPersistentDataContainer().get(gunIdKey(), PersistentDataType.STRING);
+        if (id == null) {
+            id = getLegacyID(meta);
+        }
+        if (id == null || !isValidGunID(id)) return null;
         return id;
+    }
+
+    /**
+     * Guns created before 1.3 kept their id hidden in the first lore line. Bedrock clients render that line as
+     * garbage, so the id now lives in the persistent data container.
+     */
+    private static String getLegacyID(ItemMeta meta) {
+        if (!meta.hasLore() || meta.getLore().isEmpty()) return null;
+        String id = revealID(meta.getLore().get(0));
+        return isValidGunID(id) ? id : null;
+    }
+
+    /**
+     * Moves the id of a gun created before 1.3 from its lore into the persistent data container.
+     *
+     * @return whether the item was changed
+     */
+    public static boolean migrateLegacyGun(ItemStack itemStack) {
+        if (itemStack == null || itemStack.getType() != PORTICLE_GUN_TYPE || !itemStack.hasItemMeta()) {
+            return false;
+        }
+        ItemMeta meta = itemStack.getItemMeta();
+        if (meta.getPersistentDataContainer().has(gunIdKey(), PersistentDataType.STRING)) {
+            return false;
+        }
+        String id = getLegacyID(meta);
+        if (id == null) {
+            return false;
+        }
+        meta.getPersistentDataContainer().set(gunIdKey(), PersistentDataType.STRING, id);
+        List<String> lore = new ArrayList<>(meta.getLore());
+        lore.remove(0);
+        meta.setLore(lore);
+        itemStack.setItemMeta(meta);
+        return true;
     }
 
     // Charset for generating portal IDs
