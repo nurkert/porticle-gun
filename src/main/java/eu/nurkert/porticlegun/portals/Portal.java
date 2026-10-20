@@ -160,7 +160,6 @@ public class Portal extends PotentialPortal {
                 "porticleguns." + ItemHandler.saveable(gunID) + "."
                         + type.toString().toLowerCase(),
                 null);
-        PersistentHandler.saveAll(); // Ensure the changes are saved
     }
 
     public PortalType getType() {
