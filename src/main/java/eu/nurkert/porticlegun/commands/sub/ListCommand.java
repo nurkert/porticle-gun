@@ -15,6 +15,14 @@ import org.bukkit.command.CommandSender;
  */
 public class ListCommand implements SubCommand {
 
+    private final ActivePortalsHandler activePortals;
+    private final PersistentHandler persistence;
+
+    public ListCommand(ActivePortalsHandler activePortals, PersistentHandler persistence) {
+        this.activePortals = activePortals;
+        this.persistence = persistence;
+    }
+
     @Override
     public String getName() {
         return "list";
@@ -27,12 +35,12 @@ public class ListCommand implements SubCommand {
 
     @Override
     public void execute(CommandSender sender, String label, String[] args) {
-        if (!PersistentHandler.exists("porticleguns")) {
+        if (!persistence.exists("porticleguns")) {
             sender.sendMessage(MessageManager.getMessage(sender, "commands.list.empty"));
             return;
         }
 
-        List<String> entries = PersistentHandler.getSection("porticleguns");
+        List<String> entries = persistence.getSection("porticleguns");
         if (entries.isEmpty()) {
             sender.sendMessage(MessageManager.getMessage(sender, "commands.list.empty"));
             return;
@@ -49,10 +57,10 @@ public class ListCommand implements SubCommand {
                 continue;
             }
             String basePath = "porticleguns." + entry;
-            boolean persistedPrimary = PersistentHandler.exists(basePath + ".primary.position");
-            boolean persistedSecondary = PersistentHandler.exists(basePath + ".secondary.position");
-            boolean activePrimary = ActivePortalsHandler.hasPrimaryPortal(gunId);
-            boolean activeSecondary = ActivePortalsHandler.hasSecondaryPortal(gunId);
+            boolean persistedPrimary = persistence.exists(basePath + ".primary.position");
+            boolean persistedSecondary = persistence.exists(basePath + ".secondary.position");
+            boolean activePrimary = activePortals.hasPrimaryPortal(gunId);
+            boolean activeSecondary = activePortals.hasSecondaryPortal(gunId);
 
             String primaryStatus = buildStatus(sender, activePrimary, persistedPrimary);
             String secondaryStatus = buildStatus(sender, activeSecondary, persistedSecondary);

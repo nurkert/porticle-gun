@@ -1,7 +1,6 @@
 package eu.nurkert.porticlegun.visualization;
 
 import eu.nurkert.porticlegun.PorticleGun;
-import eu.nurkert.porticlegun.config.ConfigManager;
 import eu.nurkert.porticlegun.portals.PotentialPortal;
 import java.util.function.BooleanSupplier;
 import org.bukkit.Location;
@@ -49,7 +48,7 @@ public final class PortalShotAnimation {
             impactPoint = PortalGeometry.computePortalCenter(potentialTarget);
             travelDistance = start.distance(impactPoint);
         } else {
-            double maxDistance = ConfigManager.getPortalMaxTargetDistance();
+            double maxDistance = PorticleGun.getInstance().getConfigManager().getPortalMaxTargetDistance();
             impactPoint = start.clone().add(forward.clone().multiply(maxDistance));
             travelDistance = maxDistance;
         }

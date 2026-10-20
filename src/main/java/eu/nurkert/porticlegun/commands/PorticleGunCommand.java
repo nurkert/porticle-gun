@@ -1,5 +1,6 @@
 package eu.nurkert.porticlegun.commands;
 
+import eu.nurkert.porticlegun.PorticleGun;
 import eu.nurkert.porticlegun.commands.sub.ClearPlayerCommand;
 import eu.nurkert.porticlegun.commands.sub.ListCommand;
 import eu.nurkert.porticlegun.commands.sub.ReloadCommand;
@@ -27,12 +28,13 @@ public class PorticleGunCommand implements CommandExecutor, TabCompleter {
     private final GunMenu menu = new GunMenu();
     private final Map<String, SubCommand> subCommands = new LinkedHashMap<>();
 
-    public PorticleGunCommand() {
-        register(new RemovePortalCommand());
-        register(new ListCommand());
-        register(new RemoveCommand());
-        register(new ClearPlayerCommand());
-        register(new ReloadCommand());
+    public PorticleGunCommand(PorticleGun plugin) {
+        GunData gunData = new GunData(plugin.getActivePortals(), plugin.getPersistence());
+        register(new RemovePortalCommand(plugin.getActivePortals(), plugin.getConfigManager()));
+        register(new ListCommand(plugin.getActivePortals(), plugin.getPersistence()));
+        register(new RemoveCommand(gunData, plugin.getPersistence()));
+        register(new ClearPlayerCommand(gunData));
+        register(new ReloadCommand(plugin));
     }
 
     private void register(SubCommand subCommand) {

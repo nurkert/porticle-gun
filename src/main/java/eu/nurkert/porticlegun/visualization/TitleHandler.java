@@ -1,8 +1,8 @@
 package eu.nurkert.porticlegun.visualization;
 
+import eu.nurkert.porticlegun.PorticleGun;
 import eu.nurkert.porticlegun.item.ItemHandler;
 import eu.nurkert.porticlegun.messages.MessageManager;
-import eu.nurkert.porticlegun.portals.ActivePortalsHandler;
 import eu.nurkert.porticlegun.util.BedrockSupport;
 import java.util.Map;
 import org.bukkit.entity.Player;
@@ -65,10 +65,18 @@ public class TitleHandler implements Listener {
     }
 
     public static void sendPortalStatus(Player player, String gunID) {
-        String primaryColor = GunColorHandler.getColors(gunID).getPrimary().getChatColor();
-        String secondaryColor = GunColorHandler.getColors(gunID).getSecondary().getChatColor();
-        boolean primaryOpen = ActivePortalsHandler.hasPrimaryPortal(gunID);
-        boolean secondaryOpen = ActivePortalsHandler.hasSecondaryPortal(gunID);
+        String primaryColor = PorticleGun.getInstance()
+                .getGunColors()
+                .getColors(gunID)
+                .getPrimary()
+                .getChatColor();
+        String secondaryColor = PorticleGun.getInstance()
+                .getGunColors()
+                .getColors(gunID)
+                .getSecondary()
+                .getChatColor();
+        boolean primaryOpen = PorticleGun.getInstance().getActivePortals().hasPrimaryPortal(gunID);
+        boolean secondaryOpen = PorticleGun.getInstance().getActivePortals().hasSecondaryPortal(gunID);
 
         // the left marker belongs to the button on the left: the mouse's left click, but a controller's left trigger
         // fires the secondary portal

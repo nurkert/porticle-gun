@@ -18,18 +18,24 @@ mkdir -p "$CACHE"
 rm -rf "$WORK"
 mkdir -p "$WORK/plugins"
 
-# download Paper (cached by checksum)
-BUILD_JSON="$(curl -fsSL "https://fill.papermc.io/v3/projects/paper/versions/$MC_VERSION/builds/latest")"
-read -r PAPER_URL PAPER_SHA <<<"$(python3 -c '
+# download Paper (cached per version and checksum; falls back to the cache when the API is unreachable)
+PAPER_JAR=""
+if BUILD_JSON="$(curl -fsSL "https://fill.papermc.io/v3/projects/paper/versions/$MC_VERSION/builds/latest")"; then
+    read -r PAPER_URL PAPER_SHA <<<"$(python3 -c '
 import json, sys
 d = json.loads(sys.argv[1])["downloads"]["server:default"]
 print(d["url"], d["checksums"]["sha256"])' "$BUILD_JSON")"
-PAPER_JAR="$CACHE/paper-$PAPER_SHA.jar"
-if [ ! -f "$PAPER_JAR" ]; then
-    echo "Downloading $PAPER_URL"
-    curl -fsSL -o "$PAPER_JAR.part" "$PAPER_URL"
-    echo "$PAPER_SHA  $PAPER_JAR.part" | shasum -a 256 -c - >/dev/null
-    mv "$PAPER_JAR.part" "$PAPER_JAR"
+    PAPER_JAR="$CACHE/paper-$MC_VERSION-$PAPER_SHA.jar"
+    if [ ! -f "$PAPER_JAR" ]; then
+        echo "Downloading $PAPER_URL"
+        curl -fsSL -o "$PAPER_JAR.part" "$PAPER_URL"
+        echo "$PAPER_SHA  $PAPER_JAR.part" | shasum -a 256 -c - >/dev/null
+        mv "$PAPER_JAR.part" "$PAPER_JAR"
+    fi
+else
+    PAPER_JAR="$(ls -t "$CACHE"/paper-"$MC_VERSION"-*.jar 2>/dev/null | head -n 1 || true)"
+    [ -n "$PAPER_JAR" ] || { echo "Paper API unreachable and no cached Paper $MC_VERSION jar"; exit 1; }
+    echo "Paper API unreachable, using cached $PAPER_JAR"
 fi
 
 cp "$PLUGIN_JAR" "$WORK/plugins/"
@@ -47,6 +53,27 @@ level-type=minecraft\:flat
 generate-structures=false
 spawn-protection=0
 PROPS
+
+# stored portals: a normal gun, one with a colour that no longer exists, one in a world that is not loaded
+mkdir -p "$WORK/plugins/PorticleGun"
+cat >"$WORK/plugins/PorticleGun/portals.yml" <<YAML
+porticleguns:
+  abcdefghij:
+    shape: ELLIPTIC
+    primary:
+      position: world:10.0:64.0:10.0:1.0:0.0:0.0
+      color: gold
+    secondary:
+      position: world:20.0:64.0:10.0:-1.0:0.0:0.0
+      color: dark_blue
+  klmnopqrst:
+    primary:
+      position: world:30.0:64.0:10.0:1.0:0.0:0.0
+      color: does_not_exist
+  uvwxyzABCD:
+    primary:
+      position: world_not_loaded:0.0:64.0:0.0:0.0:1.0:0.0
+YAML
 
 LOG="$WORK/server.log"
 : >"$LOG"
@@ -82,7 +109,13 @@ if [ "$WITH_GEYSER" = "geyser" ]; then
     grep -q "Installed the PorticleGun Bedrock pack" "$LOG" || fail "the Bedrock pack was not installed into Geyser"
     [ -f "$WORK/plugins/Geyser-Spigot/packs/porticlegun.mcpack" ] || fail "porticlegun.mcpack missing in Geyser's packs folder"
 fi
-grep -q "No stored portal guns found" "$LOG" || fail "/porticlegun list did not answer"
+grep -q "Stored portal guns (3)" "$LOG" || fail "/porticlegun list did not show the 3 stored guns"
+grep -q "Unknown portal colour 'does_not_exist'" "$LOG" || fail "unknown colour was not reported"
+grep -E -q "primary: .*active.*secondary: .*active" "$LOG" || fail "the stored portal pair was not activated"
+grep -E -q "primary: .*saved" "$LOG" || fail "the portal in the unloaded world should stay saved but inactive"
+for gun in abcdefghij klmnopqrst uvwxyzABCD; do
+    grep -q "$gun:" "$WORK/plugins/PorticleGun/portals.yml" || fail "gun $gun was lost from portals.yml"
+done
 grep -q "PorticleGun data reloaded from disk" "$LOG" || fail "/porticlegun reload did not succeed"
 if grep -n -E "Error occurred while (enabling|disabling) PorticleGun|Could not load 'plugins/PorticleGun" "$LOG"; then
     fail "PorticleGun failed to load, enable or disable"

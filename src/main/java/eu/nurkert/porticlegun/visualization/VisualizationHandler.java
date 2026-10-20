@@ -16,16 +16,21 @@ import org.bukkit.util.Vector;
  */
 public class VisualizationHandler implements Listener {
 
-    public VisualizationHandler() {
+    private final ActivePortalsHandler activePortals;
+    private final GunColorHandler gunColors;
+
+    public VisualizationHandler(ActivePortalsHandler activePortals, GunColorHandler gunColors) {
+        this.activePortals = activePortals;
+        this.gunColors = gunColors;
         visualizePortals();
     }
 
-    private static void visualizePortals() {
+    private void visualizePortals() {
         new BukkitRunnable() {
 
             @Override
             public void run() {
-                ArrayList<Portal> portals = ActivePortalsHandler.getAllPortal();
+                ArrayList<Portal> portals = activePortals.getAllPortal();
                 for (int i = 0; i < portals.size(); i++) {
                     Portal portal = portals.get(i);
                     if (!portal.isVisualizationReady()) {
@@ -40,7 +45,8 @@ public class VisualizationHandler implements Listener {
                     double radians = Math.toRadians(System.currentTimeMillis() / 5);
                     Vector[] locs = {portal.getParticleLocation(radians), portal.getParticleLocation(radians + Math.PI)
                     };
-                    Color color = GunColorHandler.getColors(portal.getGunID())
+                    Color color = gunColors
+                            .getColors(portal.getGunID())
                             .get(portal.getType())
                             .getBukkitColor();
                     Particle.DustOptions dustOptions = new Particle.DustOptions(color, 1);

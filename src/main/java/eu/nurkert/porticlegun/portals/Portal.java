@@ -137,7 +137,7 @@ public class Portal extends PotentialPortal {
                 + getDirection().getZ();
     }
 
-    public void saveAll() {
+    public void saveAll(PersistentHandler persistence, GunColorHandler gunColors) {
         if (location.getWorld() == null) {
             PorticleGun.getInstance()
                     .getLogger()
@@ -145,21 +145,21 @@ public class Portal extends PotentialPortal {
             return;
         }
         String basePath = "porticleguns." + ItemHandler.saveable(gunID);
-        PersistentHandler.set(basePath + "." + type.toString().toLowerCase() + ".position", getPositionString());
-        PortalColor color = GunColorHandler.getColors(gunID).get(type);
-        saveColor(gunID, type, color);
-        PersistentHandler.set(basePath + ".shape", visualizationType.toString());
+        persistence.set(basePath + "." + type.toString().toLowerCase() + ".position", getPositionString());
+        PortalColor color = gunColors.getColors(gunID).get(type);
+        saveColor(persistence, gunID, type, color);
+        persistence.set(basePath + ".shape", visualizationType.toString());
     }
 
-    public static void saveColor(String gunID, PortalType type, PortalColor color) {
-        PersistentHandler.set(
+    public static void saveColor(PersistentHandler persistence, String gunID, PortalType type, PortalColor color) {
+        persistence.set(
                 "porticleguns." + ItemHandler.saveable(gunID) + "."
                         + type.toString().toLowerCase() + ".color",
                 color.toString());
     }
 
-    public void delete() {
-        PersistentHandler.set(
+    public void delete(PersistentHandler persistence) {
+        persistence.set(
                 "porticleguns." + ItemHandler.saveable(gunID) + "."
                         + type.toString().toLowerCase(),
                 null);

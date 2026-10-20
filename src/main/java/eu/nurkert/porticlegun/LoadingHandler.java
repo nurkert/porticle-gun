@@ -37,53 +37,51 @@ import org.bukkit.event.world.WorldLoadEvent;
  */
 public class LoadingHandler implements Listener {
 
-    // Singleton construction
-    private static final LoadingHandler instance = new LoadingHandler();
-
+    private final PorticleGun plugin;
+    private final ConfigManager config;
+    private final PersistentHandler persistence;
+    private final ActivePortalsHandler activePortals;
+    private final GunColorHandler gunColors;
     private final PorticleGunCommand porticleGunCommand;
     private GravityGun gravityGun;
     private final ResourcePackHandler resourcePackHandler = new ResourcePackHandler();
     private final List<PendingPortal> pendingPortals = new ArrayList<>();
 
-    private LoadingHandler() {
-        // Private constructor
-        porticleGunCommand = new PorticleGunCommand();
+    public LoadingHandler(PorticleGun plugin) {
+        this.plugin = plugin;
+        this.config = plugin.getConfigManager();
+        this.persistence = plugin.getPersistence();
+        this.activePortals = plugin.getActivePortals();
+        this.gunColors = plugin.getGunColors();
+        porticleGunCommand = new PorticleGunCommand(plugin);
         register(this);
         registerEvents();
         registerCommands();
         loadPortals();
     }
 
-    /**
-     * @return the singleton instance
-     */
-    public static LoadingHandler getInstance() {
-        return instance;
-    }
-
     private void registerEvents() {
         register(new RecipeHandler());
         register(new GunItemUpdater());
         register(resourcePackHandler);
-        register(new PortalOpenHandler());
-        register(new ActivePortalsHandler());
+        register(new PortalOpenHandler(activePortals, gunColors, persistence));
         register(porticleGunCommand.getMenu());
-        register(new VisualizationHandler());
-        register(new TeleportationHandler());
-        register(new SettingsHandler());
+        register(new VisualizationHandler(activePortals, gunColors));
+        register(new TeleportationHandler(activePortals));
+        register(new SettingsHandler(activePortals, gunColors, persistence));
         register(new TitleHandler());
         updateGravityGunRegistration();
     }
 
     private void updateGravityGunRegistration() {
-        if (ConfigManager.isGravityGunEnabled()) {
+        if (config.isGravityGunEnabled()) {
             if (gravityGun == null) {
-                gravityGun = new GravityGun(
-                        ConfigManager.getGravityGunBlockBlacklist(), ConfigManager.isGravityGunPlayerCaptureEnabled());
+                gravityGun =
+                        new GravityGun(config.getGravityGunBlockBlacklist(), config.isGravityGunPlayerCaptureEnabled());
                 register(gravityGun);
             } else {
-                gravityGun.updateBlockBlacklist(ConfigManager.getGravityGunBlockBlacklist());
-                gravityGun.setAllowPlayerCapture(ConfigManager.isGravityGunPlayerCaptureEnabled());
+                gravityGun.updateBlockBlacklist(config.getGravityGunBlockBlacklist());
+                gravityGun.setAllowPlayerCapture(config.isGravityGunPlayerCaptureEnabled());
             }
         } else if (gravityGun != null) {
             gravityGun.shutdown();
@@ -93,7 +91,7 @@ public class LoadingHandler implements Listener {
     }
 
     private void register(Listener listener) {
-        Bukkit.getPluginManager().registerEvents(listener, PorticleGun.getInstance());
+        Bukkit.getPluginManager().registerEvents(listener, plugin);
     }
 
     private void registerCommands() {
@@ -107,7 +105,7 @@ public class LoadingHandler implements Listener {
      * @param command  The command to register the executor to
      */
     private void register(CommandExecutor executor, String command) {
-        PluginCommand pluginCommand = PorticleGun.getInstance().getCommand(command);
+        PluginCommand pluginCommand = plugin.getCommand(command);
         if (pluginCommand == null) {
             return;
         }
@@ -123,12 +121,11 @@ public class LoadingHandler implements Listener {
      */
     private void loadPortals() {
         pendingPortals.clear();
-        for (String entry : PersistentHandler.getSection("porticleguns")) {
+        for (String entry : persistence.getSection("porticleguns")) {
             try {
                 loadGun(entry);
             } catch (RuntimeException exception) {
-                PorticleGun.getInstance()
-                        .getLogger()
+                plugin.getLogger()
                         .log(
                                 Level.WARNING,
                                 "Skipping persisted entry '" + entry + "' because it could not be loaded.",
@@ -141,15 +138,14 @@ public class LoadingHandler implements Listener {
         String basePath = "porticleguns." + entry;
         String gunID = ItemHandler.useable(entry);
         if (gunID == null) {
-            PorticleGun.getInstance()
-                    .getLogger()
+            plugin.getLogger()
                     .warning("Skipping persisted entry '" + entry + "' because it contains invalid characters.");
             return;
         }
         PortalVisualizationType visualizationType =
-                PortalVisualizationType.fromString(PersistentHandler.get(basePath + ".shape"));
+                PortalVisualizationType.fromString(persistence.get(basePath + ".shape"));
 
-        GunColorHandler.setColors(
+        gunColors.setColors(
                 gunID,
                 readColor(basePath + ".primary.color", GunColorHandler.DEFAULT_PRIMARY),
                 readColor(basePath + ".secondary.color", GunColorHandler.DEFAULT_SECONDARY));
@@ -159,22 +155,21 @@ public class LoadingHandler implements Listener {
     }
 
     private PortalColor readColor(String path, PortalColor fallback) {
-        String name = PersistentHandler.get(path);
+        String name = persistence.get(path);
         if (name == null) {
             return fallback;
         }
         try {
             return PortalColor.valueOf(name);
         } catch (IllegalArgumentException exception) {
-            PorticleGun.getInstance()
-                    .getLogger()
+            plugin.getLogger()
                     .warning("Unknown portal colour '" + name + "' at " + path + ", using " + fallback + " instead.");
             return fallback;
         }
     }
 
     private void loadPortal(String gunID, Portal.PortalType type, String basePath, PortalVisualizationType shape) {
-        String position = PersistentHandler.get(basePath + "." + type.name().toLowerCase() + ".position");
+        String position = persistence.get(basePath + "." + type.name().toLowerCase() + ".position");
         if (position == null) {
             return;
         }
@@ -190,9 +185,9 @@ public class LoadingHandler implements Listener {
     private void activate(PendingPortal pending) {
         Portal portal = new Portal(pending.position(), pending.gunID(), pending.type(), pending.shape());
         if (pending.type() == Portal.PortalType.PRIMARY) {
-            ActivePortalsHandler.setPrimaryPortal(pending.gunID(), portal);
+            activePortals.setPrimaryPortal(pending.gunID(), portal);
         } else {
-            ActivePortalsHandler.setSecondaryPortal(pending.gunID(), portal);
+            activePortals.setSecondaryPortal(pending.gunID(), portal);
         }
     }
 
@@ -205,8 +200,8 @@ public class LoadingHandler implements Listener {
             if (Portal.extractWorldName(pending.position()).equals(worldName)) {
                 iterator.remove();
                 boolean replacedInMeantime = pending.type() == Portal.PortalType.PRIMARY
-                        ? ActivePortalsHandler.hasPrimaryPortal(pending.gunID())
-                        : ActivePortalsHandler.hasSecondaryPortal(pending.gunID());
+                        ? activePortals.hasPrimaryPortal(pending.gunID())
+                        : activePortals.hasSecondaryPortal(pending.gunID());
                 if (!replacedInMeantime) {
                     activate(pending);
                 }
@@ -229,13 +224,13 @@ public class LoadingHandler implements Listener {
     }
 
     public void reload() {
-        MessageManager.reload(PorticleGun.getInstance());
-        ConfigManager.reload();
+        MessageManager.reload(plugin);
+        config.reload();
         resourcePackHandler.reload();
         updateGravityGunRegistration();
-        PersistentHandler.reload();
-        ActivePortalsHandler.clear();
-        GunColorHandler.clear();
+        persistence.reload();
+        activePortals.clear();
+        gunColors.clear();
         loadPortals();
     }
 }

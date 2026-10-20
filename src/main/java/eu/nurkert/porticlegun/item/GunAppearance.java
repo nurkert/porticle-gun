@@ -1,7 +1,6 @@
 package eu.nurkert.porticlegun.item;
 
 import eu.nurkert.porticlegun.PorticleGun;
-import eu.nurkert.porticlegun.visualization.GunColorHandler;
 import eu.nurkert.porticlegun.visualization.GunColors;
 import java.util.List;
 import org.bukkit.Color;
@@ -38,7 +37,7 @@ public final class GunAppearance {
             changed = true;
         }
 
-        GunColors colors = GunColorHandler.getColors(gunID);
+        GunColors colors = PorticleGun.getInstance().getGunColors().getColors(gunID);
         List<Color> tints = List.of(
                 colors.getPrimary().getBukkitColor(), colors.getSecondary().getBukkitColor());
         CustomModelDataComponent modelData = meta.getCustomModelDataComponent();

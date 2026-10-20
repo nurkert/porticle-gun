@@ -16,13 +16,25 @@ mkdir -p "$CACHE" "$WORK/plugins"
 rm -f "$WORK"/plugins/PorticleGun-*.jar
 cp "$ROOT"/target/PorticleGun-*.jar "$WORK/plugins/"
 
-BUILD_JSON="$(curl -fsSL "https://fill.papermc.io/v3/projects/paper/versions/$MC_VERSION/builds/latest")"
-read -r PAPER_URL PAPER_SHA <<<"$(python3 -c '
+# download Paper (cached per version and checksum; falls back to the cache when the API is unreachable)
+PAPER_JAR=""
+if BUILD_JSON="$(curl -fsSL "https://fill.papermc.io/v3/projects/paper/versions/$MC_VERSION/builds/latest")"; then
+    read -r PAPER_URL PAPER_SHA <<<"$(python3 -c '
 import json, sys
 d = json.loads(sys.argv[1])["downloads"]["server:default"]
 print(d["url"], d["checksums"]["sha256"])' "$BUILD_JSON")"
-PAPER_JAR="$CACHE/paper-$PAPER_SHA.jar"
-[ -f "$PAPER_JAR" ] || curl -fsSL -o "$PAPER_JAR" "$PAPER_URL"
+    PAPER_JAR="$CACHE/paper-$MC_VERSION-$PAPER_SHA.jar"
+    if [ ! -f "$PAPER_JAR" ]; then
+        echo "Downloading $PAPER_URL"
+        curl -fsSL -o "$PAPER_JAR.part" "$PAPER_URL"
+        echo "$PAPER_SHA  $PAPER_JAR.part" | shasum -a 256 -c - >/dev/null
+        mv "$PAPER_JAR.part" "$PAPER_JAR"
+    fi
+else
+    PAPER_JAR="$(ls -t "$CACHE"/paper-"$MC_VERSION"-*.jar 2>/dev/null | head -n 1 || true)"
+    [ -n "$PAPER_JAR" ] || { echo "Paper API unreachable and no cached Paper $MC_VERSION jar"; exit 1; }
+    echo "Paper API unreachable, using cached $PAPER_JAR"
+fi
 
 for project in geyser floodgate; do
     [ -f "$WORK/plugins/$project.jar" ] || curl -fsSL -o "$WORK/plugins/$project.jar" \

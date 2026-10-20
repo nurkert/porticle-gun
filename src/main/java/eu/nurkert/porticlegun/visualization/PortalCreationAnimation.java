@@ -1,7 +1,6 @@
 package eu.nurkert.porticlegun.visualization;
 
 import eu.nurkert.porticlegun.PorticleGun;
-import eu.nurkert.porticlegun.portals.ActivePortalsHandler;
 import eu.nurkert.porticlegun.portals.Portal;
 import eu.nurkert.porticlegun.visualization.concrete.PortalVisualizationType;
 import java.util.concurrent.ThreadLocalRandom;
@@ -48,7 +47,9 @@ public final class PortalCreationAnimation {
         right.normalize();
         Vector up = normal.clone().crossProduct(right).normalize();
 
-        Color color = GunColorHandler.getColors(portal.getGunID())
+        Color color = PorticleGun.getInstance()
+                .getGunColors()
+                .getColors(portal.getGunID())
                 .get(portal.getType())
                 .getBukkitColor();
         Particle.DustOptions dustOptions = new Particle.DustOptions(color, 0.9F);
@@ -274,10 +275,10 @@ public final class PortalCreationAnimation {
 
     private static boolean isPortalStillActive(Portal portal) {
         if (portal.getType() == Portal.PortalType.PRIMARY) {
-            return ActivePortalsHandler.getPrimaryPortal(portal.getGunID()) == portal;
+            return PorticleGun.getInstance().getActivePortals().getPrimaryPortal(portal.getGunID()) == portal;
         }
         if (portal.getType() == Portal.PortalType.SECONDARY) {
-            return ActivePortalsHandler.getSecondaryPortal(portal.getGunID()) == portal;
+            return PorticleGun.getInstance().getActivePortals().getSecondaryPortal(portal.getGunID()) == portal;
         }
         return false;
     }

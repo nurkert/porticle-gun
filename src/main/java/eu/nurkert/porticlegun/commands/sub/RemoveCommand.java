@@ -18,6 +18,14 @@ import org.bukkit.command.CommandSender;
  */
 public class RemoveCommand implements SubCommand {
 
+    private final GunData gunData;
+    private final PersistentHandler persistence;
+
+    public RemoveCommand(GunData gunData, PersistentHandler persistence) {
+        this.gunData = gunData;
+        this.persistence = persistence;
+    }
+
     @Override
     public String getName() {
         return "remove";
@@ -42,7 +50,7 @@ public class RemoveCommand implements SubCommand {
             return;
         }
 
-        if (GunData.remove(gunId)) {
+        if (gunData.remove(gunId)) {
             sender.sendMessage(MessageManager.getMessage(sender, "commands.remove.success", Map.of("gun_id", gunId)));
         } else {
             sender.sendMessage(MessageManager.getMessage(sender, "commands.remove.not-found", Map.of("gun_id", gunId)));
@@ -51,11 +59,11 @@ public class RemoveCommand implements SubCommand {
 
     @Override
     public List<String> tabComplete(CommandSender sender, String[] args) {
-        if (args.length != 1 || !PersistentHandler.exists("porticleguns")) {
+        if (args.length != 1 || !persistence.exists("porticleguns")) {
             return Collections.emptyList();
         }
         String prefix = args[0].toLowerCase(Locale.ROOT);
-        return PersistentHandler.getSection("porticleguns").stream()
+        return persistence.getSection("porticleguns").stream()
                 .map(ItemHandler::useable)
                 .filter(Objects::nonNull)
                 .filter(id -> id.toLowerCase(Locale.ROOT).startsWith(prefix))

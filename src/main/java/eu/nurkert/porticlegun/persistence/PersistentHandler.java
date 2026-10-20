@@ -1,6 +1,5 @@
 package eu.nurkert.porticlegun.persistence;
 
-import eu.nurkert.porticlegun.PorticleGun;
 import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -14,6 +13,7 @@ import java.util.logging.Level;
 import org.bukkit.Bukkit;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
+import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.scheduler.BukkitTask;
 
 /**
@@ -28,21 +28,21 @@ public class PersistentHandler {
     private static final String FILENAME = "portals.yml";
     private static final long SAVE_DELAY_TICKS = 20L;
 
-    // Singleton construction
-    private static final PersistentHandler instance = new PersistentHandler();
+    private File file;
+    private FileConfiguration config;
 
-    private static File file;
-    private static FileConfiguration config;
+    private boolean dirty;
+    private BukkitTask pendingSave;
 
-    private static boolean dirty;
-    private static BukkitTask pendingSave;
+    private final Object writeLock = new Object();
+    private long snapshotCounter;
+    private long lastWrittenSnapshot;
 
-    private static final Object writeLock = new Object();
-    private static long snapshotCounter;
-    private static long lastWrittenSnapshot;
+    private final JavaPlugin plugin;
 
-    private PersistentHandler() {
-        File dataFolder = PorticleGun.getInstance().getDataFolder();
+    public PersistentHandler(JavaPlugin plugin) {
+        this.plugin = plugin;
+        File dataFolder = plugin.getDataFolder();
         if (!dataFolder.exists()) {
             dataFolder.mkdirs();
         }
@@ -50,37 +50,30 @@ public class PersistentHandler {
         config = YamlConfiguration.loadConfiguration(file);
     }
 
-    /**
-     * @return the singleton instance
-     */
-    public static PersistentHandler getInstance() {
-        return instance;
-    }
-
-    public static List<String> getSection(String path) {
+    public List<String> getSection(String path) {
         if (config.getConfigurationSection(path) == null) {
             return new ArrayList<>();
         }
         return new ArrayList<>(config.getConfigurationSection(path).getKeys(false));
     }
 
-    public static void set(String path, Object value) {
+    public void set(String path, Object value) {
         config.set(path, value);
         markDirty();
     }
 
-    public static String get(String path) {
+    public String get(String path) {
         return config.getString(path);
     }
 
-    public static boolean exists(String path) {
+    public boolean exists(String path) {
         return config.get(path) != null;
     }
 
     /**
      * Writes all pending changes to disk immediately, on the calling thread.
      */
-    public static void saveAll() {
+    public void saveAll() {
         if (pendingSave != null) {
             pendingSave.cancel();
             pendingSave = null;
@@ -92,20 +85,19 @@ public class PersistentHandler {
         write(config.saveToString(), ++snapshotCounter);
     }
 
-    public static void reload() {
+    public void reload() {
         saveAll();
         config = YamlConfiguration.loadConfiguration(file);
     }
 
-    private static void markDirty() {
+    private void markDirty() {
         dirty = true;
         if (pendingSave == null) {
-            pendingSave = Bukkit.getScheduler()
-                    .runTaskLater(PorticleGun.getInstance(), PersistentHandler::saveAsync, SAVE_DELAY_TICKS);
+            pendingSave = Bukkit.getScheduler().runTaskLater(plugin, this::saveAsync, SAVE_DELAY_TICKS);
         }
     }
 
-    private static void saveAsync() {
+    private void saveAsync() {
         pendingSave = null;
         if (!dirty) {
             return;
@@ -113,10 +105,10 @@ public class PersistentHandler {
         dirty = false;
         String content = config.saveToString();
         long snapshot = ++snapshotCounter;
-        Bukkit.getScheduler().runTaskAsynchronously(PorticleGun.getInstance(), () -> write(content, snapshot));
+        Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> write(content, snapshot));
     }
 
-    private static void write(String content, long snapshot) {
+    private void write(String content, long snapshot) {
         synchronized (writeLock) {
             // a newer snapshot may already have been written synchronously
             if (snapshot <= lastWrittenSnapshot) {
@@ -133,7 +125,7 @@ public class PersistentHandler {
                 }
                 lastWrittenSnapshot = snapshot;
             } catch (IOException exception) {
-                PorticleGun.getInstance().getLogger().log(Level.SEVERE, "Could not save " + FILENAME, exception);
+                plugin.getLogger().log(Level.SEVERE, "Could not save " + FILENAME, exception);
             }
         }
     }
