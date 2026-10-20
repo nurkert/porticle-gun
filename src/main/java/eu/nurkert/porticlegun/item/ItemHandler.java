@@ -13,6 +13,9 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.persistence.PersistentDataType;
 
+/**
+ * Creates gun items and recognises them. Every gun has a random id that links it to its portals.
+ */
 public class ItemHandler implements Listener {
 
     // uniform type for the PorticleGun

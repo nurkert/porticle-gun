@@ -32,6 +32,9 @@ import org.bukkit.event.HandlerList;
 import org.bukkit.event.Listener;
 import org.bukkit.event.world.WorldLoadEvent;
 
+/**
+ * Registers listeners and commands, loads the stored portals and handles {@code /porticlegun reload}.
+ */
 public class LoadingHandler implements Listener {
 
     // Singleton construction

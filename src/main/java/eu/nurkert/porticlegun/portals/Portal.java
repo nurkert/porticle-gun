@@ -10,6 +10,9 @@ import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.util.Vector;
 
+/**
+ * An open portal of a gun, linked to the gun's other portal, and its storage in portals.yml.
+ */
 public class Portal extends PotentialPortal {
     // the id of the gun that created this portal
     String gunID;

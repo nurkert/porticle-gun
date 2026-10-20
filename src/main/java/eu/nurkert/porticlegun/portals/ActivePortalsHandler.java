@@ -6,6 +6,9 @@ import org.bukkit.Location;
 import org.bukkit.entity.Player;
 import org.bukkit.event.Listener;
 
+/**
+ * Keeps the open portals of every gun in memory and links each primary portal with its secondary portal.
+ */
 public class ActivePortalsHandler implements Listener {
 
     private static HashMap<String, Portal> primaryPortals = new HashMap<>();

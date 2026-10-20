@@ -9,6 +9,9 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.BannerMeta;
 import org.bukkit.inventory.meta.ItemMeta;
 
+/**
+ * Fluent builder for banner items, used to preview portal colours and shapes in menus.
+ */
 public class BannerBuilder {
 
     ItemStack item;

@@ -3,6 +3,9 @@ package eu.nurkert.porticlegun.commands;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 
+/**
+ * Permission nodes of the plugin and helpers to check them.
+ */
 public final class Permissions {
 
     public static final String COMMAND = "porticlegun.command";

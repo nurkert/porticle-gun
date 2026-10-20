@@ -19,6 +19,9 @@ import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.util.Vector;
 
+/**
+ * Teleports players and other entities between linked portals and keeps their momentum and view direction.
+ */
 public class TeleportationHandler implements Listener {
 
     private static final long TELEPORT_COOLDOWN_MS = 1000;

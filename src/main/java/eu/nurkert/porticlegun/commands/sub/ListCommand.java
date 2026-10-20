@@ -10,6 +10,9 @@ import java.util.List;
 import java.util.Map;
 import org.bukkit.command.CommandSender;
 
+/**
+ * {@code /porticlegun list}: lists all stored guns and the state of their portals.
+ */
 public class ListCommand implements SubCommand {
 
     @Override

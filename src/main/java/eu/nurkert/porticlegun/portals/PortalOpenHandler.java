@@ -25,6 +25,9 @@ import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.metadata.MetadataValue;
 import org.bukkit.util.Vector;
 
+/**
+ * Fires the gun: left click opens the primary portal, right click the secondary portal.
+ */
 public class PortalOpenHandler implements Listener {
 
     @EventHandler

@@ -9,6 +9,9 @@ import eu.nurkert.porticlegun.util.WorldGuardIntegration;
 import org.bukkit.Bukkit;
 import org.bukkit.plugin.java.JavaPlugin;
 
+/**
+ * The plugin entry point: checks the server version, loads configuration and data and starts all features.
+ */
 public final class PorticleGun extends JavaPlugin {
 
     @Override

@@ -29,14 +29,26 @@ bedrock:
   # If Geyser runs on a proxy, copy porticlegun.mcpack and porticlegun_mappings.json there by hand.
   install-pack: true
 
+# Gravity gun: press the drop key (Q) while holding the gun to pick up / let go of a block or mob.
 gravity-gun:
+  # false disables the gravity gun completely
   enabled: true
+  # whether players can pick up other players
   allow-player-capture: false
+  # whether chests can be picked up (their contents travel with them)
   allow-chest-capture: true
+  # blocks that cannot be picked up (Bukkit material names)
   block-blacklist:
     - AIR
 
 portal:
+  # How far (in blocks) the gun looks for a block to place a portal on.
+  # Also the range of /porticlegun removeportal.
+  max-target-distance: 128
+  # Portals are not placed further away than this from the shooter.
+  max-player-distance: 100
+  # How many blocks are traced to find out which side of a block was hit.
+  max-block-trace: 100
   custom-colors:
     # Default colour palette. Edit the entries to tweak particle, chat, or banner colours
     # or append additional blocks to extend the list. Run "/porticlegun reload" to apply.

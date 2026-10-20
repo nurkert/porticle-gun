@@ -4,6 +4,9 @@ import eu.nurkert.porticlegun.item.ItemHandler;
 import eu.nurkert.porticlegun.persistence.PersistentHandler;
 import eu.nurkert.porticlegun.portals.ActivePortalsHandler;
 
+/**
+ * Deletes everything stored about a gun.
+ */
 public final class GunData {
 
     private GunData() {}

@@ -11,6 +11,9 @@ import org.bukkit.entity.Player;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.util.Vector;
 
+/**
+ * Particle beam from the gun to where the portal is placed.
+ */
 public final class PortalShotAnimation {
 
     private static final double STEP_DISTANCE = 0.6;

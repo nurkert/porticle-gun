@@ -14,6 +14,9 @@ import org.bukkit.Color;
 import org.bukkit.DyeColor;
 import org.bukkit.Particle;
 
+/**
+ * A portal colour: particle colour, chat colour and banner dye. Loaded from config.yml.
+ */
 public final class PortalColor {
 
     private static final Map<String, PortalColor> BY_NAME = new LinkedHashMap<>();

@@ -46,7 +46,7 @@ Reihenfolge = Priorität. Unter jedem Punkt: Problem, Lösungsansatz, Notizen be
   - Teleport:
     - [ ] Teleport mit übernommener Geschwindigkeit (`TeleportationHandler`) auf Bedrock testen: Ruckeln oder verlorener Schwung durch Geysers Bewegungsübersetzung?
   - Doku:
-    - [ ] README-Abschnitt „Bedrock / Geyser“ (kommt mit PG-18) mit Steuerung für Bedrock-Spieler
+    - [x] README-Abschnitt „Bedrock / Geyser“ (README + `docs/bedrock.md`) mit Steuerung für Bedrock-Spieler
   - Notizen: Erledigt ist alles, was ohne Bedrock-Client geht: `BedrockSupport`/`FloodgateBridge` (Floodgate optional, ohne Floodgate gelten alle als Java-Spieler, Eingabemodus wird bei jeder Abfrage neu gelesen). Die Gun-ID liegt jetzt im PersistentDataContainer, neue Guns haben keine versteckte Lore-Zeile mehr. Alte Guns funktionieren weiter und werden beim Join, Slot-Wechsel und Öffnen von Inventaren automatisch umgestellt. Die CI testet zusätzlich mit echtem Geyser + Floodgate. **Offen, weil nur mit Bedrock-Client prüfbar:** Linksklick in die Luft (CraftBukkit macht aus dem Arm-Schwung-Paket ein `LEFT_CLICK_AIR`; ob Geyser das bei Touch schickt, muss ein Test zeigen), Sneak-Gesten, Partikelfarben, BlockDisplay, Titel und Teleport-Gefühl. Das Bedrock-Formular für die Einstellungen ist gesperrt (GUI-Regel). Die versteckte ID im Namen der Glasscheibe im Settings-GUI ist GUI-intern und bleibt deshalb unverändert.
 
 - [x] **PG-15 Bedrock-Controller: Schultertasten passen nicht zu den Farbseiten (Spielermeldung)**
@@ -143,7 +143,7 @@ Reihenfolge = Priorität. Unter jedem Punkt: Problem, Lösungsansatz, Notizen be
     - [x] Gebautes Jar als Workflow-Artifact hochladen (zum Testen von PR-Builds)
     - [x] Release-Workflow: bei Tag `v*` Version aus dem Tag setzen, bauen, GitHub Release mit Jar und automatisch erzeugten Release Notes anlegen
     - [x] Dependabot für Maven-Dependencies und GitHub Actions
-    - [ ] Build-Badge in die README
+    - [x] Build-Badge in die README
     - [ ] Branch Protection auf `main` mit verpflichtendem CI-Check (macht der User in den GitHub-Einstellungen)
     - [ ] Optional: Upload nach Modrinth/Hangar per Action. Spigot hat keine Upload-API, das bleibt manuell.
   - Abhängigkeiten: PG-07 (`.gitignore`), PG-08 (eine Versionsquelle), PG-11 (Tests, damit `verify` etwas prüft)
@@ -162,17 +162,17 @@ Reihenfolge = Priorität. Unter jedem Punkt: Problem, Lösungsansatz, Notizen be
     - [x] Bilder in `images/` (2,9 MB GIFs) prüfen und ggf. verkleinern
   - Notizen: Spotless (palantir-java-format) und `.editorconfig`, Formatierung wird in `mvn verify` und damit in der CI geprüft. `handlers/` aufgelöst in `audio`, `persistence`, `gravity`, `item`, `portals`, `visualization`, `LoadingHandler` liegt im Root-Package. Gelöscht: leerer `ConfigHandler`, `DebugHandler` (Godmode für den Spielernamen „nurkert“ hinter `developMode`), auskommentierter Code, ungenutzte Maven-Repos. `PluginJarRenamer` bleibt: Den nutzt der Admin-Button „Jar umbenennen“ im `/porticlegun`-Menü. `PorticleGunCommand` aufgeteilt in Dispatcher, `GunMenu`, `Permissions`, `GunData` und je eine Klasse pro Unterbefehl, Verhalten und Texte unverändert. Bilder geprüft: max. 750 KB pro GIF, für eine README okay, nichts geändert. **Singletons → Instanzen** habe ich bewusst als PG-21 ausgelagert (Begründung dort).
 
-- [ ] **PG-18 Vernünftige README und Doku**
+- [x] **PG-18 Vernünftige README und Doku**
   - Problem: Die README besteht aus Bildern, einem Abschnitt „Recent Changes“ mit nur einem Eintrag und Config-Details. Es fehlen Installation, Befehle, Rechte und Steuerung. Die Bild-Links zeigen noch auf den alten Repo-Namen `nurkert/PorticleGun`. Es gibt keine Lizenz.
   - Teilaufgaben:
-    - [ ] README neu aufbauen: Kurzbeschreibung mit GIF, Features, unterstützte Versionen (Server, Java, Geyser), Installation, Steuerung (Java **und** Bedrock-Touch/Controller, siehe PG-14/15), Befehle und Rechte als Tabelle, Badges (Build, Release, Spigot)
-    - [ ] `docs/`-Ordner: `configuration.md` (alle Keys aus `config.yml` mit Default und Bedeutung), `worldguard.md`, `localization.md`, `bedrock.md`, `development.md` (Bauen, Testserver, Release-Ablauf aus PG-13)
-    - [ ] `CHANGELOG.md` (Keep a Changelog), ab dem nächsten Release gepflegt bzw. aus Release Notes erzeugt
-    - [ ] `LICENSE` – Lizenz muss der User festlegen
-    - [ ] `CONTRIBUTING.md` sowie Issue- und PR-Templates unter `.github/`
-    - [ ] Kommentare in `config.yml` und `messages.yml` vervollständigen, damit Server-Admins ohne README auskommen
-    - [ ] Javadoc für die öffentlichen Klassen bzw. API (`MessageManager.setPlayerLanguage` u. a.)
-  - Notizen:
+    - [x] README neu aufbauen: Kurzbeschreibung mit GIF, Features, unterstützte Versionen (Server, Java, Geyser), Installation, Steuerung (Java **und** Bedrock-Touch/Controller, siehe PG-14/15), Befehle und Rechte als Tabelle, Badges (Build, Release, Spigot)
+    - [x] `docs/`-Ordner: `configuration.md` (alle Keys aus `config.yml` mit Default und Bedeutung), `worldguard.md`, `localization.md`, `bedrock.md`, `development.md` (Bauen, Testserver, Release-Ablauf aus PG-13)
+    - [x] `CHANGELOG.md` (Keep a Changelog), ab dem nächsten Release gepflegt bzw. aus Release Notes erzeugt
+    - [x] `LICENSE` – GPL-3.0 (vom User gewählt)
+    - [x] `CONTRIBUTING.md` sowie Issue- und PR-Templates unter `.github/`
+    - [x] Kommentare in `config.yml` und `messages.yml` vervollständigen, damit Server-Admins ohne README auskommen
+    - [x] Javadoc für die öffentlichen Klassen bzw. API (`MessageManager.setPlayerLanguage` u. a.)
+  - Notizen: README neu (Features, Voraussetzungen, Installation, Rezept, Steuerung Java + Bedrock-Controller, Befehle/Rechte als Tabelle, Badges, Bild-Links relativ statt auf den alten Repo-Namen). `docs/`: configuration, worldguard, localization, bedrock, resourcepack, development. CHANGELOG (Keep a Changelog) mit allen Änderungen dieser Runde als Unreleased 1.3.0. LICENSE GPL-3.0 (auch in der pom). CONTRIBUTING plus Vorlagen für Issues und PRs. In `config.yml` alle Optionen kommentiert, die drei Portal-Distanzen standen vorher gar nicht drin. Kopfkommentar in `messages.yml`. Klassen-Javadoc für alle Klassen ohne, plus `MessageManager.setPlayerLanguage`.
 
 - [ ] **PG-21 Statische Singletons auf Instanzen umstellen (aus PG-17 ausgelagert)**
   - Ort: `ActivePortalsHandler`, `PersistentHandler`, `LoadingHandler`, `GunColorHandler`, `MessageManager`, `ConfigManager`

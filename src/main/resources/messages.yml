@@ -1,3 +1,6 @@
+# PorticleGun texts. Every language section (en, de, ...) has the same keys; copy one to add a language.
+# Players get the section matching their Minecraft locale, otherwise default-language (also used for the console).
+# Colours use & codes, placeholders look like %gun_id%. Apply changes with /porticlegun reload.
 default-language: en
 
 en:

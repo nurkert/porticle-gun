@@ -3,6 +3,9 @@ package eu.nurkert.porticlegun.portals;
 import org.bukkit.Location;
 import org.bukkit.util.Vector;
 
+/**
+ * A position and facing where a portal could be placed.
+ */
 public class PotentialPortal {
 
     // the location of the portal

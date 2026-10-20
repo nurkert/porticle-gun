@@ -18,6 +18,9 @@ import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.PlayerInventory;
 
+/**
+ * {@code /porticlegun clearplayer <player>}: removes the data of every gun an online player carries.
+ */
 public class ClearPlayerCommand implements SubCommand {
 
     @Override

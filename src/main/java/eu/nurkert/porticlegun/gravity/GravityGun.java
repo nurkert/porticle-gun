@@ -52,6 +52,11 @@ import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.scheduler.BukkitTask;
 import org.bukkit.util.Vector;
 
+/**
+ * The gravity gun: with the gun in hand, the drop key picks up the targeted block or mob and lets it go again.
+ *
+ * <p>Carried blocks are falling block entities pulled towards the player's crosshair every tick.
+ */
 public class GravityGun implements Listener {
 
     private static GravityGun instance;

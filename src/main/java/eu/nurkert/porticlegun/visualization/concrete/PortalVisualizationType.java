@@ -3,6 +3,9 @@ package eu.nurkert.porticlegun.visualization.concrete;
 import org.bukkit.Location;
 import org.bukkit.util.Vector;
 
+/**
+ * The available portal shapes, cycled in the settings menu.
+ */
 public enum PortalVisualizationType {
     RECTANGULAR(new RectangularVisualization()),
     ELLIPTIC(new EllipticVisualization());
