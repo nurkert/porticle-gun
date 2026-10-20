@@ -147,18 +147,18 @@ Reihenfolge = Priorität. Unter jedem Punkt: Problem, Lösungsansatz, Notizen be
   - Abhängigkeiten: PG-07 (`.gitignore`), PG-08 (eine Versionsquelle), PG-11 (Tests, damit `verify` etwas prüft)
   - Notizen: `.github/workflows/ci.yml` (Push auf main + PRs: `mvn verify` inkl. Tests und Spotless-Check, danach Smoke-Test auf echtem Paper 1.21.4, Jar als Artifact). `release.yml` (Tag `v*`: Version aus dem Tag, Build, Smoke-Test, GitHub Release mit Jar und automatischen Release Notes, Tags mit `-` werden Pre-Release). `dependabot.yml` für Maven und Actions (spigot-api ausgenommen, weil das die Mindestversion ist). `scripts/smoke-test.sh` startet Paper mit dem Plugin und schlägt fehl, wenn PorticleGun nicht sauber startet/stoppt oder eine Exception aus Plugin-Code kommt, lokal erfolgreich gelaufen. Release-Ablauf lokal simuliert. Badge kommt mit PG-18. **Offen für dich:** Branch Protection auf `main` mit Pflicht-Check „Build and test“ in den GitHub-Einstellungen aktivieren. Modrinth/Hangar-Upload habe ich weggelassen, das Plugin ist dort nicht gelistet.
 
-- [ ] **PG-17 Repo gründlich aufräumen**
+- [x] **PG-17 Repo gründlich aufräumen**
   - Ziel: Ein Repo, das man klonen, mit `mvn verify` bauen und ohne Vorwissen verstehen kann.
   - Teilaufgaben:
-    - [ ] PG-07 (`.gitignore`, `target/`, `.idea/`, `.DS_Store`, `PorticleGun.iml` raus), PG-09 (Klassennamen), PG-10 (Formatierung) als Teil davon erledigen
-    - [ ] Einheitliche Formatierung im ganzen Projekt (`.editorconfig`, ggf. Spotless o. Ä. im Maven-Build, damit CI das prüft)
-    - [ ] Package-Struktur prüfen: `handlers/` ist ein Sammelbecken (Persistenz, Config, Debug, Audio, Gravity Gun). Z. B. `persistence/`, `gravity/`, `portals/`, `ui/` trennen
-    - [ ] Statische Singletons (`ActivePortalsHandler`, `PersitentHandler`, `LoadingHandler`, `GunColorHandler`) schrittweise auf Instanzen umstellen, die das Plugin hält. Macht Reload, `onDisable` und Tests sauberer
-    - [ ] Toten Code und Altlasten entfernen: auskommentierte Blöcke, `developMode`/`DebugHandler` prüfen, nicht genutzte Maven-Repos in der `pom.xml` (sonatype, papermc, jitpack)
-    - [ ] Klären, ob `PluginJarRenamer` (Jar-Datei zur Laufzeit umbenennen) wirklich gebraucht wird, sonst entfernen
-    - [ ] `PorticleGunCommand` (601 Zeilen) in Unterbefehle aufteilen
-    - [ ] Bilder in `images/` (2,9 MB GIFs) prüfen und ggf. verkleinern
-  - Notizen:
+    - [x] PG-07 (`.gitignore`, `target/`, `.idea/`, `.DS_Store`, `PorticleGun.iml` raus), PG-09 (Klassennamen), PG-10 (Formatierung) als Teil davon erledigen
+    - [x] Einheitliche Formatierung im ganzen Projekt (`.editorconfig`, ggf. Spotless o. Ä. im Maven-Build, damit CI das prüft)
+    - [x] Package-Struktur prüfen: `handlers/` ist ein Sammelbecken (Persistenz, Config, Debug, Audio, Gravity Gun). Z. B. `persistence/`, `gravity/`, `portals/`, `ui/` trennen
+    - [→] Statische Singletons (`ActivePortalsHandler`, `PersitentHandler`, `LoadingHandler`, `GunColorHandler`) schrittweise auf Instanzen umstellen, die das Plugin hält. Macht Reload, `onDisable` und Tests sauberer
+    - [x] Toten Code und Altlasten entfernen: auskommentierte Blöcke, `developMode`/`DebugHandler` prüfen, nicht genutzte Maven-Repos in der `pom.xml` (sonatype, papermc, jitpack)
+    - [x] Klären, ob `PluginJarRenamer` (Jar-Datei zur Laufzeit umbenennen) wirklich gebraucht wird, sonst entfernen
+    - [x] `PorticleGunCommand` (601 Zeilen) in Unterbefehle aufteilen
+    - [x] Bilder in `images/` (2,9 MB GIFs) prüfen und ggf. verkleinern
+  - Notizen: Spotless (palantir-java-format) und `.editorconfig`, Formatierung wird in `mvn verify` und damit in der CI geprüft. `handlers/` aufgelöst in `audio`, `persistence`, `gravity`, `item`, `portals`, `visualization`, `LoadingHandler` liegt im Root-Package. Gelöscht: leerer `ConfigHandler`, `DebugHandler` (Godmode für den Spielernamen „nurkert“ hinter `developMode`), auskommentierter Code, ungenutzte Maven-Repos. `PluginJarRenamer` bleibt: Den nutzt der Admin-Button „Jar umbenennen“ im `/porticlegun`-Menü. `PorticleGunCommand` aufgeteilt in Dispatcher, `GunMenu`, `Permissions`, `GunData` und je eine Klasse pro Unterbefehl, Verhalten und Texte unverändert. Bilder geprüft: max. 750 KB pro GIF, für eine README okay, nichts geändert. **Singletons → Instanzen** habe ich bewusst als PG-21 ausgelagert (Begründung dort).
 
 - [ ] **PG-18 Vernünftige README und Doku**
   - Problem: Die README besteht aus Bildern, einem Abschnitt „Recent Changes“ mit nur einem Eintrag und Config-Details. Es fehlen Installation, Befehle, Rechte und Steuerung. Die Bild-Links zeigen noch auf den alten Repo-Namen `nurkert/PorticleGun`. Es gibt keine Lizenz.
@@ -170,6 +170,12 @@ Reihenfolge = Priorität. Unter jedem Punkt: Problem, Lösungsansatz, Notizen be
     - [ ] `CONTRIBUTING.md` sowie Issue- und PR-Templates unter `.github/`
     - [ ] Kommentare in `config.yml` und `messages.yml` vervollständigen, damit Server-Admins ohne README auskommen
     - [ ] Javadoc für die öffentlichen Klassen bzw. API (`MessageManager.setPlayerLanguage` u. a.)
+  - Notizen:
+
+- [ ] **PG-21 Statische Singletons auf Instanzen umstellen (aus PG-17 ausgelagert)**
+  - Ort: `ActivePortalsHandler`, `PersistentHandler`, `LoadingHandler`, `GunColorHandler`, `MessageManager`, `ConfigManager`
+  - Warum ausgelagert: Fast jede Klasse ruft diese statischen Methoden auf. Die Umstellung ändert damit nahezu jede Datei und betrifft vor allem Laufzeitverhalten (Reload, Event-Reihenfolge), das die bestehenden Tests und der Smoke-Test nicht abdecken. Ohne Spieltests ist das Risiko höher als der Nutzen. Sinnvoll erst, wenn es Integrationstests gibt (z. B. MockBukkit) oder jemand die Änderung ingame durchtestet.
+  - Ansatz: Das Plugin erzeugt die Instanzen in `onEnable` und reicht sie per Konstruktor weiter. Klasse für Klasse umstellen, beginnend mit `PersistentHandler` und `ActivePortalsHandler`.
   - Notizen:
 
 ## P3 – Aufräumen
