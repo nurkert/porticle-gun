@@ -7,7 +7,7 @@ import java.util.HashMap;
  */
 public class GunColorHandler {
 
-    private static HashMap<String, GunColors> colors = new HashMap<>();
+    private final HashMap<String, GunColors> colors = new HashMap<>();
 
     // the default colors of a gun
     public static final PortalColor DEFAULT_PRIMARY = PortalColor.GOLD;
@@ -19,7 +19,7 @@ public class GunColorHandler {
      * @param gunID
      * @return the colors of the gun
      */
-    public static GunColors getColors(String gunID) {
+    public GunColors getColors(String gunID) {
         if (!colors.containsKey(gunID)) colors.put(gunID, new GunColors(DEFAULT_PRIMARY, DEFAULT_SECONDARY));
 
         return colors.get(gunID);
@@ -32,7 +32,7 @@ public class GunColorHandler {
      * @param primary the primary color
      * @param secondary the secondary color
      */
-    public static void setColors(String gunID, PortalColor primary, PortalColor secondary) {
+    public void setColors(String gunID, PortalColor primary, PortalColor secondary) {
         colors.put(
                 gunID,
                 new GunColors(
@@ -40,23 +40,23 @@ public class GunColorHandler {
                         secondary != null ? secondary : DEFAULT_SECONDARY));
     }
 
-    public static void selectNextPrimary(String gunID) {
+    public void selectNextPrimary(String gunID) {
         getColors(gunID).selectNextPrimary(gunID);
     }
 
-    public static void selectNextSecondary(String gunID) {
+    public void selectNextSecondary(String gunID) {
         getColors(gunID).selectNextSecondary(gunID);
     }
 
-    public static void selectPreviousPrimary(String gunID) {
+    public void selectPreviousPrimary(String gunID) {
         getColors(gunID).selectPreviousPrimary(gunID);
     }
 
-    public static void selectPreviousSecondary(String gunID) {
+    public void selectPreviousSecondary(String gunID) {
         getColors(gunID).selectPreviousSecondary(gunID);
     }
 
-    public static void clear() {
+    public void clear() {
         colors.clear();
     }
 }

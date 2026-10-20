@@ -29,7 +29,10 @@ public class TeleportationHandler implements Listener {
     private final Map<UUID, Long> teleportCooldown;
     private final Map<UUID, Portal> portalReentryLock;
 
-    public TeleportationHandler() {
+    private final ActivePortalsHandler activePortals;
+
+    public TeleportationHandler(ActivePortalsHandler activePortals) {
+        this.activePortals = activePortals;
         teleportCooldown = new HashMap<>();
         portalReentryLock = new HashMap<>();
         new BukkitRunnable() {
@@ -53,7 +56,7 @@ public class TeleportationHandler implements Listener {
         }
 
         Player player = event.getPlayer();
-        ArrayList<Portal> portals = ActivePortalsHandler.getRelevantPortals(player);
+        ArrayList<Portal> portals = activePortals.getRelevantPortals(player);
         for (Portal portal : portals) {
             boolean inPortal = isEntityInPortal(portal, event.getTo());
             if (inPortal) {
@@ -72,7 +75,7 @@ public class TeleportationHandler implements Listener {
     private void tickEntityTeleports() {
         cleanupCooldowns();
 
-        for (Portal portal : ActivePortalsHandler.getAllPortal()) {
+        for (Portal portal : activePortals.getAllPortal()) {
             Portal linked = portal.getLinkedPortal();
             if (linked == null) {
                 continue;

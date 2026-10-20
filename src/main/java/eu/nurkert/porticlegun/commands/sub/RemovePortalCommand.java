@@ -22,6 +22,14 @@ import org.bukkit.util.Vector;
  */
 public class RemovePortalCommand implements SubCommand {
 
+    private final ActivePortalsHandler activePortals;
+    private final ConfigManager config;
+
+    public RemovePortalCommand(ActivePortalsHandler activePortals, ConfigManager config) {
+        this.activePortals = activePortals;
+        this.config = config;
+    }
+
     @Override
     public String getName() {
         return "removeportal";
@@ -58,14 +66,14 @@ public class RemovePortalCommand implements SubCommand {
 
         Portal linkedPortal = portal.getLinkedPortal();
         PortalType type = portal.getType();
-        ActivePortalsHandler.closePortal(portal);
+        activePortals.closePortal(portal);
 
         if (!includeLinked) {
             player.sendMessage(MessageManager.getMessage(
                     player, "commands.removeportal.removed-single", Map.of("type", getPortalTypeName(player, type))));
         } else if (linkedPortal != null) {
             PortalType linkedType = linkedPortal.getType();
-            ActivePortalsHandler.closePortal(linkedPortal);
+            activePortals.closePortal(linkedPortal);
             player.sendMessage(MessageManager.getMessage(
                     player,
                     "commands.removeportal.removed-linked",
@@ -92,12 +100,12 @@ public class RemovePortalCommand implements SubCommand {
     private Portal findPortalPlayerLooksAt(Player player) {
         Location eyeLocation = player.getEyeLocation();
         Vector viewDirection = eyeLocation.getDirection().normalize();
-        double maxDistance = ConfigManager.getPortalMaxTargetDistance();
+        double maxDistance = config.getPortalMaxTargetDistance();
 
         Portal bestPortal = null;
         double bestDistance = Double.MAX_VALUE;
 
-        for (Portal portal : ActivePortalsHandler.getRelevantPortals(player)) {
+        for (Portal portal : activePortals.getRelevantPortals(player)) {
             if (portal == null
                     || portal.getLocation() == null
                     || portal.getLocation().getWorld() == null) {

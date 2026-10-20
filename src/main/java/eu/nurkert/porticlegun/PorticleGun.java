@@ -3,9 +3,11 @@ package eu.nurkert.porticlegun;
 import eu.nurkert.porticlegun.config.ConfigManager;
 import eu.nurkert.porticlegun.messages.MessageManager;
 import eu.nurkert.porticlegun.persistence.PersistentHandler;
+import eu.nurkert.porticlegun.portals.ActivePortalsHandler;
 import eu.nurkert.porticlegun.resourcepack.BedrockPackInstaller;
 import eu.nurkert.porticlegun.util.BedrockSupport;
 import eu.nurkert.porticlegun.util.WorldGuardIntegration;
+import eu.nurkert.porticlegun.visualization.GunColorHandler;
 import org.bukkit.Bukkit;
 import org.bukkit.plugin.java.JavaPlugin;
 
@@ -35,10 +37,12 @@ public final class PorticleGun extends JavaPlugin {
         enabled = true;
 
         saveDefaultConfig();
-        ConfigManager.init();
-        PersistentHandler.getInstance();
+        configManager = new ConfigManager(this);
+        persistence = new PersistentHandler(this);
         MessageManager.init(this);
-        LoadingHandler.getInstance();
+        gunColors = new GunColorHandler();
+        activePortals = new ActivePortalsHandler(persistence);
+        loadingHandler = new LoadingHandler(this);
         BedrockSupport.init(this);
         BedrockPackInstaller.checkGeyserConfig(this);
         worldGuardEnabled = false;
@@ -59,8 +63,8 @@ public final class PorticleGun extends JavaPlugin {
         if (!enabled) {
             return;
         }
-        LoadingHandler.getInstance().shutdown();
-        PersistentHandler.saveAll();
+        loadingHandler.shutdown();
+        persistence.saveAll();
     }
 
     static final int[] MINIMUM_SERVER_VERSION = {1, 21, 4};
@@ -89,6 +93,12 @@ public final class PorticleGun extends JavaPlugin {
     private boolean worldGuardEnabled;
     private boolean enabled;
 
+    private ConfigManager configManager;
+    private PersistentHandler persistence;
+    private GunColorHandler gunColors;
+    private ActivePortalsHandler activePortals;
+    private LoadingHandler loadingHandler;
+
     public PorticleGun() {
         plugin = this;
     }
@@ -99,5 +109,25 @@ public final class PorticleGun extends JavaPlugin {
 
     public static boolean isWorldGuardEnabled() {
         return plugin != null && plugin.worldGuardEnabled;
+    }
+
+    public ConfigManager getConfigManager() {
+        return configManager;
+    }
+
+    public PersistentHandler getPersistence() {
+        return persistence;
+    }
+
+    public GunColorHandler getGunColors() {
+        return gunColors;
+    }
+
+    public ActivePortalsHandler getActivePortals() {
+        return activePortals;
+    }
+
+    public LoadingHandler getLoadingHandler() {
+        return loadingHandler;
     }
 }

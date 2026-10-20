@@ -23,6 +23,12 @@ import org.bukkit.inventory.PlayerInventory;
  */
 public class ClearPlayerCommand implements SubCommand {
 
+    private final GunData gunData;
+
+    public ClearPlayerCommand(GunData gunData) {
+        this.gunData = gunData;
+    }
+
     @Override
     public String getName() {
         return "clearplayer";
@@ -59,7 +65,7 @@ public class ClearPlayerCommand implements SubCommand {
         List<String> untouched = new ArrayList<>();
 
         for (String gunId : gunIds) {
-            if (GunData.remove(gunId)) {
+            if (gunData.remove(gunId)) {
                 cleared.add(gunId);
             } else {
                 untouched.add(gunId);

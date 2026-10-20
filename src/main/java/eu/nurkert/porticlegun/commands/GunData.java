@@ -9,19 +9,25 @@ import eu.nurkert.porticlegun.portals.ActivePortalsHandler;
  */
 public final class GunData {
 
-    private GunData() {}
+    private final ActivePortalsHandler activePortals;
+    private final PersistentHandler persistence;
+
+    public GunData(ActivePortalsHandler activePortals, PersistentHandler persistence) {
+        this.activePortals = activePortals;
+        this.persistence = persistence;
+    }
 
     /**
      * Closes the portals of a gun and deletes everything stored about it.
      *
      * @return whether anything was removed
      */
-    public static boolean remove(String gunId) {
-        boolean modified = ActivePortalsHandler.closePortals(gunId);
+    public boolean remove(String gunId) {
+        boolean modified = activePortals.closePortals(gunId);
 
         String encodedId = ItemHandler.saveable(gunId);
-        if (PersistentHandler.exists("porticleguns." + encodedId)) {
-            PersistentHandler.set("porticleguns." + encodedId, null);
+        if (persistence.exists("porticleguns." + encodedId)) {
+            persistence.set("porticleguns." + encodedId, null);
             modified = true;
         }
 

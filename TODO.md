@@ -145,7 +145,7 @@ Reihenfolge = Priorität. Unter jedem Punkt: Problem, Lösungsansatz, Notizen be
     - [x] Dependabot für Maven-Dependencies und GitHub Actions
     - [x] Build-Badge in die README
     - [ ] Branch Protection auf `main` mit verpflichtendem CI-Check (macht der User in den GitHub-Einstellungen)
-    - [ ] Optional: Upload nach Modrinth/Hangar per Action. Spigot hat keine Upload-API, das bleibt manuell.
+    - [x] Optional: Upload nach Modrinth/Hangar per Action. Entschieden: entfällt, das Plugin ist dort nicht gelistet. Spigot hat keine Upload-API, das bleibt manuell.
   - Abhängigkeiten: PG-07 (`.gitignore`), PG-08 (eine Versionsquelle), PG-11 (Tests, damit `verify` etwas prüft)
   - Notizen: `.github/workflows/ci.yml` (Push auf main + PRs: `mvn verify` inkl. Tests und Spotless-Check, danach Smoke-Test auf echtem Paper 1.21.4, Jar als Artifact). `release.yml` (Tag `v*`: Version aus dem Tag, Build, Smoke-Test, GitHub Release mit Jar und automatischen Release Notes, Tags mit `-` werden Pre-Release). `dependabot.yml` für Maven und Actions (spigot-api ausgenommen, weil das die Mindestversion ist). `scripts/smoke-test.sh` startet Paper mit dem Plugin und schlägt fehl, wenn PorticleGun nicht sauber startet/stoppt oder eine Exception aus Plugin-Code kommt, lokal erfolgreich gelaufen. Release-Ablauf lokal simuliert. Badge kommt mit PG-18. **Offen für dich:** Branch Protection auf `main` mit Pflicht-Check „Build and test“ in den GitHub-Einstellungen aktivieren. Modrinth/Hangar-Upload habe ich weggelassen, das Plugin ist dort nicht gelistet.
 
@@ -155,7 +155,7 @@ Reihenfolge = Priorität. Unter jedem Punkt: Problem, Lösungsansatz, Notizen be
     - [x] PG-07 (`.gitignore`, `target/`, `.idea/`, `.DS_Store`, `PorticleGun.iml` raus), PG-09 (Klassennamen), PG-10 (Formatierung) als Teil davon erledigen
     - [x] Einheitliche Formatierung im ganzen Projekt (`.editorconfig`, ggf. Spotless o. Ä. im Maven-Build, damit CI das prüft)
     - [x] Package-Struktur prüfen: `handlers/` ist ein Sammelbecken (Persistenz, Config, Debug, Audio, Gravity Gun). Z. B. `persistence/`, `gravity/`, `portals/`, `ui/` trennen
-    - [→] Statische Singletons (`ActivePortalsHandler`, `PersitentHandler`, `LoadingHandler`, `GunColorHandler`) schrittweise auf Instanzen umstellen, die das Plugin hält. Macht Reload, `onDisable` und Tests sauberer
+    - [x] Statische Singletons (`ActivePortalsHandler`, `PersitentHandler`, `LoadingHandler`, `GunColorHandler`) schrittweise auf Instanzen umstellen, die das Plugin hält. Macht Reload, `onDisable` und Tests sauberer
     - [x] Toten Code und Altlasten entfernen: auskommentierte Blöcke, `developMode`/`DebugHandler` prüfen, nicht genutzte Maven-Repos in der `pom.xml` (sonatype, papermc, jitpack)
     - [x] Klären, ob `PluginJarRenamer` (Jar-Datei zur Laufzeit umbenennen) wirklich gebraucht wird, sonst entfernen
     - [x] `PorticleGunCommand` (601 Zeilen) in Unterbefehle aufteilen
@@ -174,11 +174,11 @@ Reihenfolge = Priorität. Unter jedem Punkt: Problem, Lösungsansatz, Notizen be
     - [x] Javadoc für die öffentlichen Klassen bzw. API (`MessageManager.setPlayerLanguage` u. a.)
   - Notizen: README neu (Features, Voraussetzungen, Installation, Rezept, Steuerung Java + Bedrock-Controller, Befehle/Rechte als Tabelle, Badges, Bild-Links relativ statt auf den alten Repo-Namen). `docs/`: configuration, worldguard, localization, bedrock, resourcepack, development. CHANGELOG (Keep a Changelog) mit allen Änderungen dieser Runde als Unreleased 1.3.0. LICENSE GPL-3.0 (auch in der pom). CONTRIBUTING plus Vorlagen für Issues und PRs. In `config.yml` alle Optionen kommentiert, die drei Portal-Distanzen standen vorher gar nicht drin. Kopfkommentar in `messages.yml`. Klassen-Javadoc für alle Klassen ohne, plus `MessageManager.setPlayerLanguage`.
 
-- [ ] **PG-21 Statische Singletons auf Instanzen umstellen (aus PG-17 ausgelagert)**
+- [x] **PG-21 Statische Singletons auf Instanzen umstellen (aus PG-17 ausgelagert)**
   - Ort: `ActivePortalsHandler`, `PersistentHandler`, `LoadingHandler`, `GunColorHandler`, `MessageManager`, `ConfigManager`
   - Warum ausgelagert: Fast jede Klasse ruft diese statischen Methoden auf. Die Umstellung ändert damit nahezu jede Datei und betrifft vor allem Laufzeitverhalten (Reload, Event-Reihenfolge), das die bestehenden Tests und der Smoke-Test nicht abdecken. Ohne Spieltests ist das Risiko höher als der Nutzen. Sinnvoll erst, wenn es Integrationstests gibt (z. B. MockBukkit) oder jemand die Änderung ingame durchtestet.
   - Ansatz: Das Plugin erzeugt die Instanzen in `onEnable` und reicht sie per Konstruktor weiter. Klasse für Klasse umstellen, beginnend mit `PersistentHandler` und `ActivePortalsHandler`.
-  - Notizen:
+  - Notizen: Doch umgesetzt, abgesichert durch einen erweiterten Smoke-Test. `PersistentHandler`, `ActivePortalsHandler`, `GunColorHandler`, `ConfigManager` und `LoadingHandler` sind jetzt Instanzen, die `PorticleGun.onEnable` erzeugt (Getter am Plugin). Listener und Commands bekommen sie per Konstruktor (`PortalOpenHandler`, `SettingsHandler`, `TeleportationHandler`, `VisualizationHandler`, alle Unterbefehle, `GunData`). `Portal.saveAll/delete/saveColor` bekommen die Abhängigkeiten als Parameter. Rein statische Hilfsklassen (`PortalTracing`, Animationen, `TitleHandler.sendPortalStatus`, `GunAppearance`) holen sie über `PorticleGun.getInstance()`. Bewusst statisch geblieben: `MessageManager`, weil `setPlayerLanguage` dokumentierte API für andere Plugins ist und eine Instanz die API brechen würde. Das `SettingsHandler`-GUI ist nur intern umgestellt, Aussehen und Bedienung sind unverändert. Der Smoke-Test lädt jetzt zusätzlich eine vorbereitete `portals.yml` (normales Paar, unbekannte Farbe, nicht geladene Welt) und prüft `list`, `reload` und das Speichern beim Stop. Grün mit und ohne Geyser. Bei HTTP 429 der Paper-API fällt er auf das zwischengespeicherte Jar zurück.
 
 ## P3 – Aufräumen
 

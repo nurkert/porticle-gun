@@ -1,6 +1,5 @@
 package eu.nurkert.porticlegun.config;
 
-import eu.nurkert.porticlegun.PorticleGun;
 import eu.nurkert.porticlegun.visualization.PortalColor;
 import java.util.Collection;
 import java.util.Collections;
@@ -9,6 +8,7 @@ import java.util.Locale;
 import java.util.Set;
 import org.bukkit.Material;
 import org.bukkit.configuration.file.FileConfiguration;
+import org.bukkit.plugin.java.JavaPlugin;
 
 /**
  * Reads config.yml: portal distances, gravity gun settings and custom portal colours.
@@ -24,26 +24,26 @@ public final class ConfigManager {
     private static final Set<Material> DEFAULT_GRAVITY_GUN_BLOCK_BLACKLIST =
             Collections.unmodifiableSet(EnumSet.of(Material.AIR));
 
-    private static int maxTargetDistance = DEFAULT_MAX_TARGET_DISTANCE;
-    private static int maxPlayerDistance = DEFAULT_MAX_PLAYER_DISTANCE;
-    private static int maxBlockTrace = DEFAULT_MAX_BLOCK_TRACE;
-    private static boolean gravityGunEnabled = DEFAULT_GRAVITY_GUN_ENABLED;
-    private static boolean gravityGunAllowPlayerCapture = DEFAULT_GRAVITY_GUN_ALLOW_PLAYER_CAPTURE;
-    private static final Set<Material> gravityGunBlockBlacklist = EnumSet.copyOf(DEFAULT_GRAVITY_GUN_BLOCK_BLACKLIST);
+    private int maxTargetDistance = DEFAULT_MAX_TARGET_DISTANCE;
+    private int maxPlayerDistance = DEFAULT_MAX_PLAYER_DISTANCE;
+    private int maxBlockTrace = DEFAULT_MAX_BLOCK_TRACE;
+    private boolean gravityGunEnabled = DEFAULT_GRAVITY_GUN_ENABLED;
+    private boolean gravityGunAllowPlayerCapture = DEFAULT_GRAVITY_GUN_ALLOW_PLAYER_CAPTURE;
+    private final Set<Material> gravityGunBlockBlacklist = EnumSet.copyOf(DEFAULT_GRAVITY_GUN_BLOCK_BLACKLIST);
 
-    private ConfigManager() {}
+    private final JavaPlugin plugin;
 
-    public static void init() {
-        load(PorticleGun.getInstance().getConfig());
+    public ConfigManager(JavaPlugin plugin) {
+        this.plugin = plugin;
+        load(plugin.getConfig());
     }
 
-    public static void reload() {
-        PorticleGun plugin = PorticleGun.getInstance();
+    public void reload() {
         plugin.reloadConfig();
         load(plugin.getConfig());
     }
 
-    private static void load(FileConfiguration config) {
+    private void load(FileConfiguration config) {
         maxTargetDistance = ensurePositive(
                 config.getInt("portal.max-target-distance", DEFAULT_MAX_TARGET_DISTANCE), DEFAULT_MAX_TARGET_DISTANCE);
         maxPlayerDistance = ensurePositive(
@@ -59,7 +59,7 @@ public final class ConfigManager {
         loadCustomPortalColors(config);
     }
 
-    private static void loadGravityGunBlacklist(Collection<String> configuredEntries, boolean allowChestCapture) {
+    private void loadGravityGunBlacklist(Collection<String> configuredEntries, boolean allowChestCapture) {
         gravityGunBlockBlacklist.clear();
 
         if (configuredEntries == null || configuredEntries.isEmpty()) {
@@ -94,37 +94,35 @@ public final class ConfigManager {
         }
     }
 
-    private static void loadCustomPortalColors(FileConfiguration config) {
-        PortalColor.reloadCustomColors(
-                config.getMapList("portal.custom-colors"),
-                PorticleGun.getInstance().getLogger());
+    private void loadCustomPortalColors(FileConfiguration config) {
+        PortalColor.reloadCustomColors(config.getMapList("portal.custom-colors"), plugin.getLogger());
     }
 
-    private static int ensurePositive(int value, int fallback) {
+    private int ensurePositive(int value, int fallback) {
         return value > 0 ? value : fallback;
     }
 
-    public static int getPortalMaxTargetDistance() {
+    public int getPortalMaxTargetDistance() {
         return maxTargetDistance;
     }
 
-    public static int getPortalMaxPlayerDistance() {
+    public int getPortalMaxPlayerDistance() {
         return maxPlayerDistance;
     }
 
-    public static int getPortalMaxBlockTrace() {
+    public int getPortalMaxBlockTrace() {
         return maxBlockTrace;
     }
 
-    public static boolean isGravityGunEnabled() {
+    public boolean isGravityGunEnabled() {
         return gravityGunEnabled;
     }
 
-    public static boolean isGravityGunPlayerCaptureEnabled() {
+    public boolean isGravityGunPlayerCaptureEnabled() {
         return gravityGunAllowPlayerCapture;
     }
 
-    public static Set<Material> getGravityGunBlockBlacklist() {
+    public Set<Material> getGravityGunBlockBlacklist() {
         return EnumSet.copyOf(gravityGunBlockBlacklist);
     }
 }

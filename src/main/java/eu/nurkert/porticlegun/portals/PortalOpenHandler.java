@@ -30,6 +30,17 @@ import org.bukkit.util.Vector;
  */
 public class PortalOpenHandler implements Listener {
 
+    private final ActivePortalsHandler activePortals;
+    private final GunColorHandler gunColors;
+    private final PersistentHandler persistence;
+
+    public PortalOpenHandler(
+            ActivePortalsHandler activePortals, GunColorHandler gunColors, PersistentHandler persistence) {
+        this.activePortals = activePortals;
+        this.gunColors = gunColors;
+        this.persistence = persistence;
+    }
+
     @EventHandler
     public void on(PlayerInteractEvent event) {
         if (event.getHand() != EquipmentSlot.HAND) {
@@ -65,7 +76,7 @@ public class PortalOpenHandler implements Listener {
         Portal.PortalType type = (action == Action.LEFT_CLICK_AIR || action == Action.LEFT_CLICK_BLOCK)
                 ? Portal.PortalType.PRIMARY
                 : Portal.PortalType.SECONDARY;
-        PortalColor color = GunColorHandler.getColors(gunID).get(type);
+        PortalColor color = gunColors.getColors(gunID).get(type);
 
         PortalShotAnimation.play(player, snapshot, color, () -> attemptPortalPlacement(player, gunID, type, snapshot));
     }
@@ -158,14 +169,14 @@ public class PortalOpenHandler implements Listener {
         }
 
         PortalVisualizationType visualizationType = PortalVisualizationType.fromString(
-                PersistentHandler.get("porticleguns." + ItemHandler.saveable(gunID) + ".shape"));
+                persistence.get("porticleguns." + ItemHandler.saveable(gunID) + ".shape"));
         Portal portal = new Portal(potential, gunID, type, visualizationType);
         if (type == Portal.PortalType.PRIMARY) {
-            ActivePortalsHandler.setPrimaryPortal(gunID, portal);
+            activePortals.setPrimaryPortal(gunID, portal);
         } else {
-            ActivePortalsHandler.setSecondaryPortal(gunID, portal);
+            activePortals.setSecondaryPortal(gunID, portal);
         }
-        portal.saveAll();
+        portal.saveAll(persistence, gunColors);
         PortalCreationAnimation.play(portal);
         TitleHandler.sendPortalStatus(player, gunID);
         AudioHandler.playSound(player, AudioHandler.PortalSound.PORTAL_OPEN);
