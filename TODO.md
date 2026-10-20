@@ -174,11 +174,11 @@ Reihenfolge = Priorität. Unter jedem Punkt: Problem, Lösungsansatz, Notizen be
 
 ## P3 – Aufräumen
 
-- [ ] **PG-08 Versionsangaben widersprechen sich**
+- [x] **PG-08 Versionsangaben widersprechen sich**
   - Ort: `pom.xml`, `src/main/resources/plugin.yml`
   - Problem: pom `1.0.0` vs. plugin.yml `v1.2.2-SNAPSHOT`. `api-version: 1.19` passt nicht zu Java 21 und spigot-api 1.21.1 (Java 21 erst ab MC 1.20.5).
   - Ansatz: Version nur in der pom pflegen, per `${project.version}` filtern. `api-version` auf echte Mindestversion setzen.
-  - Notizen:
+  - Notizen: pom ist jetzt einzige Versionsquelle (`1.3.0-SNAPSHOT`), plugin.yml bekommt `${project.version}` per Filtering (Filtering nur noch für plugin.yml). spigot-api auf 1.21.4, `api-version: '1.21'`, zusätzlich Laufzeitprüfung in `onEnable`: unter 1.21.4 deaktiviert sich das Plugin mit klarer Meldung. Ungenutzte Maven-Repos (sonatype, papermc, jitpack) entfernt.
 
 - [ ] **PG-09 Tippfehler in Klassennamen**
   - Ort: `PersitentHandler`, `VisualizationHanlder`

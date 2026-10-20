@@ -5,15 +5,19 @@ import eu.nurkert.porticlegun.handlers.LoadingHandler;
 import eu.nurkert.porticlegun.handlers.PersitentHandler;
 import eu.nurkert.porticlegun.messages.MessageManager;
 import eu.nurkert.porticlegun.util.WorldGuardIntegration;
+import org.bukkit.Bukkit;
 import org.bukkit.plugin.java.JavaPlugin;
 
 public final class PorticleGun extends JavaPlugin {
 
     @Override
     public void onEnable() {
-        // Plugin startup logic
+        if (!isSupportedServerVersion(Bukkit.getBukkitVersion())) {
+            getLogger().severe("PorticleGun requires Minecraft 1.21.4 or newer (found " + Bukkit.getBukkitVersion() + "). Disabling.");
+            getServer().getPluginManager().disablePlugin(this);
+            return;
+        }
         getLogger().info("PorticleGun has been enabled!");
-
 
         saveDefaultConfig();
         ConfigManager.init();
@@ -31,6 +35,28 @@ public final class PorticleGun extends JavaPlugin {
         } catch (ClassNotFoundException | NoClassDefFoundError exception) {
             getLogger().info("WorldGuard classes not found - integration disabled.");
         }
+    }
+
+    static final int[] MINIMUM_SERVER_VERSION = {1, 21, 4};
+
+    /**
+     * @param bukkitVersion a version string like {@code 1.21.4-R0.1-SNAPSHOT}
+     * @return whether the version is at least {@link #MINIMUM_SERVER_VERSION}
+     */
+    static boolean isSupportedServerVersion(String bukkitVersion) {
+        String[] parts = bukkitVersion.split("-")[0].split("\\.");
+        for (int i = 0; i < MINIMUM_SERVER_VERSION.length; i++) {
+            int actual;
+            try {
+                actual = i < parts.length ? Integer.parseInt(parts[i]) : 0;
+            } catch (NumberFormatException exception) {
+                return true;
+            }
+            if (actual != MINIMUM_SERVER_VERSION[i]) {
+                return actual > MINIMUM_SERVER_VERSION[i];
+            }
+        }
+        return true;
     }
 
     public static boolean developMode = false;

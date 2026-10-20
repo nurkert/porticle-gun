@@ -1,7 +1,7 @@
 name: PorticleGun
-version: v1.2.2-SNAPSHOT
+version: '${project.version}'
 main: eu.nurkert.porticlegun.PorticleGun
-api-version: 1.19
+api-version: '1.21'
 authors: [ nurkert ]
 softdepend: [WorldGuard]
 
