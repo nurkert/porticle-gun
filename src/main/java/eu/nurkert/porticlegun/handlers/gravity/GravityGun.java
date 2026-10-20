@@ -11,14 +11,20 @@ import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.logging.Level;
+import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
+import org.bukkit.NamespacedKey;
+import org.bukkit.Tag;
+import org.bukkit.World;
 import org.bukkit.block.Block;
 import org.bukkit.block.Container;
 import org.bukkit.block.CreatureSpawner;
+import org.bukkit.configuration.InvalidConfigurationException;
+import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.BlockDisplay;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
@@ -29,6 +35,7 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.EntityChangeBlockEvent;
 import org.bukkit.event.entity.EntityDamageEvent;
+import org.bukkit.event.entity.EntityDropItemEvent;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.player.PlayerDropItemEvent;
 import org.bukkit.event.player.PlayerItemHeldEvent;
@@ -36,9 +43,11 @@ import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.event.player.PlayerTeleportEvent;
 import org.bukkit.event.player.PlayerToggleSneakEvent;
+import org.bukkit.event.world.EntitiesLoadEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.metadata.FixedMetadataValue;
-import org.bukkit.metadata.MetadataValue;
+import org.bukkit.persistence.PersistentDataContainer;
+import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.scheduler.BukkitTask;
 import org.bukkit.util.Vector;
@@ -47,31 +56,41 @@ public class GravityGun implements Listener {
 
     private static GravityGun instance;
 
-    HashMap<Player, Entity> players;
-    HashMap<Entity, Location> entitys;
-    HashMap<Entity, EntityType> spawner;
-    HashMap<Entity, BlockDisplay> visualDisplays;
-    BukkitTask task;
+    // player -> the entity they are currently holding
+    private final HashMap<Player, Entity> players;
+    // held entity -> the location it is pulled towards
+    private final HashMap<Entity, Location> entitys;
+    private final HashMap<Entity, BlockDisplay> visualDisplays;
+    private BukkitTask task;
 
     private final Set<Material> blacklist;
     private boolean allowPlayerCapture;
 
-    private static final String METADATA_BINDED_UUID = "binded_uuid";
-    private static final String METADATA_SPAWNER_TYPE = "spawner_type";
-    private static final String METADATA_CONTAINER_ITEMS = "gravity_gun_container_items";
+    /*
+     * Everything that must survive a restart or crash is kept in the falling block's persistent data container,
+     * because the entity itself is saved with its chunk.
+     */
+    private final NamespacedKey keyCarried;
+    private final NamespacedKey keySpawnerType;
+    private final NamespacedKey keyContainerItems;
+
     private static final Set<Material> VISUAL_FALLBACK_BLOCKS =
             EnumSet.of(Material.CHEST, Material.TRAPPED_CHEST, Material.ENDER_CHEST);
+    private static final int BLOCK_PLACEMENT_SEARCH_HEIGHT = 4;
 
     public GravityGun(Collection<Material> blockBlacklist, boolean allowPlayerCapture) {
         instance = this;
-        entitys = new HashMap<Entity, Location>();
-        players = new HashMap<Player, Entity>();
-        spawner = new HashMap<Entity, EntityType>();
+        entitys = new HashMap<>();
+        players = new HashMap<>();
         visualDisplays = new HashMap<>();
         blacklist = new HashSet<>();
+        keyCarried = new NamespacedKey(PorticleGun.getInstance(), "gravity_carried");
+        keySpawnerType = new NamespacedKey(PorticleGun.getInstance(), "gravity_spawner_type");
+        keyContainerItems = new NamespacedKey(PorticleGun.getInstance(), "gravity_container_items");
         this.allowPlayerCapture = allowPlayerCapture;
         updateBlockBlacklist(blockBlacklist);
         init();
+        recoverOrphanedBlocks();
     }
 
     public static GravityGun getInstance() {
@@ -104,9 +123,14 @@ public class GravityGun implements Listener {
                     Entity entity = entry.getKey();
 
                     if (entity == null || entity.isDead() || !entity.isValid()) {
-                        handleEntityRemoval(entity);
                         iterator.remove();
+                        handleEntityRemoval(entity);
                         continue;
+                    }
+
+                    if (entity instanceof FallingBlock) {
+                        // vanilla discards falling blocks that have not landed after 600 ticks
+                        entity.setTicksLived(1);
                     }
 
                     Vector plV = entry.getValue().toVector();
@@ -123,10 +147,30 @@ public class GravityGun implements Listener {
         }.runTaskTimer(PorticleGun.getInstance(), 0, 1);
     }
 
+    /**
+     * Stops the gravity gun and puts every carried block back into the world, so nothing is lost when the plugin is
+     * disabled or the server stops.
+     */
     public void shutdown() {
         if (task != null) {
             task.cancel();
+            task = null;
         }
+
+        for (Entity entity : new ArrayList<>(entitys.keySet())) {
+            releaseEntity(entity, false);
+            if (entity instanceof FallingBlock && entity.isValid()) {
+                placeCarriedBlock((FallingBlock) entity);
+            }
+        }
+
+        for (BlockDisplay display : visualDisplays.values()) {
+            if (display != null && display.isValid()) {
+                display.remove();
+            }
+        }
+        visualDisplays.clear();
+
         if (instance == this) {
             instance = null;
         }
@@ -145,26 +189,30 @@ public class GravityGun implements Listener {
             return false;
         }
 
-        Player owner = null;
-        for (Map.Entry<Player, Entity> entry : players.entrySet()) {
-            if (entry.getValue().equals(entity)) {
-                owner = entry.getKey();
-                break;
-            }
-        }
-
         entitys.remove(entity);
         entity.setFallDistance(0F);
+        if (entity instanceof FallingBlock) {
+            entity.setGravity(true);
+        }
 
+        Player owner = getOwner(entity);
         if (owner != null) {
             players.remove(owner);
             if (playSound) {
                 AudioHandler.playSound(owner.getLocation(), AudioHandler.PortalSound.LET_BLOCK);
             }
-            spawner.remove(owner.getUniqueId().toString());
         }
 
         return true;
+    }
+
+    private Player getOwner(Entity entity) {
+        for (Map.Entry<Player, Entity> entry : players.entrySet()) {
+            if (entry.getValue().equals(entity)) {
+                return entry.getKey();
+            }
+        }
+        return null;
     }
 
     @EventHandler
@@ -177,111 +225,99 @@ public class GravityGun implements Listener {
         }
 
         ItemStack item = event.getItemDrop().getItemStack();
-        if (item.getType() == Material.BREWING_STAND) {
-            if (ItemHandler.isValidGun(item) != null) {
+        if (item.getType() != Material.BREWING_STAND || ItemHandler.isValidGun(item) == null) {
+            return;
+        }
 
-                if (player.hasMetadata("portalgun-drop")
-                        && player.getMetadata("portalgun-drop").size() > 0) {
-                    long time = Long.valueOf(
-                            player.getMetadata("portalgun-drop").get(0).asString());
-                    if (System.currentTimeMillis() - time < 500) {
-                        if (players.containsKey(player)) {
-                            AudioHandler.playSound(player.getLocation(), AudioHandler.PortalSound.LET_BLOCK);
-                            entitys.remove(players.get(player));
-                            players.remove(player);
-                        }
-                        return;
-                    }
-                    player.removeMetadata("portalgun-drop", PorticleGun.getInstance());
-                }
-
-                event.setCancelled(true);
-                player.setMetadata(
-                        "portalgun-drop",
-                        new FixedMetadataValue(PorticleGun.getInstance(), System.currentTimeMillis() + ""));
-
+        if (player.hasMetadata("portalgun-drop")
+                && player.getMetadata("portalgun-drop").size() > 0) {
+            long time =
+                    Long.parseLong(player.getMetadata("portalgun-drop").get(0).asString());
+            if (System.currentTimeMillis() - time < 500) {
+                // second drop in quick succession: really drop the gun
                 if (players.containsKey(player)) {
-                    AudioHandler.playSound(player.getLocation(), AudioHandler.PortalSound.LET_BLOCK);
-                    entitys.remove(players.get(player));
-                    players.get(player).setFallDistance(0F);
-                    players.remove(player);
-                } else {
-                    Block block = player.getTargetBlockExact(4);
-
-                    if (block == null || block.getType() == Material.AIR) {
-                        AudioHandler.playSound(player, AudioHandler.PortalSound.DENY);
-                        return;
-                    }
-
-                    Location loc = playersLook(player);
-
-                    for (Entity entity : loc.getChunk().getEntities()) {
-                        if (!(entity instanceof LivingEntity)) {
-                            continue;
-                        }
-
-                        if (entity.equals(player) || entitys.containsKey(entity)) {
-                            continue;
-                        }
-
-                        if (entity.getType() == EntityType.PLAYER && !allowPlayerCapture) {
-                            continue;
-                        }
-
-                        if (entity.getLocation().distance(loc) < 1.5) {
-                            if (PorticleGun.isWorldGuardEnabled()
-                                    && !WorldGuardIntegration.canUseGravityGun(player, entity.getLocation())) {
-                                continue;
-                            }
-                            entitys.put(entity, playersLook(player));
-                            players.put(player, entity);
-                            AudioHandler.playSound(player.getLocation(), AudioHandler.PortalSound.GRAB_BLOCK);
-                            return;
-                        }
-                    }
-
-                    if (PorticleGun.isWorldGuardEnabled()
-                            && !WorldGuardIntegration.canUseGravityGun(player, block.getLocation())) {
-                        AudioHandler.playSound(event.getPlayer(), AudioHandler.PortalSound.DENY);
-                        return;
-                    }
-
-                    if (blacklist.contains(block.getType()) || block.isLiquid()) {
-                        AudioHandler.playSound(event.getPlayer(), AudioHandler.PortalSound.DENY);
-                        return;
-                    }
-
-                    AudioHandler.playSound(player.getLocation(), AudioHandler.PortalSound.GRAB_BLOCK);
-                    FallingBlock fallingblock = (FallingBlock) block.getLocation()
-                            .getWorld()
-                            .spawnFallingBlock(block.getLocation().add(0.5, 0, 0.5), block.getBlockData());
-
-                    createVisualDisplayIfNeeded(block, fallingblock);
-
-                    storeContainerInventory(block, fallingblock);
-
-                    if (block.getType() == Material.SPAWNER) {
-                        fallingblock.setMetadata(
-                                METADATA_SPAWNER_TYPE,
-                                new FixedMetadataValue(
-                                        PorticleGun.getInstance(),
-                                        ((CreatureSpawner) block.getState())
-                                                .getSpawnedType()
-                                                .toString()));
-                    }
-
-                    ((Entity) fallingblock)
-                            .setMetadata(
-                                    METADATA_BINDED_UUID,
-                                    new FixedMetadataValue(
-                                            PorticleGun.getInstance(),
-                                            player.getUniqueId().toString()));
-                    block.setType(Material.AIR);
-                    entitys.put((Entity) fallingblock, playersLook(player));
-                    players.put(player, (Entity) fallingblock);
+                    releaseEntity(players.get(player), true);
                 }
+                return;
+            }
+            player.removeMetadata("portalgun-drop", PorticleGun.getInstance());
+        }
+
+        event.setCancelled(true);
+        player.setMetadata(
+                "portalgun-drop", new FixedMetadataValue(PorticleGun.getInstance(), System.currentTimeMillis() + ""));
+
+        if (players.containsKey(player)) {
+            releaseEntity(players.get(player), true);
+            return;
+        }
+
+        Block block = player.getTargetBlockExact(4);
+
+        if (block == null || block.getType() == Material.AIR) {
+            AudioHandler.playSound(player, AudioHandler.PortalSound.DENY);
+            return;
+        }
+
+        Location loc = playersLook(player);
+
+        for (Entity entity : loc.getChunk().getEntities()) {
+            if (!(entity instanceof LivingEntity)) {
+                continue;
+            }
+
+            if (entity.equals(player) || entitys.containsKey(entity)) {
+                continue;
+            }
+
+            if (entity.getType() == EntityType.PLAYER && !allowPlayerCapture) {
+                continue;
+            }
+
+            if (entity.getLocation().distance(loc) < 1.5) {
+                if (PorticleGun.isWorldGuardEnabled()
+                        && !WorldGuardIntegration.canUseGravityGun(player, entity.getLocation())) {
+                    continue;
+                }
+                entitys.put(entity, playersLook(player));
+                players.put(player, entity);
+                AudioHandler.playSound(player.getLocation(), AudioHandler.PortalSound.GRAB_BLOCK);
+                return;
             }
         }
+
+        if (PorticleGun.isWorldGuardEnabled() && !WorldGuardIntegration.canUseGravityGun(player, block.getLocation())) {
+            AudioHandler.playSound(player, AudioHandler.PortalSound.DENY);
+            return;
+        }
+
+        if (blacklist.contains(block.getType()) || block.isLiquid()) {
+            AudioHandler.playSound(player, AudioHandler.PortalSound.DENY);
+            return;
+        }
+
+        AudioHandler.playSound(player.getLocation(), AudioHandler.PortalSound.GRAB_BLOCK);
+        FallingBlock fallingblock =
+                block.getWorld().spawnFallingBlock(block.getLocation().add(0.5, 0, 0.5), block.getBlockData());
+        // without gravity the Bedrock client does not simulate the block falling and landing on its own
+        fallingblock.setGravity(false);
+        fallingblock.setDropItem(true);
+
+        PersistentDataContainer data = fallingblock.getPersistentDataContainer();
+        data.set(keyCarried, PersistentDataType.BYTE, (byte) 1);
+        if (block.getState() instanceof CreatureSpawner spawnerState && spawnerState.getSpawnedType() != null) {
+            data.set(
+                    keySpawnerType,
+                    PersistentDataType.STRING,
+                    spawnerState.getSpawnedType().name());
+        }
+
+        createVisualDisplayIfNeeded(block, fallingblock);
+        storeContainerInventory(block, fallingblock);
+
+        block.setType(Material.AIR);
+        entitys.put(fallingblock, playersLook(player));
+        players.put(player, fallingblock);
     }
 
     @EventHandler
@@ -296,15 +332,7 @@ public class GravityGun implements Listener {
 
     @EventHandler
     public void on(PlayerTeleportEvent event) {
-        Player player = event.getPlayer();
-        if (players.containsKey(player)) {
-            entitys.remove(players.get(player));
-            players.remove(player);
-            if (spawner.containsKey(player.getUniqueId().toString()))
-                spawner.remove(player.getUniqueId().toString());
-        } else if (entitys.containsKey(player)) {
-            releaseEntitySilently(player);
-        }
+        releaseHeldOrSelf(event.getPlayer());
     }
 
     @EventHandler
@@ -316,69 +344,61 @@ public class GravityGun implements Listener {
 
     @EventHandler
     public void on(EntityChangeBlockEvent event) {
-        if (event.getEntity() instanceof FallingBlock) {
-            if (event.getEntity().hasMetadata(METADATA_BINDED_UUID)
-                    && event.getEntity().getMetadata(METADATA_BINDED_UUID).size() > 0) {
+        if (!(event.getEntity() instanceof FallingBlock fallingBlock) || !isCarriedBlock(fallingBlock)) {
+            return;
+        }
 
-                for (Player player : players.keySet())
-                    if (player.getUniqueId()
-                            .toString()
-                            .equals(event.getEntity()
-                                    .getMetadata(METADATA_BINDED_UUID)
-                                    .get(0)
-                                    .asString())) {
-                        AudioHandler.playSound(player.getLocation(), AudioHandler.PortalSound.LET_BLOCK);
-                        entitys.remove(event.getEntity());
-                        players.remove(player);
-                        break;
-                    }
-            }
+        // the block landed
+        releaseEntity(fallingBlock, true);
+        removeVisualDisplay(fallingBlock);
 
-            if (event.getEntity().hasMetadata(METADATA_SPAWNER_TYPE)
-                    && event.getEntity().getMetadata(METADATA_SPAWNER_TYPE).size() > 0) {
-                event.setCancelled(true);
-                Block block = event.getBlock();
-                block.setType(Material.SPAWNER);
-                EntityType type = EntityType.valueOf(event.getEntity()
-                        .getMetadata(METADATA_SPAWNER_TYPE)
-                        .get(0)
-                        .asString());
-                CreatureSpawner spawner = ((CreatureSpawner) block.getState());
-                spawner.setSpawnedType(type);
-                spawner.update();
-            }
+        Block block = event.getBlock();
+        EntityType spawnedType = getSpawnerType(fallingBlock);
+        if (spawnedType != null) {
+            event.setCancelled(true);
+            block.setType(Material.SPAWNER);
+            applySpawnerType(block, spawnedType);
+        }
 
-            removeVisualDisplay(event.getEntity());
+        // the block is only placed after this event, so fill the container one tick later
+        ItemStack[] storedItems = getStoredContainerItems(fallingBlock);
+        fallingBlock.getPersistentDataContainer().remove(keyContainerItems);
+        if (storedItems != null) {
+            Bukkit.getScheduler().runTask(PorticleGun.getInstance(), () -> fillContainerOrDrop(block, storedItems));
+        }
+    }
 
-            if (event.getEntity().hasMetadata(METADATA_CONTAINER_ITEMS)) {
-                restoreContainerInventory(event.getBlock(), event.getEntity());
-            }
+    @EventHandler
+    public void on(EntityDropItemEvent event) {
+        if (!(event.getEntity() instanceof FallingBlock fallingBlock) || !isCarriedBlock(fallingBlock)) {
+            return;
+        }
+
+        // the block could not be placed where it landed and breaks into an item: keep the contents with it
+        releaseEntity(fallingBlock, false);
+        removeVisualDisplay(fallingBlock);
+        dropContainerItems(fallingBlock);
+    }
+
+    @EventHandler
+    public void on(EntitiesLoadEvent event) {
+        for (Entity entity : event.getEntities()) {
+            recoverIfOrphaned(entity);
         }
     }
 
     @EventHandler
     public void on(PlayerItemHeldEvent event) {
         Player player = event.getPlayer();
-        if (players.containsKey(player) && player.getInventory().getItem(event.getPreviousSlot()) != null) {
-            if (ItemHandler.isValidGun(player.getInventory().getItem(event.getPreviousSlot())) != null) {
-                AudioHandler.playSound(player.getLocation(), AudioHandler.PortalSound.LET_BLOCK);
-                entitys.remove(players.get(player));
-                players.remove(player);
-            }
+        ItemStack previous = player.getInventory().getItem(event.getPreviousSlot());
+        if (players.containsKey(player) && previous != null && ItemHandler.isValidGun(previous) != null) {
+            releaseEntity(players.get(player), true);
         }
     }
 
     @EventHandler
     public void on(PlayerQuitEvent event) {
-        Player player = event.getPlayer();
-        if (players.containsKey(player)) {
-            entitys.remove(players.get(player));
-            players.remove(player);
-            if (spawner.containsKey(player.getUniqueId().toString()))
-                spawner.remove(player.getUniqueId().toString());
-        } else if (entitys.containsKey(player)) {
-            releaseEntitySilently(player);
-        }
+        releaseHeldOrSelf(event.getPlayer());
     }
 
     @EventHandler
@@ -394,6 +414,14 @@ public class GravityGun implements Listener {
         }
     }
 
+    private void releaseHeldOrSelf(Player player) {
+        if (players.containsKey(player)) {
+            releaseEntity(players.get(player), false);
+        } else if (entitys.containsKey(player)) {
+            releaseEntitySilently(player);
+        }
+    }
+
     private Location playersLook(Player player) {
         return player.getEyeLocation()
                 .add(player.getEyeLocation()
@@ -404,12 +432,85 @@ public class GravityGun implements Listener {
                 .subtract(0, 0.2, 0);
     }
 
+    private boolean isCarriedBlock(Entity entity) {
+        return entity.getPersistentDataContainer().has(keyCarried, PersistentDataType.BYTE);
+    }
+
+    /**
+     * Carried blocks have no gravity. If the server crashed while a block was carried, it would float forever, so
+     * blocks that are not held by anyone get their gravity back and land normally.
+     */
+    private void recoverOrphanedBlocks() {
+        for (World world : Bukkit.getWorlds()) {
+            for (Entity entity : world.getEntitiesByClass(FallingBlock.class)) {
+                recoverIfOrphaned(entity);
+            }
+        }
+    }
+
+    private void recoverIfOrphaned(Entity entity) {
+        if (entity instanceof FallingBlock && isCarriedBlock(entity) && !entitys.containsKey(entity)) {
+            entity.setGravity(true);
+        }
+    }
+
+    /**
+     * Puts a carried block back into the world at (or slightly above) its current position, including spawner type
+     * and container contents. Drops it as items if there is no room.
+     */
+    private void placeCarriedBlock(FallingBlock fallingBlock) {
+        Block target = fallingBlock.getLocation().getBlock();
+        for (int i = 0; i < BLOCK_PLACEMENT_SEARCH_HEIGHT && !canPlaceInto(target); i++) {
+            target = target.getRelative(0, 1, 0);
+        }
+
+        if (canPlaceInto(target)) {
+            target.setBlockData(fallingBlock.getBlockData());
+            EntityType spawnedType = getSpawnerType(fallingBlock);
+            if (spawnedType != null) {
+                applySpawnerType(target, spawnedType);
+            }
+            restoreContainerInventory(target, fallingBlock);
+        } else {
+            Location location = fallingBlock.getLocation();
+            dropItems(
+                    location,
+                    new ItemStack[] {new ItemStack(fallingBlock.getBlockData().getPlacementMaterial())});
+            dropContainerItems(fallingBlock);
+        }
+
+        removeVisualDisplay(fallingBlock);
+        fallingBlock.remove();
+    }
+
+    private boolean canPlaceInto(Block block) {
+        return block.getType().isAir() || (Tag.REPLACEABLE.isTagged(block.getType()) && !block.isLiquid());
+    }
+
+    private EntityType getSpawnerType(Entity entity) {
+        String name = entity.getPersistentDataContainer().get(keySpawnerType, PersistentDataType.STRING);
+        if (name == null) {
+            return null;
+        }
+        try {
+            return EntityType.valueOf(name);
+        } catch (IllegalArgumentException exception) {
+            return null;
+        }
+    }
+
+    private void applySpawnerType(Block block, EntityType type) {
+        if (block.getState() instanceof CreatureSpawner spawnerState) {
+            spawnerState.setSpawnedType(type);
+            spawnerState.update();
+        }
+    }
+
     private void storeContainerInventory(Block block, FallingBlock fallingBlock) {
-        if (!(block.getState() instanceof Container)) {
+        if (!(block.getState() instanceof Container container)) {
             return;
         }
 
-        Container container = (Container) block.getState();
         ItemStack[] contents = container.getInventory().getContents();
 
         boolean hasItems = false;
@@ -424,23 +525,25 @@ public class GravityGun implements Listener {
             return;
         }
 
-        ItemStack[] clonedContents = cloneItemStackArray(contents);
-        fallingBlock.setMetadata(
-                METADATA_CONTAINER_ITEMS, new FixedMetadataValue(PorticleGun.getInstance(), clonedContents));
+        fallingBlock
+                .getPersistentDataContainer()
+                .set(keyContainerItems, PersistentDataType.STRING, serializeItems(contents));
         container.getInventory().clear();
         container.update(true);
     }
 
     private void restoreContainerInventory(Block block, Entity entity) {
         ItemStack[] storedItems = getStoredContainerItems(entity);
-        entity.removeMetadata(METADATA_CONTAINER_ITEMS, PorticleGun.getInstance());
+        entity.getPersistentDataContainer().remove(keyContainerItems);
+        fillContainerOrDrop(block, storedItems);
+    }
 
+    private void fillContainerOrDrop(Block block, ItemStack[] storedItems) {
         if (storedItems == null) {
             return;
         }
 
-        if (block.getState() instanceof Container) {
-            Container container = (Container) block.getState();
+        if (block.getState() instanceof Container container) {
             ItemStack[] destination = new ItemStack[container.getInventory().getSize()];
             int limit = Math.min(destination.length, storedItems.length);
             System.arraycopy(storedItems, 0, destination, 0, limit);
@@ -462,20 +565,11 @@ public class GravityGun implements Listener {
             return;
         }
 
-        dropContainerItems(entity);
         removeVisualDisplay(entity);
 
-        Player owner = null;
-        for (Map.Entry<Player, Entity> entry : new ArrayList<>(players.entrySet())) {
-            if (entry.getValue().equals(entity)) {
-                owner = entry.getKey();
-                break;
-            }
-        }
-
+        Player owner = getOwner(entity);
         if (owner != null) {
             players.remove(owner);
-            spawner.remove(owner.getUniqueId().toString());
         }
     }
 
@@ -552,42 +646,52 @@ public class GravityGun implements Listener {
 
     private void dropContainerItems(Entity entity) {
         ItemStack[] storedItems = getStoredContainerItems(entity);
-        if (storedItems == null) {
-            return;
-        }
-
+        entity.getPersistentDataContainer().remove(keyContainerItems);
         dropItems(entity.getLocation(), storedItems);
-        entity.removeMetadata(METADATA_CONTAINER_ITEMS, PorticleGun.getInstance());
     }
 
     private ItemStack[] getStoredContainerItems(Entity entity) {
-        if (entity == null || !entity.hasMetadata(METADATA_CONTAINER_ITEMS)) {
+        if (entity == null) {
             return null;
         }
 
-        List<MetadataValue> metadataValues = entity.getMetadata(METADATA_CONTAINER_ITEMS);
-        if (metadataValues.isEmpty()) {
+        String serialized = entity.getPersistentDataContainer().get(keyContainerItems, PersistentDataType.STRING);
+        if (serialized == null) {
             return null;
         }
 
-        Object value = metadataValues.get(0).value();
-        if (!(value instanceof ItemStack[])) {
-            return null;
-        }
+        return deserializeItems(serialized);
+    }
 
-        ItemStack[] contents = (ItemStack[]) value;
-        ItemStack[] clone = new ItemStack[contents.length];
-        boolean hasItems = false;
-        for (int i = 0; i < contents.length; i++) {
-            if (contents[i] != null && contents[i].getType() != Material.AIR) {
-                clone[i] = contents[i].clone();
-                hasItems = true;
-            } else {
-                clone[i] = null;
+    static String serializeItems(ItemStack[] items) {
+        YamlConfiguration yaml = new YamlConfiguration();
+        yaml.set("size", items.length);
+        for (int i = 0; i < items.length; i++) {
+            if (items[i] != null && items[i].getType() != Material.AIR) {
+                yaml.set("items." + i, items[i]);
             }
         }
+        return yaml.saveToString();
+    }
 
-        return hasItems ? clone : null;
+    static ItemStack[] deserializeItems(String serialized) {
+        YamlConfiguration yaml = new YamlConfiguration();
+        try {
+            yaml.loadFromString(serialized);
+        } catch (InvalidConfigurationException exception) {
+            PorticleGun.getInstance()
+                    .getLogger()
+                    .log(Level.SEVERE, "Could not read the contents of a carried container", exception);
+            return null;
+        }
+
+        ItemStack[] items = new ItemStack[yaml.getInt("size")];
+        boolean hasItems = false;
+        for (int i = 0; i < items.length; i++) {
+            items[i] = yaml.getItemStack("items." + i);
+            hasItems |= items[i] != null;
+        }
+        return hasItems ? items : null;
     }
 
     private void dropItems(Location location, ItemStack[] items) {
@@ -602,17 +706,5 @@ public class GravityGun implements Listener {
 
             location.getWorld().dropItemNaturally(location, item);
         }
-    }
-
-    private ItemStack[] cloneItemStackArray(ItemStack[] original) {
-        ItemStack[] clone = new ItemStack[original.length];
-        for (int i = 0; i < original.length; i++) {
-            if (original[i] != null) {
-                clone[i] = original[i].clone();
-            } else {
-                clone[i] = null;
-            }
-        }
-        return clone;
     }
 }

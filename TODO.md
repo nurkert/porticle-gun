@@ -7,17 +7,17 @@ Reihenfolge = Priorität. Unter jedem Punkt: Problem, Lösungsansatz, Notizen be
 
 ## P1 – Datenverlust / funktionale Bugs
 
-- [ ] **PG-01 Gravity Gun: Kisteninhalte liegen beim Tragen nur im RAM**
+- [x] **PG-01 Gravity Gun: Kisteninhalte liegen beim Tragen nur im RAM**
   - Ort: `handlers/gravity/GravityGun.java:404` (`storeContainerInventory`)
   - Problem: Die echte Kiste wird geleert, die Items hängen nur als `FixedMetadataValue` am FallingBlock. Stoppt oder crasht der Server während des Tragens, sind die Items weg.
   - Ansatz: Inhalt dauerhaft an der Entity speichern (PersistentDataContainer, serialisiert) oder Container nicht leeren. Beim Laden verwaiste FallingBlocks mit Inventar wiederherstellen.
-  - Notizen:
+  - Notizen: Kisteninhalt, Spawner-Typ und eine Markierung liegen jetzt im PersistentDataContainer des FallingBlock (Items als YAML-String serialisiert) und werden mit der Entity im Chunk gespeichert. Nach einem Crash bekommen markierte, nicht gehaltene Blöcke beim Laden (`EntitiesLoadEvent` + Scan beim Start) ihre Schwerkraft zurück, landen und füllen die Kiste wieder. Zusätzlich gefixt: Beim Landen war der Block zum Zeitpunkt des Events noch Luft, deshalb wurde der Inhalt bisher immer auf den Boden geworfen statt in die Kiste gelegt. Jetzt wird er einen Tick später einsortiert. Zerbricht der Block beim Landen (z. B. auf einer Fackel), fällt der Inhalt mit raus (`EntityDropItemEvent`). Nicht im Spiel getestet, nur Build.
 
-- [ ] **PG-02 Kein `onDisable`: getragene Blöcke und Daten werden beim Stop nicht gesichert**
+- [x] **PG-02 Kein `onDisable`: getragene Blöcke und Daten werden beim Stop nicht gesichert**
   - Ort: `PorticleGun.java`, `GravityGun.shutdown()`
   - Problem: `shutdown()` lässt gehaltene Blöcke nicht los und läuft nur beim Abschalten per Config.
   - Ansatz: `onDisable()` ergänzen: gehaltene Blöcke an aktueller Position absetzen (inkl. Inventar und Spawner-Typ), BlockDisplays entfernen, Portale speichern.
-  - Notizen:
+  - Notizen: `PorticleGun.onDisable()` ruft `LoadingHandler.shutdown()` und speichert die Portaldatei. `GravityGun.shutdown()` setzt jeden getragenen Block an seiner Position (oder bis 4 Blöcke darüber) wieder ein, inkl. Spawner-Typ und Kisteninhalt. Ist kein Platz, fallen Block und Inhalt als Items raus. Gefangene Entities werden freigelassen, BlockDisplays entfernt. Nicht im Spiel getestet, nur Build.
 
 - [ ] **PG-03 Portale schließen im Settings-Menü wird nicht gespeichert**
   - Ort: `handlers/portals/SettingsHandler.java:61`
@@ -55,12 +55,12 @@ Reihenfolge = Priorität. Unter jedem Punkt: Problem, Lösungsansatz, Notizen be
   - Hängt ab von: PG-14 (Floodgate-Grundlage)
   - Notizen:
 
-- [ ] **PG-16 Gravity Gun: gehaltene Blöcke verschwinden (Spielermeldung Bedrock)**
+- [x] **PG-16 Gravity Gun: gehaltene Blöcke verschwinden (Spielermeldung Bedrock)**
   - Ort: `handlers/gravity/GravityGun.java:98` (Tick-Task), `:258` (Spawn des FallingBlock), `:479` (`createVisualDisplayIfNeeded`)
   - Ursache 1 (sicher, betrifft alle Spieler): Der gehaltene Block ist ein normaler `FallingBlock`, der jeden Tick per `setVelocity` gezogen wird. Vanilla entfernt einen FallingBlock, der nach 600 Ticks (30 s) nicht gelandet ist, und lässt je nach `dropItem` höchstens ein Item fallen. `setTicksLived` wird nirgends zurückgesetzt. Wer einen Block länger als 30 s trägt, verliert ihn, bei Kisten samt Inhalt (siehe PG-01).
   - Ursache 2 (Verdacht, nur Bedrock): Bedrock rechnet FallingBlocks clientseitig mit eigener Schwerkraft und lässt sie dabei evtl. „landen“ und verschwinden, obwohl der Server sie noch hält. Bei Kisten hängt die Darstellung zusätzlich am `BlockDisplay` und damit an der Display-Entity-Unterstützung von Geyser.
   - Ansatz: `setTicksLived(1)` jeden Tick bzw. Lebenszeit anders absichern, `setDropItem(false)` setzen und beim Entfernen den Block sauber zurücksetzen. Langfristig den gehaltenen Block nicht mehr als physikalischen FallingBlock führen, sondern als reine Anzeige-Entity, die der Server per Teleport bewegt (Bedrock-Fallback beachten). Mit Geyser-Client reproduzieren: verschwindet er sofort, nach Sekunden oder nach ~30 s?
-  - Notizen:
+  - Notizen: Ursache 1 behoben: Gehaltene FallingBlocks bekommen jeden Tick `setTicksLived(1)`, damit Vanilla sie nicht nach 30 s entfernt. Für Ursache 2 (Bedrock) haben gehaltene Blöcke jetzt `setGravity(false)`, Geyser übernimmt das Flag, damit sollte der Bedrock-Client sie nicht mehr selbst fallen und „landen“ lassen. Beim Loslassen wird die Schwerkraft wieder eingeschaltet. **Muss noch mit einem Bedrock-Client über Geyser bestätigt werden.** Nebenbei: alle Loslass-Wege laufen jetzt über eine Methode, die kaputte `spawner`-Map (Entity-Key, aber mit String entfernt) ist weg.
 
 - [!] **PG-19 Einstellungs-GUI komplett neu und detailreich gestalten** – GESPERRT: Das GUI bleibt vorerst unverändert. Die Punkte unten sind nur Ideensammlung für eine spätere Diskussion, nichts davon ohne Freigabe umsetzen.
   - Ist-Zustand (`handlers/portals/SettingsHandler.java`): Ein 3×3-Dropper. Farben werden mit Pfeilen einzeln durchgeschaltet (Slots 0/6 bzw. 2/8), Vorschau in 3/5, Form-Banner in 7. Portale schließen per Doppelklick innerhalb von 500 ms auf Slot 4. Das Menü wird über eine Glasscheibe in Slot 1 erkannt, deren Name die Gun-ID versteckt enthält.
