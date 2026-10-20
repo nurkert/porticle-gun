@@ -1,6 +1,9 @@
 package eu.nurkert.porticlegun.portals;
 
 import eu.nurkert.porticlegun.config.ConfigManager;
+import java.util.EnumSet;
+import java.util.List;
+import java.util.Set;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.Tag;
@@ -9,10 +12,6 @@ import org.bukkit.block.BlockFace;
 import org.bukkit.entity.Player;
 import org.bukkit.util.BlockIterator;
 import org.bukkit.util.Vector;
-
-import java.util.EnumSet;
-import java.util.List;
-import java.util.Set;
 
 public class PortalTracing {
 
@@ -31,10 +30,10 @@ public class PortalTracing {
         }
         // get the mid point of the block
         BlockFace face = getBlockFace(player);
-        if(face == null) return null;
+        if (face == null) return null;
         Vector direction = face.getDirection().normalize();
         Location loc = block.getLocation().add(direction);
-        if(loc.distance(player.getLocation()) >= ConfigManager.getPortalMaxPlayerDistance()) return null;
+        if (loc.distance(player.getLocation()) >= ConfigManager.getPortalMaxPlayerDistance()) return null;
         return new PotentialPortal(loc, direction);
     }
 
@@ -45,8 +44,10 @@ public class PortalTracing {
      * @return the BlockFace of the targeted block, or null if the targeted block is non-occluding.
      */
     public static BlockFace getBlockFace(Player player) {
-        List<Block> lastTwoTargetBlocks = player.getLastTwoTargetBlocks(TRANSPARENT_BLOCKS, ConfigManager.getPortalMaxBlockTrace());
-        if (lastTwoTargetBlocks.size() != 2 || !lastTwoTargetBlocks.get(1).getType().isOccluding()) return null;
+        List<Block> lastTwoTargetBlocks =
+                player.getLastTwoTargetBlocks(TRANSPARENT_BLOCKS, ConfigManager.getPortalMaxBlockTrace());
+        if (lastTwoTargetBlocks.size() != 2
+                || !lastTwoTargetBlocks.get(1).getType().isOccluding()) return null;
         Block targetBlock = lastTwoTargetBlocks.get(1);
         Block adjacentBlock = lastTwoTargetBlocks.get(0);
         return targetBlock.getFace(adjacentBlock);
@@ -55,7 +56,8 @@ public class PortalTracing {
     private static Block getTargetBlockIgnoringFoliage(Player player) {
         int maxDistance = ConfigManager.getPortalMaxTargetDistance();
         Location eyeLocation = player.getEyeLocation();
-        BlockIterator iterator = new BlockIterator(player.getWorld(), eyeLocation.toVector(), eyeLocation.getDirection(), 0, maxDistance);
+        BlockIterator iterator = new BlockIterator(
+                player.getWorld(), eyeLocation.toVector(), eyeLocation.getDirection(), 0, maxDistance);
 
         while (iterator.hasNext()) {
             Block block = iterator.next();
@@ -78,8 +80,7 @@ public class PortalTracing {
                 Material.LARGE_FERN,
                 Material.VINE,
                 Material.GLOW_LICHEN,
-                Material.HANGING_ROOTS
-        );
+                Material.HANGING_ROOTS);
         transparentBlocks.addAll(Tag.LEAVES.getValues());
         transparentBlocks.addAll(Tag.SMALL_FLOWERS.getValues());
         transparentBlocks.addAll(Tag.SAPLINGS.getValues());

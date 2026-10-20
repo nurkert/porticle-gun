@@ -28,15 +28,16 @@ public class RecipeHandler implements Listener {
         recipe.setIngredient('E', Material.ENDER_PEARL);
         recipe.setIngredient('C', Material.CROSSBOW);
 
-        if(PorticleGun.getInstance().isEnabled() && Bukkit.getServer().getRecipe(key) == null)
+        if (PorticleGun.getInstance().isEnabled() && Bukkit.getServer().getRecipe(key) == null)
             PorticleGun.getInstance().getServer().addRecipe(recipe);
     }
 
     @EventHandler
     public void on(CraftItemEvent event) {
         ItemStack crafted = event.getCurrentItem();
-        if (crafted.getType() == Material.BREWING_STAND && crafted.hasItemMeta() &&
-                crafted.getItemMeta().getDisplayName().equals(ItemHandler.getPorticleGunName())) {
+        if (crafted.getType() == Material.BREWING_STAND
+                && crafted.hasItemMeta()
+                && crafted.getItemMeta().getDisplayName().equals(ItemHandler.getPorticleGunName())) {
             // so not ever portal has the same id
             event.setCurrentItem(ItemHandler.generateNewGun());
         }

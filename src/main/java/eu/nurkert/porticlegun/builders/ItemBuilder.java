@@ -1,7 +1,6 @@
 package eu.nurkert.porticlegun.builders;
 
 import java.util.Arrays;
-
 import org.bukkit.Material;
 import org.bukkit.enchantments.Enchantment;
 import org.bukkit.inventory.ItemFlag;
@@ -19,8 +18,7 @@ public class ItemBuilder {
     }
 
     public ItemBuilder hide() {
-        for(ItemFlag flag : ItemFlag.values())
-            meta.addItemFlags(flag);
+        for (ItemFlag flag : ItemFlag.values()) meta.addItemFlags(flag);
         return this;
     }
 

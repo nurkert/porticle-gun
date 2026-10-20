@@ -4,13 +4,16 @@ import eu.nurkert.porticlegun.builders.BannerBuilder;
 import eu.nurkert.porticlegun.builders.ItemBuilder;
 import eu.nurkert.porticlegun.handlers.AudioHandler;
 import eu.nurkert.porticlegun.handlers.PersistentHandler;
+import eu.nurkert.porticlegun.handlers.item.ItemHandler;
 import eu.nurkert.porticlegun.handlers.visualization.GunColorHandler;
 import eu.nurkert.porticlegun.handlers.visualization.GunColors;
-import eu.nurkert.porticlegun.handlers.item.ItemHandler;
+import eu.nurkert.porticlegun.handlers.visualization.PortalColor;
 import eu.nurkert.porticlegun.handlers.visualization.concrete.PortalVisualizationType;
 import eu.nurkert.porticlegun.messages.MessageManager;
 import eu.nurkert.porticlegun.portals.Portal;
-import eu.nurkert.porticlegun.handlers.visualization.PortalColor;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
 import org.bukkit.Bukkit;
 import org.bukkit.DyeColor;
 import org.bukkit.Material;
@@ -26,25 +29,31 @@ import org.bukkit.inventory.InventoryView;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
-
 public class SettingsHandler implements Listener {
 
-    final ItemStack up = new BannerBuilder().setBaseColor(DyeColor.GRAY).setName("§f▲")
-            .setPatterns(new Pattern(DyeColor.LIGHT_GRAY, PatternType.DIAGONAL_LEFT),
+    final ItemStack up = new BannerBuilder()
+            .setBaseColor(DyeColor.GRAY)
+            .setName("§f▲")
+            .setPatterns(
+                    new Pattern(DyeColor.LIGHT_GRAY, PatternType.DIAGONAL_LEFT),
                     new Pattern(DyeColor.LIGHT_GRAY, PatternType.DIAGONAL_UP_RIGHT))
-            .hideItemFlags().build();
-    final ItemStack down = new BannerBuilder().setBaseColor(DyeColor.GRAY).setName("§f▼")
-            .setPatterns(new Pattern(DyeColor.LIGHT_GRAY, PatternType.DIAGONAL_RIGHT),
+            .hideItemFlags()
+            .build();
+    final ItemStack down = new BannerBuilder()
+            .setBaseColor(DyeColor.GRAY)
+            .setName("§f▼")
+            .setPatterns(
+                    new Pattern(DyeColor.LIGHT_GRAY, PatternType.DIAGONAL_RIGHT),
                     new Pattern(DyeColor.LIGHT_GRAY, PatternType.DIAGONAL_UP_LEFT))
-            .hideItemFlags().build();
+            .hideItemFlags()
+            .build();
 
-    final ItemStack resetTemplate = new BannerBuilder().setBaseColor(DyeColor.LIGHT_GRAY)
-            .setPatterns(new Pattern(DyeColor.RED, PatternType.CROSS),
-                    new Pattern(DyeColor.LIGHT_GRAY, PatternType.BORDER))
-            .hideItemFlags().build();
+    final ItemStack resetTemplate = new BannerBuilder()
+            .setBaseColor(DyeColor.LIGHT_GRAY)
+            .setPatterns(
+                    new Pattern(DyeColor.RED, PatternType.CROSS), new Pattern(DyeColor.LIGHT_GRAY, PatternType.BORDER))
+            .hideItemFlags()
+            .build();
 
     HashMap<String, Long> lastClick = new HashMap<>();
 
@@ -56,40 +65,44 @@ public class SettingsHandler implements Listener {
                 event.setCancelled(true);
                 if (event.getCurrentItem() != null) {
                     Player player = (Player) event.getWhoClicked();
-                    if ( event.getRawSlot() == 4) {
-                        if(lastClick.containsKey(gunID) && System.currentTimeMillis() - lastClick.get(gunID) < 500) {
+                    if (event.getRawSlot() == 4) {
+                        if (lastClick.containsKey(gunID) && System.currentTimeMillis() - lastClick.get(gunID) < 500) {
                             ActivePortalsHandler.removePrimaryPortal(gunID);
                             ActivePortalsHandler.removeSecondaryPortal(gunID);
-                            AudioHandler.playSound((Player) event.getWhoClicked(), AudioHandler.PortalSound.PORTAL_CLOSE);
+                            AudioHandler.playSound(
+                                    (Player) event.getWhoClicked(), AudioHandler.PortalSound.PORTAL_CLOSE);
                         } else {
                             lastClick.put(gunID, System.currentTimeMillis());
                         }
-                    } else if(event.getRawSlot() == 0) {
+                    } else if (event.getRawSlot() == 0) {
                         GunColorHandler.selectNextPrimary(gunID);
                         Inventory inv = getCurrentSettings(gunID, player);
                         event.getClickedInventory().setContents(inv.getContents());
-                    } else if(event.getRawSlot() == 6) {
+                    } else if (event.getRawSlot() == 6) {
                         GunColorHandler.selectPreviousPrimary(gunID);
                         Inventory inv = getCurrentSettings(gunID, player);
                         event.getClickedInventory().setContents(inv.getContents());
-                    } else if(event.getRawSlot() == 2) {
+                    } else if (event.getRawSlot() == 2) {
                         GunColorHandler.selectNextSecondary(gunID);
                         Inventory inv = getCurrentSettings(gunID, player);
                         event.getClickedInventory().setContents(inv.getContents());
-                    } else if(event.getRawSlot() == 8) {
+                    } else if (event.getRawSlot() == 8) {
                         GunColorHandler.selectPreviousSecondary(gunID);
                         Inventory inv = getCurrentSettings(gunID, player);
                         event.getClickedInventory().setContents(inv.getContents());
                     } else if (event.getRawSlot() == 7) {
 
-                        Portal[] portals = new Portal[]{ActivePortalsHandler.getPrimaryPortal(gunID), ActivePortalsHandler.getSecondaryPortal(gunID)};
+                        Portal[] portals = new Portal[] {
+                            ActivePortalsHandler.getPrimaryPortal(gunID), ActivePortalsHandler.getSecondaryPortal(gunID)
+                        };
 
-                        for(Portal portal : portals)
-                            if(portal != null)
-                                portal.toggleVisualizationType();
+                        for (Portal portal : portals) if (portal != null) portal.toggleVisualizationType();
 
-                        PortalVisualizationType visualizationType = PortalVisualizationType.fromString(PersistentHandler.get("porticleguns." + ItemHandler.saveable(gunID) + ".shape"));
-                        PersistentHandler.set("porticleguns." + ItemHandler.saveable(gunID) + ".shape", visualizationType.getNext().toString());
+                        PortalVisualizationType visualizationType = PortalVisualizationType.fromString(
+                                PersistentHandler.get("porticleguns." + ItemHandler.saveable(gunID) + ".shape"));
+                        PersistentHandler.set(
+                                "porticleguns." + ItemHandler.saveable(gunID) + ".shape",
+                                visualizationType.getNext().toString());
 
                         Inventory inv = getCurrentSettings(gunID, player);
                         event.getClickedInventory().setContents(inv.getContents());
@@ -103,18 +116,21 @@ public class SettingsHandler implements Listener {
     }
 
     public ItemStack getColorPreview(PortalColor color) {
-        return new BannerBuilder().setBaseColor(DyeColor.LIGHT_GRAY).setName(color.getChatColor() + color.toString())
+        return new BannerBuilder()
+                .setBaseColor(DyeColor.LIGHT_GRAY)
+                .setName(color.getChatColor() + color.toString())
                 .setPatterns(new Pattern(color.getDyeColor(), PatternType.BORDER))
-                .hideItemFlags().build();
+                .hideItemFlags()
+                .build();
     }
 
     @EventHandler
     public void on(PlayerInteractEvent event) {
         // check if player is holding a gun and is sneaking
-        if(event.getItem() != null && event.getPlayer().isSneaking()) {
+        if (event.getItem() != null && event.getPlayer().isSneaking()) {
             // check if player is holding a gun
             String gunID = ItemHandler.isValidGun(event.getItem());
-            if(gunID != null) {
+            if (gunID != null) {
                 Player player = event.getPlayer();
 
                 AudioHandler.playSound(player, AudioHandler.PortalSound.INV_OPEN);
@@ -130,8 +146,8 @@ public class SettingsHandler implements Listener {
      * @return
      */
     public Inventory getCurrentSettings(String gunID, Player player) {
-        Inventory inv = Bukkit.createInventory(null, InventoryType.DROPPER,
-                MessageManager.getMessage(player, "menus.settings.title"));
+        Inventory inv = Bukkit.createInventory(
+                null, InventoryType.DROPPER, MessageManager.getMessage(player, "menus.settings.title"));
         inv.setItem(0, up);
         inv.setItem(2, up);
         inv.setItem(6, down);
@@ -142,26 +158,36 @@ public class SettingsHandler implements Listener {
         inv.setItem(3, getColorPreview(colors.getPrimary()));
         inv.setItem(5, getColorPreview(colors.getSecondary()));
 
-        ItemStack background =  new ItemBuilder(Material.GRAY_STAINED_GLASS_PANE).setName(ItemHandler.vanishID(gunID)).build();
-        for (int i = 1; i <= 3; i++)
-            inv.setItem((i * 3) - 2, background);
+        ItemStack background = new ItemBuilder(Material.GRAY_STAINED_GLASS_PANE)
+                .setName(ItemHandler.vanishID(gunID))
+                .build();
+        for (int i = 1; i <= 3; i++) inv.setItem((i * 3) - 2, background);
 
         inv.setItem(4, createResetItem(player));
 
-        PortalVisualizationType visualizationType = PortalVisualizationType.fromString(PersistentHandler.get("porticleguns." + ItemHandler.saveable(gunID) + ".shape"));
+        PortalVisualizationType visualizationType = PortalVisualizationType.fromString(
+                PersistentHandler.get("porticleguns." + ItemHandler.saveable(gunID) + ".shape"));
 
         boolean ellpitic = visualizationType == PortalVisualizationType.ELLIPTIC;
 
         String stateKey = ellpitic ? "menus.settings.round-on" : "menus.settings.round-off";
         String roundState = MessageManager.getMessage(player, stateKey);
-        String roundLabel = MessageManager.getMessage(player, "menus.settings.round-label", Map.of("state", roundState));
+        String roundLabel =
+                MessageManager.getMessage(player, "menus.settings.round-label", Map.of("state", roundState));
 
-        inv.setItem(7, new BannerBuilder().setBaseColor(DyeColor.WHITE).
-                setPatterns(new Pattern(ellpitic ? DyeColor.GRAY : DyeColor.RED, PatternType.HALF_HORIZONTAL),
-                        new Pattern(ellpitic ? DyeColor.GREEN : DyeColor.GRAY, PatternType.HALF_HORIZONTAL_BOTTOM),
-                        new Pattern(ellpitic ? DyeColor.GREEN : DyeColor.RED, PatternType.STRIPE_MIDDLE),
-                        new Pattern(DyeColor.LIGHT_GRAY, PatternType.BORDER))
-                .hideItemFlags().setName(roundLabel).build());
+        inv.setItem(
+                7,
+                new BannerBuilder()
+                        .setBaseColor(DyeColor.WHITE)
+                        .setPatterns(
+                                new Pattern(ellpitic ? DyeColor.GRAY : DyeColor.RED, PatternType.HALF_HORIZONTAL),
+                                new Pattern(
+                                        ellpitic ? DyeColor.GREEN : DyeColor.GRAY, PatternType.HALF_HORIZONTAL_BOTTOM),
+                                new Pattern(ellpitic ? DyeColor.GREEN : DyeColor.RED, PatternType.STRIPE_MIDDLE),
+                                new Pattern(DyeColor.LIGHT_GRAY, PatternType.BORDER))
+                        .hideItemFlags()
+                        .setName(roundLabel)
+                        .build());
 
         return inv;
     }
@@ -185,7 +211,7 @@ public class SettingsHandler implements Listener {
     @EventHandler
     public void on(InventoryCloseEvent event) {
         String gunID = isPorticleSettingsInv(event.getView());
-        if(gunID != null) {
+        if (gunID != null) {
             GunColors colors = GunColorHandler.getColors(gunID);
             Portal.saveColor(gunID, Portal.PortalType.PRIMARY, colors.getPrimary());
             Portal.saveColor(gunID, Portal.PortalType.SECONDARY, colors.getSecondary());
@@ -203,10 +229,12 @@ public class SettingsHandler implements Listener {
         if (MessageManager.matchesConfiguredValue("menus.settings.title", title)) {
             Inventory inv = view.getTopInventory();
             ItemStack slot = inv.getItem(1);
-            if(slot != null && slot.getType() == Material.GRAY_STAINED_GLASS_PANE) {
-                if(slot.hasItemMeta() && slot.getItemMeta().hasDisplayName() && slot.getItemMeta().getDisplayName().contains("§")) {
+            if (slot != null && slot.getType() == Material.GRAY_STAINED_GLASS_PANE) {
+                if (slot.hasItemMeta()
+                        && slot.getItemMeta().hasDisplayName()
+                        && slot.getItemMeta().getDisplayName().contains("§")) {
                     String gunID = ItemHandler.revealID(slot.getItemMeta().getDisplayName());
-                    if(ItemHandler.isValidGunID(gunID)) {
+                    if (ItemHandler.isValidGunID(gunID)) {
                         return gunID;
                     }
                 }

@@ -5,5 +5,5 @@ import org.bukkit.util.Vector;
 
 public interface PortalVisualization {
 
-    Vector getParticleLocation(double radians,  Location loc , Vector direction);
+    Vector getParticleLocation(double radians, Location loc, Vector direction);
 }

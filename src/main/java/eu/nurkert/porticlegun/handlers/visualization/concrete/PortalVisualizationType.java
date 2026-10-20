@@ -4,7 +4,6 @@ import org.bukkit.Location;
 import org.bukkit.util.Vector;
 
 public enum PortalVisualizationType {
-
     RECTANGULAR(new RectangularVisualization()),
     ELLIPTIC(new EllipticVisualization());
 

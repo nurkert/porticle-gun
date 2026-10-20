@@ -10,8 +10,7 @@ import org.bukkit.util.Vector;
  */
 public final class PortalGeometry {
 
-    private PortalGeometry() {
-    }
+    private PortalGeometry() {}
 
     public static Location computePortalCenter(Portal portal) {
         return computePortalCenter(portal.getLocation(), portal.getDirection());

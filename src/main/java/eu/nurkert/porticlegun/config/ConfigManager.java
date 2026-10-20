@@ -2,14 +2,13 @@ package eu.nurkert.porticlegun.config;
 
 import eu.nurkert.porticlegun.PorticleGun;
 import eu.nurkert.porticlegun.handlers.visualization.PortalColor;
-import org.bukkit.Material;
-import org.bukkit.configuration.file.FileConfiguration;
-
 import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.Locale;
 import java.util.Set;
+import org.bukkit.Material;
+import org.bukkit.configuration.file.FileConfiguration;
 
 public final class ConfigManager {
 
@@ -29,8 +28,7 @@ public final class ConfigManager {
     private static boolean gravityGunAllowPlayerCapture = DEFAULT_GRAVITY_GUN_ALLOW_PLAYER_CAPTURE;
     private static final Set<Material> gravityGunBlockBlacklist = EnumSet.copyOf(DEFAULT_GRAVITY_GUN_BLOCK_BLACKLIST);
 
-    private ConfigManager() {
-    }
+    private ConfigManager() {}
 
     public static void init() {
         load(PorticleGun.getInstance().getConfig());
@@ -43,12 +41,17 @@ public final class ConfigManager {
     }
 
     private static void load(FileConfiguration config) {
-        maxTargetDistance = ensurePositive(config.getInt("portal.max-target-distance", DEFAULT_MAX_TARGET_DISTANCE), DEFAULT_MAX_TARGET_DISTANCE);
-        maxPlayerDistance = ensurePositive(config.getInt("portal.max-player-distance", DEFAULT_MAX_PLAYER_DISTANCE), DEFAULT_MAX_PLAYER_DISTANCE);
-        maxBlockTrace = ensurePositive(config.getInt("portal.max-block-trace", DEFAULT_MAX_BLOCK_TRACE), DEFAULT_MAX_BLOCK_TRACE);
+        maxTargetDistance = ensurePositive(
+                config.getInt("portal.max-target-distance", DEFAULT_MAX_TARGET_DISTANCE), DEFAULT_MAX_TARGET_DISTANCE);
+        maxPlayerDistance = ensurePositive(
+                config.getInt("portal.max-player-distance", DEFAULT_MAX_PLAYER_DISTANCE), DEFAULT_MAX_PLAYER_DISTANCE);
+        maxBlockTrace = ensurePositive(
+                config.getInt("portal.max-block-trace", DEFAULT_MAX_BLOCK_TRACE), DEFAULT_MAX_BLOCK_TRACE);
         gravityGunEnabled = config.getBoolean("gravity-gun.enabled", DEFAULT_GRAVITY_GUN_ENABLED);
-        gravityGunAllowPlayerCapture = config.getBoolean("gravity-gun.allow-player-capture", DEFAULT_GRAVITY_GUN_ALLOW_PLAYER_CAPTURE);
-        boolean allowChestCapture = config.getBoolean("gravity-gun.allow-chest-capture", DEFAULT_GRAVITY_GUN_ALLOW_CHEST_CAPTURE);
+        gravityGunAllowPlayerCapture =
+                config.getBoolean("gravity-gun.allow-player-capture", DEFAULT_GRAVITY_GUN_ALLOW_PLAYER_CAPTURE);
+        boolean allowChestCapture =
+                config.getBoolean("gravity-gun.allow-chest-capture", DEFAULT_GRAVITY_GUN_ALLOW_CHEST_CAPTURE);
         loadGravityGunBlacklist(config.getStringList("gravity-gun.block-blacklist"), allowChestCapture);
         loadCustomPortalColors(config);
     }
@@ -89,7 +92,9 @@ public final class ConfigManager {
     }
 
     private static void loadCustomPortalColors(FileConfiguration config) {
-        PortalColor.reloadCustomColors(config.getMapList("portal.custom-colors"), PorticleGun.getInstance().getLogger());
+        PortalColor.reloadCustomColors(
+                config.getMapList("portal.custom-colors"),
+                PorticleGun.getInstance().getLogger());
     }
 
     private static int ensurePositive(int value, int fallback) {

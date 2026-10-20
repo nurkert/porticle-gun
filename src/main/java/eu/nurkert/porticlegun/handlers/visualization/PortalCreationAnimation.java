@@ -2,10 +2,9 @@ package eu.nurkert.porticlegun.handlers.visualization;
 
 import eu.nurkert.porticlegun.PorticleGun;
 import eu.nurkert.porticlegun.handlers.portals.ActivePortalsHandler;
-import eu.nurkert.porticlegun.handlers.visualization.GunColorHandler;
-import eu.nurkert.porticlegun.handlers.visualization.PortalGeometry;
-import eu.nurkert.porticlegun.portals.Portal;
 import eu.nurkert.porticlegun.handlers.visualization.concrete.PortalVisualizationType;
+import eu.nurkert.porticlegun.portals.Portal;
+import java.util.concurrent.ThreadLocalRandom;
 import org.bukkit.Color;
 import org.bukkit.Location;
 import org.bukkit.Particle;
@@ -13,15 +12,12 @@ import org.bukkit.World;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.util.Vector;
 
-import java.util.concurrent.ThreadLocalRandom;
-
 public final class PortalCreationAnimation {
 
     public static final int ANIMATION_DURATION_TICKS = 30;
     private static final double GOLDEN_ANGLE = Math.PI * (3 - Math.sqrt(5));
 
-    private PortalCreationAnimation() {
-    }
+    private PortalCreationAnimation() {}
 
     public static void play(Portal portal) {
         if (portal == null) {
@@ -49,7 +45,9 @@ public final class PortalCreationAnimation {
         right.normalize();
         Vector up = normal.clone().crossProduct(right).normalize();
 
-        Color color = GunColorHandler.getColors(portal.getGunID()).get(portal.getType()).getBukkitColor();
+        Color color = GunColorHandler.getColors(portal.getGunID())
+                .get(portal.getType())
+                .getBukkitColor();
         Particle.DustOptions dustOptions = new Particle.DustOptions(color, 0.9F);
 
         double maxRight = portal.getDirection().getY() == 0.0 ? 0.35 : 0.45;
@@ -84,10 +82,30 @@ public final class PortalCreationAnimation {
                 ThreadLocalRandom random = ThreadLocalRandom.current();
 
                 switch (finalVisualizationType) {
-                    case ELLIPTIC -> spawnEllipticPattern(world, center, finalRight, finalUp, finalDustOptions,
-                            finalMaxRight, finalMaxUp, finalPointsPerTick, progress, easing, random);
-                    case RECTANGULAR -> spawnRectangularPattern(world, center, finalRight, finalUp, finalDustOptions,
-                            finalMaxRight, finalMaxUp, finalPointsPerTick, progress, easing, random);
+                    case ELLIPTIC -> spawnEllipticPattern(
+                            world,
+                            center,
+                            finalRight,
+                            finalUp,
+                            finalDustOptions,
+                            finalMaxRight,
+                            finalMaxUp,
+                            finalPointsPerTick,
+                            progress,
+                            easing,
+                            random);
+                    case RECTANGULAR -> spawnRectangularPattern(
+                            world,
+                            center,
+                            finalRight,
+                            finalUp,
+                            finalDustOptions,
+                            finalMaxRight,
+                            finalMaxUp,
+                            finalPointsPerTick,
+                            progress,
+                            easing,
+                            random);
                 }
 
                 spawnAmbientSparkles(world, center, finalRight, finalUp, finalMaxRight, finalMaxUp, progress, random);
@@ -96,10 +114,18 @@ public final class PortalCreationAnimation {
         }.runTaskTimer(PorticleGun.getInstance(), 0L, 1L);
     }
 
-    private static void spawnEllipticPattern(World world, Location center, Vector right, Vector up,
-                                             Particle.DustOptions dustOptions, double maxRight, double maxUp,
-                                             int pointsPerTick, double progress, double easing,
-                                             ThreadLocalRandom random) {
+    private static void spawnEllipticPattern(
+            World world,
+            Location center,
+            Vector right,
+            Vector up,
+            Particle.DustOptions dustOptions,
+            double maxRight,
+            double maxUp,
+            int pointsPerTick,
+            double progress,
+            double easing,
+            ThreadLocalRandom random) {
         double spiralRotation = progress * Math.PI * 1.1;
         double wave = Math.sin(progress * Math.PI) * 0.6;
 
@@ -118,8 +144,17 @@ public final class PortalCreationAnimation {
             Vector offset = right.clone().multiply(x).add(up.clone().multiply(y));
             Location particleLocation = center.clone().add(offset);
 
-            world.spawnParticle(Particle.DUST, particleLocation.getX(), particleLocation.getY(), particleLocation.getZ(),
-                    1, 0.0, 0.0, 0.0, 0.0, dustOptions);
+            world.spawnParticle(
+                    Particle.DUST,
+                    particleLocation.getX(),
+                    particleLocation.getY(),
+                    particleLocation.getZ(),
+                    1,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    dustOptions);
 
             if (i % 6 == 0) {
                 spawnPortalParticle(world, particleLocation, maxRight, maxUp, random);
@@ -127,10 +162,18 @@ public final class PortalCreationAnimation {
         }
     }
 
-    private static void spawnRectangularPattern(World world, Location center, Vector right, Vector up,
-                                                Particle.DustOptions dustOptions, double maxRight, double maxUp,
-                                                int pointsPerTick, double progress, double easing,
-                                                ThreadLocalRandom random) {
+    private static void spawnRectangularPattern(
+            World world,
+            Location center,
+            Vector right,
+            Vector up,
+            Particle.DustOptions dustOptions,
+            double maxRight,
+            double maxUp,
+            int pointsPerTick,
+            double progress,
+            double easing,
+            ThreadLocalRandom random) {
         double halfWidth = maxRight * (0.35 + 0.65 * easing);
         double halfHeight = maxUp * (0.35 + 0.65 * easing);
         double width = halfWidth * 2;
@@ -145,12 +188,22 @@ public final class PortalCreationAnimation {
             double jitterRight = (random.nextDouble() - 0.5) * 0.08 * (1.0 - easing);
             double jitterUp = (random.nextDouble() - 0.5) * 0.08 * (1.0 - easing);
 
-            Vector offset = right.clone().multiply(edgePoint.getX() + jitterRight)
+            Vector offset = right.clone()
+                    .multiply(edgePoint.getX() + jitterRight)
                     .add(up.clone().multiply(edgePoint.getY() + jitterUp));
             Location particleLocation = center.clone().add(offset);
 
-            world.spawnParticle(Particle.DUST, particleLocation.getX(), particleLocation.getY(), particleLocation.getZ(),
-                    1, 0.0, 0.0, 0.0, 0.0, dustOptions);
+            world.spawnParticle(
+                    Particle.DUST,
+                    particleLocation.getX(),
+                    particleLocation.getY(),
+                    particleLocation.getZ(),
+                    1,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    dustOptions);
 
             if (i % 4 == 0) {
                 spawnPortalParticle(world, particleLocation, maxRight, maxUp, random);
@@ -179,8 +232,15 @@ public final class PortalCreationAnimation {
         return new Vector(-halfWidth, -halfHeight + d, 0);
     }
 
-    private static void spawnAmbientSparkles(World world, Location center, Vector right, Vector up,
-                                             double maxRight, double maxUp, double progress, ThreadLocalRandom random) {
+    private static void spawnAmbientSparkles(
+            World world,
+            Location center,
+            Vector right,
+            Vector up,
+            double maxRight,
+            double maxUp,
+            double progress,
+            ThreadLocalRandom random) {
         int sparkleCount = 3;
         double innerScale = 0.25 + 0.55 * progress;
         for (int i = 0; i < sparkleCount; i++) {
@@ -193,11 +253,15 @@ public final class PortalCreationAnimation {
         }
     }
 
-    private static void spawnPortalParticle(World world, Location location, double maxRight, double maxUp,
-                                            ThreadLocalRandom random) {
+    private static void spawnPortalParticle(
+            World world, Location location, double maxRight, double maxUp, ThreadLocalRandom random) {
         double spreadRight = maxRight * 0.15;
         double spreadUp = maxUp * 0.15;
-        world.spawnParticle(Particle.PORTAL, location.getX(), location.getY(), location.getZ(),
+        world.spawnParticle(
+                Particle.PORTAL,
+                location.getX(),
+                location.getY(),
+                location.getZ(),
                 1,
                 (random.nextDouble() - 0.5) * spreadRight,
                 (random.nextDouble() - 0.5) * spreadUp,
