@@ -77,7 +77,10 @@ public class TeleportationHandler implements Listener {
             }
 
             Location portalLocation = portal.getLocation();
-            if (portalLocation.getWorld() == null) {
+            if (portalLocation.getWorld() == null
+                    || !portalLocation
+                            .getWorld()
+                            .isChunkLoaded(portalLocation.getBlockX() >> 4, portalLocation.getBlockZ() >> 4)) {
                 continue;
             }
 
