@@ -1,4 +1,4 @@
-package eu.nurkert.porticlegun.handlers.item;
+package eu.nurkert.porticlegun.item;
 
 import eu.nurkert.porticlegun.PorticleGun;
 import org.bukkit.Bukkit;

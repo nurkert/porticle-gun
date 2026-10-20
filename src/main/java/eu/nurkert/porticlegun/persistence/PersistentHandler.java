@@ -1,4 +1,4 @@
-package eu.nurkert.porticlegun.handlers;
+package eu.nurkert.porticlegun.persistence;
 
 import eu.nurkert.porticlegun.PorticleGun;
 import java.io.File;

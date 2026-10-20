@@ -1,7 +1,7 @@
 package eu.nurkert.porticlegun.config;
 
 import eu.nurkert.porticlegun.PorticleGun;
-import eu.nurkert.porticlegun.handlers.visualization.PortalColor;
+import eu.nurkert.porticlegun.visualization.PortalColor;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumSet;

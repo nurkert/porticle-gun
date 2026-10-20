@@ -1,11 +1,11 @@
 package eu.nurkert.porticlegun.portals;
 
 import eu.nurkert.porticlegun.PorticleGun;
-import eu.nurkert.porticlegun.handlers.PersistentHandler;
-import eu.nurkert.porticlegun.handlers.item.ItemHandler;
-import eu.nurkert.porticlegun.handlers.visualization.GunColorHandler;
-import eu.nurkert.porticlegun.handlers.visualization.PortalColor;
-import eu.nurkert.porticlegun.handlers.visualization.concrete.PortalVisualizationType;
+import eu.nurkert.porticlegun.item.ItemHandler;
+import eu.nurkert.porticlegun.persistence.PersistentHandler;
+import eu.nurkert.porticlegun.visualization.GunColorHandler;
+import eu.nurkert.porticlegun.visualization.PortalColor;
+import eu.nurkert.porticlegun.visualization.concrete.PortalVisualizationType;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.util.Vector;

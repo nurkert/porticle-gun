@@ -1,4 +1,4 @@
-package eu.nurkert.porticlegun.handlers.visualization.concrete;
+package eu.nurkert.porticlegun.visualization.concrete;
 
 import org.bukkit.Location;
 import org.bukkit.util.Vector;

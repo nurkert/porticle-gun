@@ -1,18 +1,22 @@
-package eu.nurkert.porticlegun.handlers;
+package eu.nurkert.porticlegun;
 
-import static eu.nurkert.porticlegun.PorticleGun.developMode;
-
-import eu.nurkert.porticlegun.PorticleGun;
 import eu.nurkert.porticlegun.commands.PorticleGunCommand;
 import eu.nurkert.porticlegun.config.ConfigManager;
-import eu.nurkert.porticlegun.handlers.gravity.GravityGun;
-import eu.nurkert.porticlegun.handlers.item.ItemHandler;
-import eu.nurkert.porticlegun.handlers.item.RecipeHandler;
-import eu.nurkert.porticlegun.handlers.portals.*;
-import eu.nurkert.porticlegun.handlers.visualization.*;
-import eu.nurkert.porticlegun.handlers.visualization.concrete.PortalVisualizationType;
+import eu.nurkert.porticlegun.gravity.GravityGun;
+import eu.nurkert.porticlegun.item.ItemHandler;
+import eu.nurkert.porticlegun.item.RecipeHandler;
 import eu.nurkert.porticlegun.messages.MessageManager;
+import eu.nurkert.porticlegun.persistence.PersistentHandler;
+import eu.nurkert.porticlegun.portals.ActivePortalsHandler;
 import eu.nurkert.porticlegun.portals.Portal;
+import eu.nurkert.porticlegun.portals.PortalOpenHandler;
+import eu.nurkert.porticlegun.portals.SettingsHandler;
+import eu.nurkert.porticlegun.portals.TeleportationHandler;
+import eu.nurkert.porticlegun.visualization.GunColorHandler;
+import eu.nurkert.porticlegun.visualization.PortalColor;
+import eu.nurkert.porticlegun.visualization.TitleHandler;
+import eu.nurkert.porticlegun.visualization.VisualizationHandler;
+import eu.nurkert.porticlegun.visualization.concrete.PortalVisualizationType;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -61,8 +65,6 @@ public class LoadingHandler implements Listener {
         register(new SettingsHandler());
         register(new TitleHandler());
         updateGravityGunRegistration();
-
-        if (developMode) register(new DebugHandler());
     }
 
     private void updateGravityGunRegistration() {

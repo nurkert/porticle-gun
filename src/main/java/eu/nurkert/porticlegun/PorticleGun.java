@@ -1,9 +1,8 @@
 package eu.nurkert.porticlegun;
 
 import eu.nurkert.porticlegun.config.ConfigManager;
-import eu.nurkert.porticlegun.handlers.LoadingHandler;
-import eu.nurkert.porticlegun.handlers.PersistentHandler;
 import eu.nurkert.porticlegun.messages.MessageManager;
+import eu.nurkert.porticlegun.persistence.PersistentHandler;
 import eu.nurkert.porticlegun.util.WorldGuardIntegration;
 import org.bukkit.Bukkit;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -71,7 +70,6 @@ public final class PorticleGun extends JavaPlugin {
         return true;
     }
 
-    public static boolean developMode = false;
     static PorticleGun plugin;
     private boolean worldGuardEnabled;
     private boolean enabled;

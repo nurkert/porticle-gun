@@ -1,4 +1,4 @@
-package eu.nurkert.porticlegun.handlers;
+package eu.nurkert.porticlegun.audio;
 
 import org.bukkit.Location;
 import org.bukkit.Sound;

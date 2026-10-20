@@ -1,6 +1,5 @@
-package eu.nurkert.porticlegun.handlers.portals;
+package eu.nurkert.porticlegun.portals;
 
-import eu.nurkert.porticlegun.portals.Portal;
 import java.util.ArrayList;
 import java.util.HashMap;
 import org.bukkit.Location;

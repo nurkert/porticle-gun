@@ -1,8 +1,8 @@
-package eu.nurkert.porticlegun.handlers.visualization;
+package eu.nurkert.porticlegun.visualization;
 
-import eu.nurkert.porticlegun.handlers.item.ItemHandler;
-import eu.nurkert.porticlegun.handlers.portals.ActivePortalsHandler;
+import eu.nurkert.porticlegun.item.ItemHandler;
 import eu.nurkert.porticlegun.messages.MessageManager;
+import eu.nurkert.porticlegun.portals.ActivePortalsHandler;
 import java.util.Map;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
