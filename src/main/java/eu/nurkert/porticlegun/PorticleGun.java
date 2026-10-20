@@ -20,6 +20,7 @@ public final class PorticleGun extends JavaPlugin {
             return;
         }
         getLogger().info("PorticleGun has been enabled!");
+        enabled = true;
 
         saveDefaultConfig();
         ConfigManager.init();
@@ -37,6 +38,15 @@ public final class PorticleGun extends JavaPlugin {
         } catch (ClassNotFoundException | NoClassDefFoundError exception) {
             getLogger().info("WorldGuard classes not found - integration disabled.");
         }
+    }
+
+    @Override
+    public void onDisable() {
+        if (!enabled) {
+            return;
+        }
+        LoadingHandler.getInstance().shutdown();
+        PersistentHandler.saveAll();
     }
 
     static final int[] MINIMUM_SERVER_VERSION = {1, 21, 4};
@@ -64,6 +74,7 @@ public final class PorticleGun extends JavaPlugin {
     public static boolean developMode = false;
     static PorticleGun plugin;
     private boolean worldGuardEnabled;
+    private boolean enabled;
 
     public PorticleGun() {
         plugin = this;

@@ -146,6 +146,17 @@ public class LoadingHandler {
         }
     }
 
+    /**
+     * Releases everything that must not outlive the plugin, e.g. blocks carried with the gravity gun.
+     */
+    public void shutdown() {
+        if (gravityGun != null) {
+            gravityGun.shutdown();
+            HandlerList.unregisterAll(gravityGun);
+            gravityGun = null;
+        }
+    }
+
     public void reload() {
         MessageManager.reload(PorticleGun.getInstance());
         porticleGunCommand.reloadMessages();
