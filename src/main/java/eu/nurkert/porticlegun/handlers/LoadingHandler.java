@@ -49,7 +49,7 @@ public class LoadingHandler {
         register(new PortalOpenHandler());
         register(new ActivePortalsHandler());
         register(porticleGunCommand);
-        register(new VisualizationHanlder());
+        register(new VisualizationHandler());
         register(new TeleportationHandler());
         register(new SettingsHandler());
         register(new TitleHandler());
@@ -104,37 +104,37 @@ public class LoadingHandler {
      * Loads all portals from the portals.yml file
      */
     private void loadPortals() {
-        if (PersitentHandler.exists("porticleguns")) {
-            PersitentHandler.getSection("porticleguns").forEach(porticlegun -> {
+        if (PersistentHandler.exists("porticleguns")) {
+            PersistentHandler.getSection("porticleguns").forEach(porticlegun -> {
                 String basePath = "porticleguns." + porticlegun;
                 String gunID = ItemHandler.useable(porticlegun);
                 if (gunID == null) {
                     PorticleGun.getInstance().getLogger().warning("Skipping persisted entry '" + porticlegun + "' because it contains invalid characters.");
                     return;
                 }
-                PortalVisualizationType visualizationType = PortalVisualizationType.fromString(PersitentHandler.get(basePath + ".shape"));
-                if (PersitentHandler.exists(basePath + ".primary")) {
+                PortalVisualizationType visualizationType = PortalVisualizationType.fromString(PersistentHandler.get(basePath + ".shape"));
+                if (PersistentHandler.exists(basePath + ".primary")) {
                     PortalColor primaryColor;
-                    if (PersitentHandler.exists(basePath + ".primary.color")) {
-                        primaryColor = PortalColor.valueOf(PersitentHandler.get(basePath + ".primary.color"));
+                    if (PersistentHandler.exists(basePath + ".primary.color")) {
+                        primaryColor = PortalColor.valueOf(PersistentHandler.get(basePath + ".primary.color"));
                     } else {
                         primaryColor = GunColorHandler.DEFAULT_PRIMARY;
                     }
                     PortalColor secondaryColor;
-                    if (PersitentHandler.exists(basePath + ".secondary.color")) {
-                        secondaryColor = PortalColor.valueOf(PersitentHandler.get(basePath + ".secondary.color"));
+                    if (PersistentHandler.exists(basePath + ".secondary.color")) {
+                        secondaryColor = PortalColor.valueOf(PersistentHandler.get(basePath + ".secondary.color"));
                     } else {
                         secondaryColor = GunColorHandler.DEFAULT_SECONDARY;
                     }
                     GunColorHandler.setColors(gunID, primaryColor, secondaryColor);
 
-                    if (PersitentHandler.exists(basePath + ".primary.position")) {
-                        String position = PersitentHandler.get(basePath + ".primary.position");
+                    if (PersistentHandler.exists(basePath + ".primary.position")) {
+                        String position = PersistentHandler.get(basePath + ".primary.position");
                         Portal primary = new Portal(position, gunID, Portal.PortalType.PRIMARY, visualizationType);
                         ActivePortalsHandler.setPrimaryPortal(gunID, primary);
                     }
-                    if (PersitentHandler.exists(basePath + ".secondary.position")) {
-                        String position = PersitentHandler.get(basePath + ".secondary.position");
+                    if (PersistentHandler.exists(basePath + ".secondary.position")) {
+                        String position = PersistentHandler.get(basePath + ".secondary.position");
                         Portal secondary = new Portal(position, gunID, Portal.PortalType.SECONDARY, visualizationType);
                         ActivePortalsHandler.setSecondaryPortal(gunID, secondary);
                     }
@@ -148,7 +148,7 @@ public class LoadingHandler {
         porticleGunCommand.reloadMessages();
         ConfigManager.reload();
         updateGravityGunRegistration();
-        PersitentHandler.reload();
+        PersistentHandler.reload();
         ActivePortalsHandler.clear();
         GunColorHandler.clear();
         loadPortals();

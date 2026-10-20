@@ -3,7 +3,7 @@ package eu.nurkert.porticlegun.handlers.portals;
 import eu.nurkert.porticlegun.builders.BannerBuilder;
 import eu.nurkert.porticlegun.builders.ItemBuilder;
 import eu.nurkert.porticlegun.handlers.AudioHandler;
-import eu.nurkert.porticlegun.handlers.PersitentHandler;
+import eu.nurkert.porticlegun.handlers.PersistentHandler;
 import eu.nurkert.porticlegun.handlers.visualization.GunColorHandler;
 import eu.nurkert.porticlegun.handlers.visualization.GunColors;
 import eu.nurkert.porticlegun.handlers.item.ItemHandler;
@@ -88,8 +88,8 @@ public class SettingsHandler implements Listener {
                             if(portal != null)
                                 portal.toggleVisualizationType();
 
-                        PortalVisualizationType visualizationType = PortalVisualizationType.fromString(PersitentHandler.get("porticleguns." + ItemHandler.saveable(gunID) + ".shape"));
-                        PersitentHandler.set("porticleguns." + ItemHandler.saveable(gunID) + ".shape", visualizationType.getNext().toString());
+                        PortalVisualizationType visualizationType = PortalVisualizationType.fromString(PersistentHandler.get("porticleguns." + ItemHandler.saveable(gunID) + ".shape"));
+                        PersistentHandler.set("porticleguns." + ItemHandler.saveable(gunID) + ".shape", visualizationType.getNext().toString());
 
                         Inventory inv = getCurrentSettings(gunID, player);
                         event.getClickedInventory().setContents(inv.getContents());
@@ -148,7 +148,7 @@ public class SettingsHandler implements Listener {
 
         inv.setItem(4, createResetItem(player));
 
-        PortalVisualizationType visualizationType = PortalVisualizationType.fromString(PersitentHandler.get("porticleguns." + ItemHandler.saveable(gunID) + ".shape"));
+        PortalVisualizationType visualizationType = PortalVisualizationType.fromString(PersistentHandler.get("porticleguns." + ItemHandler.saveable(gunID) + ".shape"));
 
         boolean ellpitic = visualizationType == PortalVisualizationType.ELLIPTIC;
 

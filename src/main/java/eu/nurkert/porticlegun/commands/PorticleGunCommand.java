@@ -4,7 +4,7 @@ import eu.nurkert.porticlegun.PorticleGun;
 import eu.nurkert.porticlegun.builders.ItemBuilder;
 import eu.nurkert.porticlegun.config.ConfigManager;
 import eu.nurkert.porticlegun.handlers.LoadingHandler;
-import eu.nurkert.porticlegun.handlers.PersitentHandler;
+import eu.nurkert.porticlegun.handlers.PersistentHandler;
 import eu.nurkert.porticlegun.handlers.item.ItemHandler;
 import eu.nurkert.porticlegun.handlers.portals.ActivePortalsHandler;
 import eu.nurkert.porticlegun.messages.MessageManager;
@@ -203,12 +203,12 @@ public class PorticleGunCommand implements CommandExecutor, Listener, TabComplet
     }
 
     private void handleList(CommandSender sender) {
-        if (!PersitentHandler.exists("porticleguns")) {
+        if (!PersistentHandler.exists("porticleguns")) {
             sender.sendMessage(MessageManager.getMessage(sender, "commands.list.empty"));
             return;
         }
 
-        List<String> entries = PersitentHandler.getSection("porticleguns");
+        List<String> entries = PersistentHandler.getSection("porticleguns");
         if (entries.isEmpty()) {
             sender.sendMessage(MessageManager.getMessage(sender, "commands.list.empty"));
             return;
@@ -223,8 +223,8 @@ public class PorticleGunCommand implements CommandExecutor, Listener, TabComplet
                 continue;
             }
             String basePath = "porticleguns." + entry;
-            boolean persistedPrimary = PersitentHandler.exists(basePath + ".primary.position");
-            boolean persistedSecondary = PersitentHandler.exists(basePath + ".secondary.position");
+            boolean persistedPrimary = PersistentHandler.exists(basePath + ".primary.position");
+            boolean persistedSecondary = PersistentHandler.exists(basePath + ".secondary.position");
             boolean activePrimary = ActivePortalsHandler.hasPrimaryPortal(gunId);
             boolean activeSecondary = ActivePortalsHandler.hasSecondaryPortal(gunId);
 
@@ -358,9 +358,9 @@ public class PorticleGunCommand implements CommandExecutor, Listener, TabComplet
         }
 
         String encodedId = ItemHandler.saveable(gunId);
-        if (PersitentHandler.exists("porticleguns." + encodedId)) {
-            PersitentHandler.set("porticleguns." + encodedId, null);
-            PersitentHandler.saveAll();
+        if (PersistentHandler.exists("porticleguns." + encodedId)) {
+            PersistentHandler.set("porticleguns." + encodedId, null);
+            PersistentHandler.saveAll();
             modified = true;
         }
 
@@ -518,11 +518,11 @@ public class PorticleGunCommand implements CommandExecutor, Listener, TabComplet
                 return Collections.emptyList();
             }
             if (sub.equals("remove")) {
-                if (!PersitentHandler.exists("porticleguns")) {
+                if (!PersistentHandler.exists("porticleguns")) {
                     return Collections.emptyList();
                 }
                 String prefix = args[1].toLowerCase(Locale.ROOT);
-                return PersitentHandler.getSection("porticleguns").stream()
+                return PersistentHandler.getSection("porticleguns").stream()
                         .map(ItemHandler::useable)
                         .filter(Objects::nonNull)
                         .filter(id -> id.toLowerCase(Locale.ROOT).startsWith(prefix))

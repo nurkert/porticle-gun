@@ -2,7 +2,7 @@ package eu.nurkert.porticlegun;
 
 import eu.nurkert.porticlegun.config.ConfigManager;
 import eu.nurkert.porticlegun.handlers.LoadingHandler;
-import eu.nurkert.porticlegun.handlers.PersitentHandler;
+import eu.nurkert.porticlegun.handlers.PersistentHandler;
 import eu.nurkert.porticlegun.messages.MessageManager;
 import eu.nurkert.porticlegun.util.WorldGuardIntegration;
 import org.bukkit.Bukkit;
@@ -21,7 +21,7 @@ public final class PorticleGun extends JavaPlugin {
 
         saveDefaultConfig();
         ConfigManager.init();
-        PersitentHandler.getInstance();
+        PersistentHandler.getInstance();
         MessageManager.init(this);
         LoadingHandler.getInstance();
         worldGuardEnabled = false;

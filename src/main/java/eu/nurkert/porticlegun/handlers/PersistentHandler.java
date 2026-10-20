@@ -9,14 +9,14 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
-public class PersitentHandler {
+public class PersistentHandler {
     // Singleton construction
-    final private static PersitentHandler instance = new PersitentHandler();
+    final private static PersistentHandler instance = new PersistentHandler();
 
     private static PortalsFile portalsFile;
     private static FileConfiguration config;
 
-    private PersitentHandler() {
+    private PersistentHandler() {
         portalsFile = new PortalsFile();
         config = portalsFile.getConfig();
     }
@@ -24,7 +24,7 @@ public class PersitentHandler {
     /**
      * @return the singleton instance
      */
-    public static PersitentHandler getInstance() {
+    public static PersistentHandler getInstance() {
         return instance;
     }
 

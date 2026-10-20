@@ -2,7 +2,7 @@ package eu.nurkert.porticlegun.handlers.portals;
 
 import eu.nurkert.porticlegun.PorticleGun;
 import eu.nurkert.porticlegun.handlers.AudioHandler;
-import eu.nurkert.porticlegun.handlers.PersitentHandler;
+import eu.nurkert.porticlegun.handlers.PersistentHandler;
 import eu.nurkert.porticlegun.handlers.item.ItemHandler;
 import eu.nurkert.porticlegun.handlers.visualization.GunColorHandler;
 import eu.nurkert.porticlegun.handlers.visualization.PortalColor;
@@ -149,7 +149,7 @@ public class PortalOpenHandler implements Listener {
         }
 
         PortalVisualizationType visualizationType = PortalVisualizationType.fromString(
-                PersitentHandler.get("porticleguns." + ItemHandler.saveable(gunID) + ".shape"));
+                PersistentHandler.get("porticleguns." + ItemHandler.saveable(gunID) + ".shape"));
         Portal portal = new Portal(potential, gunID, type, visualizationType);
         if (type == Portal.PortalType.PRIMARY) {
             ActivePortalsHandler.setPrimaryPortal(gunID, portal);
