@@ -1,5 +1,6 @@
 package eu.nurkert.porticlegun.portals;
 
+import eu.nurkert.porticlegun.PorticleGun;
 import eu.nurkert.porticlegun.handlers.PersistentHandler;
 import eu.nurkert.porticlegun.handlers.item.ItemHandler;
 import eu.nurkert.porticlegun.handlers.visualization.GunColorHandler;
@@ -52,6 +53,14 @@ public class Portal extends PotentialPortal {
         this.linkedPortal = null;
         this.visualizationType = visualizationType;
         this.visualizationResumeTimeMillis = 0L;
+    }
+
+    /**
+     * @param position a position string as created by {@link #getPositionString()}
+     * @return the name of the world the position is in
+     */
+    public static String extractWorldName(String position) {
+        return position.split(":")[0];
     }
 
     private static Location extractLocation(String from) {
@@ -126,6 +135,12 @@ public class Portal extends PotentialPortal {
     }
 
     public void saveAll() {
+        if (location.getWorld() == null) {
+            PorticleGun.getInstance()
+                    .getLogger()
+                    .warning("Not saving portal of gun " + gunID + " because its world is not loaded.");
+            return;
+        }
         String basePath = "porticleguns." + ItemHandler.saveable(gunID);
         PersistentHandler.set(basePath + "." + type.toString().toLowerCase() + ".position", getPositionString());
         PortalColor color = GunColorHandler.getColors(gunID).get(type);

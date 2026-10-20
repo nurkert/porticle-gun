@@ -3,7 +3,7 @@ version: '${project.version}'
 main: eu.nurkert.porticlegun.PorticleGun
 api-version: '1.21'
 authors: [ nurkert ]
-softdepend: [WorldGuard]
+softdepend: [WorldGuard, Multiverse-Core]
 
 commands:
   porticlegun:

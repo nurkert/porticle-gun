@@ -109,17 +109,17 @@ Reihenfolge = Priorität. Unter jedem Punkt: Problem, Lösungsansatz, Notizen be
 
 ## P2 – Robustheit / Performance
 
-- [ ] **PG-04 Eine unbekannte Farbe bricht das Laden aller Portale ab**
+- [x] **PG-04 Eine unbekannte Farbe bricht das Laden aller Portale ab**
   - Ort: `handlers/LoadingHandler.java` (`loadPortals`)
   - Problem: `PortalColor.valueOf` wirft, wenn eine Custom-Farbe aus der Config entfernt wurde. Das beendet die `forEach`, alle folgenden Guns verlieren ihre Portale.
   - Ansatz: Jeden Eintrag einzeln absichern, auf Default-Farbe zurückfallen, Warnung loggen.
-  - Notizen:
+  - Notizen: Jeder Gun-Eintrag wird einzeln in try/catch geladen. Unbekannte Farben fallen mit Warnung auf die Default-Farbe zurück. Nebenbei gefixt: Farben und Sekundärportal wurden bisher nur geladen, wenn auch ein Primärportal gespeichert war. Jetzt wird jedes Portal unabhängig geladen.
 
-- [ ] **PG-05 Portale in später geladenen Welten werden zu null-Welt-Portalen**
+- [x] **PG-05 Portale in später geladenen Welten werden zu null-Welt-Portalen**
   - Ort: `portals/Portal.java` (`extractLocation`)
   - Problem: `Bukkit.getWorld()` gibt `null` zurück, wenn z. B. Multiverse die Welt später lädt. Das Portal ist tot, `getPositionString()` wirft beim Speichern eine NPE.
   - Ansatz: Portale mit fehlender Welt zurückstellen und bei `WorldLoadEvent` nachladen, nie mit null-Welt speichern. Multiverse-Core als `softdepend` eintragen.
-  - Notizen:
+  - Notizen: Portale, deren Welt beim Laden noch fehlt, werden zurückgestellt und bei `WorldLoadEvent` aktiviert, außer der Spieler hat in der Zwischenzeit schon ein neues Portal geschossen. `Portal.saveAll()` speichert nie mit null-Welt. `Multiverse-Core` als `softdepend` eingetragen.
 
 - [ ] **PG-06 Jeder `set()` schreibt `portals.yml` synchron auf die Platte**
   - Ort: `handlers/PersitentHandler.java:39`

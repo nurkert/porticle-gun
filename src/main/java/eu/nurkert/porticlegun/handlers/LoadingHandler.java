@@ -13,24 +13,32 @@ import eu.nurkert.porticlegun.handlers.visualization.*;
 import eu.nurkert.porticlegun.handlers.visualization.concrete.PortalVisualizationType;
 import eu.nurkert.porticlegun.messages.MessageManager;
 import eu.nurkert.porticlegun.portals.Portal;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
+import java.util.logging.Level;
 import org.bukkit.Bukkit;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.PluginCommand;
 import org.bukkit.command.TabCompleter;
+import org.bukkit.event.EventHandler;
 import org.bukkit.event.HandlerList;
 import org.bukkit.event.Listener;
+import org.bukkit.event.world.WorldLoadEvent;
 
-public class LoadingHandler {
+public class LoadingHandler implements Listener {
 
     // Singleton construction
     private static final LoadingHandler instance = new LoadingHandler();
 
     private final PorticleGunCommand porticleGunCommand;
     private GravityGun gravityGun;
+    private final List<PendingPortal> pendingPortals = new ArrayList<>();
 
     private LoadingHandler() {
         // Private constructor
         porticleGunCommand = new PorticleGunCommand();
+        register(this);
         registerEvents();
         registerCommands();
         loadPortals();
@@ -100,51 +108,104 @@ public class LoadingHandler {
     }
 
     /**
-     * Loads all portals from the portals.yml file
+     * Loads all portals from the portals.yml file. A broken entry only skips that gun, portals in worlds that are not
+     * loaded yet are activated once their world loads.
      */
     private void loadPortals() {
-        if (PersistentHandler.exists("porticleguns")) {
-            PersistentHandler.getSection("porticleguns").forEach(porticlegun -> {
-                String basePath = "porticleguns." + porticlegun;
-                String gunID = ItemHandler.useable(porticlegun);
-                if (gunID == null) {
-                    PorticleGun.getInstance()
-                            .getLogger()
-                            .warning("Skipping persisted entry '" + porticlegun
-                                    + "' because it contains invalid characters.");
-                    return;
-                }
-                PortalVisualizationType visualizationType =
-                        PortalVisualizationType.fromString(PersistentHandler.get(basePath + ".shape"));
-                if (PersistentHandler.exists(basePath + ".primary")) {
-                    PortalColor primaryColor;
-                    if (PersistentHandler.exists(basePath + ".primary.color")) {
-                        primaryColor = PortalColor.valueOf(PersistentHandler.get(basePath + ".primary.color"));
-                    } else {
-                        primaryColor = GunColorHandler.DEFAULT_PRIMARY;
-                    }
-                    PortalColor secondaryColor;
-                    if (PersistentHandler.exists(basePath + ".secondary.color")) {
-                        secondaryColor = PortalColor.valueOf(PersistentHandler.get(basePath + ".secondary.color"));
-                    } else {
-                        secondaryColor = GunColorHandler.DEFAULT_SECONDARY;
-                    }
-                    GunColorHandler.setColors(gunID, primaryColor, secondaryColor);
-
-                    if (PersistentHandler.exists(basePath + ".primary.position")) {
-                        String position = PersistentHandler.get(basePath + ".primary.position");
-                        Portal primary = new Portal(position, gunID, Portal.PortalType.PRIMARY, visualizationType);
-                        ActivePortalsHandler.setPrimaryPortal(gunID, primary);
-                    }
-                    if (PersistentHandler.exists(basePath + ".secondary.position")) {
-                        String position = PersistentHandler.get(basePath + ".secondary.position");
-                        Portal secondary = new Portal(position, gunID, Portal.PortalType.SECONDARY, visualizationType);
-                        ActivePortalsHandler.setSecondaryPortal(gunID, secondary);
-                    }
-                }
-            });
+        pendingPortals.clear();
+        for (String entry : PersistentHandler.getSection("porticleguns")) {
+            try {
+                loadGun(entry);
+            } catch (RuntimeException exception) {
+                PorticleGun.getInstance()
+                        .getLogger()
+                        .log(
+                                Level.WARNING,
+                                "Skipping persisted entry '" + entry + "' because it could not be loaded.",
+                                exception);
+            }
         }
     }
+
+    private void loadGun(String entry) {
+        String basePath = "porticleguns." + entry;
+        String gunID = ItemHandler.useable(entry);
+        if (gunID == null) {
+            PorticleGun.getInstance()
+                    .getLogger()
+                    .warning("Skipping persisted entry '" + entry + "' because it contains invalid characters.");
+            return;
+        }
+        PortalVisualizationType visualizationType =
+                PortalVisualizationType.fromString(PersistentHandler.get(basePath + ".shape"));
+
+        GunColorHandler.setColors(
+                gunID,
+                readColor(basePath + ".primary.color", GunColorHandler.DEFAULT_PRIMARY),
+                readColor(basePath + ".secondary.color", GunColorHandler.DEFAULT_SECONDARY));
+
+        loadPortal(gunID, Portal.PortalType.PRIMARY, basePath, visualizationType);
+        loadPortal(gunID, Portal.PortalType.SECONDARY, basePath, visualizationType);
+    }
+
+    private PortalColor readColor(String path, PortalColor fallback) {
+        String name = PersistentHandler.get(path);
+        if (name == null) {
+            return fallback;
+        }
+        try {
+            return PortalColor.valueOf(name);
+        } catch (IllegalArgumentException exception) {
+            PorticleGun.getInstance()
+                    .getLogger()
+                    .warning("Unknown portal colour '" + name + "' at " + path + ", using " + fallback + " instead.");
+            return fallback;
+        }
+    }
+
+    private void loadPortal(String gunID, Portal.PortalType type, String basePath, PortalVisualizationType shape) {
+        String position = PersistentHandler.get(basePath + "." + type.name().toLowerCase() + ".position");
+        if (position == null) {
+            return;
+        }
+
+        PendingPortal portal = new PendingPortal(gunID, type, position, shape);
+        if (Bukkit.getWorld(Portal.extractWorldName(position)) == null) {
+            pendingPortals.add(portal);
+            return;
+        }
+        activate(portal);
+    }
+
+    private void activate(PendingPortal pending) {
+        Portal portal = new Portal(pending.position(), pending.gunID(), pending.type(), pending.shape());
+        if (pending.type() == Portal.PortalType.PRIMARY) {
+            ActivePortalsHandler.setPrimaryPortal(pending.gunID(), portal);
+        } else {
+            ActivePortalsHandler.setSecondaryPortal(pending.gunID(), portal);
+        }
+    }
+
+    @EventHandler
+    public void on(WorldLoadEvent event) {
+        String worldName = event.getWorld().getName();
+        Iterator<PendingPortal> iterator = pendingPortals.iterator();
+        while (iterator.hasNext()) {
+            PendingPortal pending = iterator.next();
+            if (Portal.extractWorldName(pending.position()).equals(worldName)) {
+                iterator.remove();
+                boolean replacedInMeantime = pending.type() == Portal.PortalType.PRIMARY
+                        ? ActivePortalsHandler.hasPrimaryPortal(pending.gunID())
+                        : ActivePortalsHandler.hasSecondaryPortal(pending.gunID());
+                if (!replacedInMeantime) {
+                    activate(pending);
+                }
+            }
+        }
+    }
+
+    private record PendingPortal(
+            String gunID, Portal.PortalType type, String position, PortalVisualizationType shape) {}
 
     /**
      * Releases everything that must not outlive the plugin, e.g. blocks carried with the gravity gun.
