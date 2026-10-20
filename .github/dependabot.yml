@@ -1,0 +1,13 @@
+version: 2
+updates:
+  - package-ecosystem: maven
+    directory: /
+    schedule:
+      interval: weekly
+    ignore:
+      # the Spigot API version is the minimum supported server version and is raised deliberately
+      - dependency-name: org.spigotmc:spigot-api
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly

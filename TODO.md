@@ -133,19 +133,19 @@ Reihenfolge = Priorität. Unter jedem Punkt: Problem, Lösungsansatz, Notizen be
   - Ansatz: `.gitignore` für Maven, IntelliJ und macOS anlegen, Dateien mit `git rm --cached` aus dem Index nehmen.
   - Notizen: `.gitignore` (Maven, IntelliJ, Eclipse/VS Code, macOS, `run/` für Testserver) angelegt, `target/`, `.idea/`, `.DS_Store`, `PorticleGun.iml` aus dem Index entfernt (lokal bleiben sie liegen).
 
-- [ ] **PG-13 CI/CD-Pipeline mit GitHub Actions aufsetzen**
+- [x] **PG-13 CI/CD-Pipeline mit GitHub Actions aufsetzen**
   - Ort: `.github/workflows/` (existiert noch nicht), Remote `github.com/nurkert/porticle-gun`
   - Problem: Es gibt keine automatischen Builds und Tests und keine reproduzierbaren Releases. Jars werden bisher lokal über ein IntelliJ-Artifact gebaut (`.idea/artifacts/PorticleGun_jar.xml`).
   - Ansatz:
-    - [ ] CI-Workflow: bei Push auf `main` und bei jedem PR `mvn -B verify` mit Java 21 (Temurin) und Maven-Cache
-    - [ ] Gebautes Jar als Workflow-Artifact hochladen (zum Testen von PR-Builds)
-    - [ ] Release-Workflow: bei Tag `v*` Version aus dem Tag setzen, bauen, GitHub Release mit Jar und automatisch erzeugten Release Notes anlegen
-    - [ ] Dependabot für Maven-Dependencies und GitHub Actions
+    - [x] CI-Workflow: bei Push auf `main` und bei jedem PR `mvn -B verify` mit Java 21 (Temurin) und Maven-Cache
+    - [x] Gebautes Jar als Workflow-Artifact hochladen (zum Testen von PR-Builds)
+    - [x] Release-Workflow: bei Tag `v*` Version aus dem Tag setzen, bauen, GitHub Release mit Jar und automatisch erzeugten Release Notes anlegen
+    - [x] Dependabot für Maven-Dependencies und GitHub Actions
     - [ ] Build-Badge in die README
     - [ ] Branch Protection auf `main` mit verpflichtendem CI-Check (macht der User in den GitHub-Einstellungen)
     - [ ] Optional: Upload nach Modrinth/Hangar per Action. Spigot hat keine Upload-API, das bleibt manuell.
   - Abhängigkeiten: PG-07 (`.gitignore`), PG-08 (eine Versionsquelle), PG-11 (Tests, damit `verify` etwas prüft)
-  - Notizen:
+  - Notizen: `.github/workflows/ci.yml` (Push auf main + PRs: `mvn verify` inkl. Tests und Spotless-Check, danach Smoke-Test auf echtem Paper 1.21.4, Jar als Artifact). `release.yml` (Tag `v*`: Version aus dem Tag, Build, Smoke-Test, GitHub Release mit Jar und automatischen Release Notes, Tags mit `-` werden Pre-Release). `dependabot.yml` für Maven und Actions (spigot-api ausgenommen, weil das die Mindestversion ist). `scripts/smoke-test.sh` startet Paper mit dem Plugin und schlägt fehl, wenn PorticleGun nicht sauber startet/stoppt oder eine Exception aus Plugin-Code kommt, lokal erfolgreich gelaufen. Release-Ablauf lokal simuliert. Badge kommt mit PG-18. **Offen für dich:** Branch Protection auf `main` mit Pflicht-Check „Build and test“ in den GitHub-Einstellungen aktivieren. Modrinth/Hangar-Upload habe ich weggelassen, das Plugin ist dort nicht gelistet.
 
 - [ ] **PG-17 Repo gründlich aufräumen**
   - Ziel: Ein Repo, das man klonen, mit `mvn verify` bauen und ohne Vorwissen verstehen kann.
