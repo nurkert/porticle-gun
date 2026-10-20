@@ -3,8 +3,8 @@ package eu.nurkert.porticlegun;
 import eu.nurkert.porticlegun.commands.PorticleGunCommand;
 import eu.nurkert.porticlegun.config.ConfigManager;
 import eu.nurkert.porticlegun.gravity.GravityGun;
+import eu.nurkert.porticlegun.item.GunItemUpdater;
 import eu.nurkert.porticlegun.item.ItemHandler;
-import eu.nurkert.porticlegun.item.LegacyGunMigration;
 import eu.nurkert.porticlegun.item.RecipeHandler;
 import eu.nurkert.porticlegun.messages.MessageManager;
 import eu.nurkert.porticlegun.persistence.PersistentHandler;
@@ -13,6 +13,7 @@ import eu.nurkert.porticlegun.portals.Portal;
 import eu.nurkert.porticlegun.portals.PortalOpenHandler;
 import eu.nurkert.porticlegun.portals.SettingsHandler;
 import eu.nurkert.porticlegun.portals.TeleportationHandler;
+import eu.nurkert.porticlegun.resourcepack.ResourcePackHandler;
 import eu.nurkert.porticlegun.visualization.GunColorHandler;
 import eu.nurkert.porticlegun.visualization.PortalColor;
 import eu.nurkert.porticlegun.visualization.TitleHandler;
@@ -38,6 +39,7 @@ public class LoadingHandler implements Listener {
 
     private final PorticleGunCommand porticleGunCommand;
     private GravityGun gravityGun;
+    private final ResourcePackHandler resourcePackHandler = new ResourcePackHandler();
     private final List<PendingPortal> pendingPortals = new ArrayList<>();
 
     private LoadingHandler() {
@@ -58,7 +60,8 @@ public class LoadingHandler implements Listener {
 
     private void registerEvents() {
         register(new RecipeHandler());
-        register(new LegacyGunMigration());
+        register(new GunItemUpdater());
+        register(resourcePackHandler);
         register(new PortalOpenHandler());
         register(new ActivePortalsHandler());
         register(porticleGunCommand.getMenu());
@@ -225,6 +228,7 @@ public class LoadingHandler implements Listener {
     public void reload() {
         MessageManager.reload(PorticleGun.getInstance());
         ConfigManager.reload();
+        resourcePackHandler.reload();
         updateGravityGunRegistration();
         PersistentHandler.reload();
         ActivePortalsHandler.clear();

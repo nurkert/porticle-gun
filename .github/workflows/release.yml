@@ -31,6 +31,10 @@ jobs:
 
       - uses: softprops/action-gh-release@v2
         with:
-          files: target/PorticleGun-*.jar
+          files: |
+            target/PorticleGun-*.jar
+            target/PorticleGun-resourcepack-*.zip
+            target/PorticleGun-bedrock-*.mcpack
+            src/main/resourcepack/geyser/porticlegun_mappings.json
           generate_release_notes: true
           prerelease: ${{ contains(github.ref_name, '-') }}

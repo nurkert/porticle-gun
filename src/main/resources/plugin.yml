@@ -4,6 +4,8 @@ main: eu.nurkert.porticlegun.PorticleGun
 api-version: '1.21'
 authors: [ nurkert ]
 softdepend: [WorldGuard, Multiverse-Core, floodgate]
+# installs the Bedrock pack before Geyser reads its packs folder
+loadbefore: [Geyser-Spigot]
 
 commands:
   porticlegun:

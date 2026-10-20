@@ -1,0 +1,16 @@
+{
+  "format_version": 2,
+  "items": {
+    "minecraft:brewing_stand": [
+      {
+        "type": "definition",
+        "model": "porticlegun:portal_gun",
+        "bedrock_identifier": "porticlegun:portal_gun",
+        "display_name": "PorticleGun",
+        "bedrock_options": {
+          "display_handheld": true
+        }
+      }
+    ]
+  }
+}

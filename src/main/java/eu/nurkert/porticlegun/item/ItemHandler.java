@@ -34,6 +34,7 @@ public class ItemHandler implements Listener {
         ItemMeta meta = gun.getItemMeta();
         meta.getPersistentDataContainer().set(gunIdKey(), PersistentDataType.STRING, id);
         gun.setItemMeta(meta);
+        GunAppearance.apply(gun, id);
         return gun;
     }
 

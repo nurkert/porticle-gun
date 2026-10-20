@@ -34,5 +34,8 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: PorticleGun-${{ github.sha }}
-          path: target/PorticleGun-*.jar
+          path: |
+            target/PorticleGun-*.jar
+            target/PorticleGun-resourcepack-*.zip
+            target/PorticleGun-bedrock-*.mcpack
           if-no-files-found: error
