@@ -29,7 +29,7 @@ jobs:
       - name: Smoke test on Paper 1.21.4
         run: scripts/smoke-test.sh "target/PorticleGun-${GITHUB_REF_NAME#v}.jar" 1.21.4
 
-      - uses: softprops/action-gh-release@v2
+      - uses: softprops/action-gh-release@v3
         with:
           files: |
             target/PorticleGun-*.jar
