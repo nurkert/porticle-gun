@@ -195,8 +195,8 @@ Reihenfolge = Priorität. Unter jedem Punkt: Problem, Lösungsansatz, Notizen be
   - Ansatz: JUnit 5 ergänzen, Tests für Wand→Wand, Wand→Boden, Boden→Decke und Erhaltung des Betrags.
   - Notizen: JUnit 5 eingebunden. `TeleportationHandlerTest` (6 Tests): Basen orthonormal für alle 6 Richtungen, Eintrittsgeschwindigkeit verlässt das Zielportal für alle 36 Richtungspaare, Betrag bleibt erhalten, Höhenanteil bleibt bei Wand→Wand, Boden→Wand und Boden→Boden. `PorticleGunTest` (2 Tests) für die Versionsprüfung. Alle 8 grün über `mvn verify`.
 
-- [ ] **PG-12 Entity-Teleport-Check skaliert linear mit der Portalanzahl**
+- [x] **PG-12 Entity-Teleport-Check skaliert linear mit der Portalanzahl**
   - Ort: `handlers/portals/TeleportationHandler.java:70` (`tickEntityTeleports`)
   - Problem: Jeden Tick `getNearbyEntities` pro Portal, auch in ungeladenen Chunks.
   - Ansatz: Portale in ungeladenen Chunks überspringen. Erst messen, dann optimieren.
-  - Notizen:
+  - Notizen: Portale in ungeladenen Chunks werden im Entity-Tick übersprungen (`isChunkLoaded`, lädt nichts nach). Ein Prüfintervall von 2 Ticks habe ich bewusst nicht eingebaut: ohne Messung auf einem echten Server lohnt das nicht, und es würde schnelle Entities durchrutschen lassen.
