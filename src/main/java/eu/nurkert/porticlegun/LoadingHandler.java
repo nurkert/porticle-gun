@@ -59,7 +59,7 @@ public class LoadingHandler implements Listener {
         register(new RecipeHandler());
         register(new PortalOpenHandler());
         register(new ActivePortalsHandler());
-        register(porticleGunCommand);
+        register(porticleGunCommand.getMenu());
         register(new VisualizationHandler());
         register(new TeleportationHandler());
         register(new SettingsHandler());
@@ -222,7 +222,6 @@ public class LoadingHandler implements Listener {
 
     public void reload() {
         MessageManager.reload(PorticleGun.getInstance());
-        porticleGunCommand.reloadMessages();
         ConfigManager.reload();
         updateGravityGunRegistration();
         PersistentHandler.reload();

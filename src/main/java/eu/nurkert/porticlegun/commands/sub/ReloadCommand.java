@@ -1,0 +1,27 @@
+package eu.nurkert.porticlegun.commands.sub;
+
+import eu.nurkert.porticlegun.LoadingHandler;
+import eu.nurkert.porticlegun.PorticleGun;
+import eu.nurkert.porticlegun.commands.SubCommand;
+import eu.nurkert.porticlegun.messages.MessageManager;
+import org.bukkit.command.CommandSender;
+
+public class ReloadCommand implements SubCommand {
+
+    @Override
+    public String getName() {
+        return "reload";
+    }
+
+    @Override
+    public boolean isAdminOnly() {
+        return true;
+    }
+
+    @Override
+    public void execute(CommandSender sender, String label, String[] args) {
+        PorticleGun.getInstance().reloadConfig();
+        LoadingHandler.getInstance().reload();
+        sender.sendMessage(MessageManager.getMessage(sender, "commands.reload.success"));
+    }
+}

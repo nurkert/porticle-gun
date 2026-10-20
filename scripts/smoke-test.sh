@@ -51,6 +51,11 @@ cd "$WORK"
         sleep 1
     done
     sleep 3
+    # exercise the command dispatcher and the reload path from the console
+    echo "porticlegun list"
+    sleep 1
+    echo "porticlegun reload"
+    sleep 2
     echo "stop"
 ) | java -Xms1G -Xmx2G -jar "$PAPER_JAR" --nogui >"$LOG" 2>&1 || true
 
@@ -64,6 +69,8 @@ fail() {
 grep -q "Done (" "$LOG" || fail "server did not finish starting within ${STARTUP_TIMEOUT}s"
 grep -q "\[PorticleGun\] PorticleGun has been enabled" "$LOG" || fail "PorticleGun was not enabled"
 grep -q "Disabling PorticleGun" "$LOG" || fail "PorticleGun was not disabled on shutdown"
+grep -q "No stored portal guns found" "$LOG" || fail "/porticlegun list did not answer"
+grep -q "PorticleGun data reloaded from disk" "$LOG" || fail "/porticlegun reload did not succeed"
 if grep -n -E "Error occurred while (enabling|disabling) PorticleGun|Could not load 'plugins/PorticleGun" "$LOG"; then
     fail "PorticleGun failed to load, enable or disable"
 fi
