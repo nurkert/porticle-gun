@@ -67,8 +67,7 @@ public class SettingsHandler implements Listener {
                     Player player = (Player) event.getWhoClicked();
                     if (event.getRawSlot() == 4) {
                         if (lastClick.containsKey(gunID) && System.currentTimeMillis() - lastClick.get(gunID) < 500) {
-                            ActivePortalsHandler.removePrimaryPortal(gunID);
-                            ActivePortalsHandler.removeSecondaryPortal(gunID);
+                            ActivePortalsHandler.closePortals(gunID);
                             AudioHandler.playSound(
                                     (Player) event.getWhoClicked(), AudioHandler.PortalSound.PORTAL_CLOSE);
                         } else {

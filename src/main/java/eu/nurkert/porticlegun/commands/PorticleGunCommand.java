@@ -350,17 +350,7 @@ public class PorticleGunCommand implements CommandExecutor, Listener, TabComplet
     private boolean removeGunData(String gunId) {
         boolean modified = false;
 
-        Portal primary = ActivePortalsHandler.getPrimaryPortal(gunId);
-        if (primary != null) {
-            primary.delete();
-            ActivePortalsHandler.removePrimaryPortal(gunId);
-            modified = true;
-        }
-
-        Portal secondary = ActivePortalsHandler.getSecondaryPortal(gunId);
-        if (secondary != null) {
-            secondary.delete();
-            ActivePortalsHandler.removeSecondaryPortal(gunId);
+        if (ActivePortalsHandler.closePortals(gunId)) {
             modified = true;
         }
 
@@ -451,16 +441,7 @@ public class PorticleGunCommand implements CommandExecutor, Listener, TabComplet
             return;
         }
 
-        Portal linkedPortal = portal.getLinkedPortal();
-        portal.delete();
-        if (portal.getType() == PortalType.PRIMARY) {
-            ActivePortalsHandler.removePrimaryPortal(portal.getGunID());
-        } else {
-            ActivePortalsHandler.removeSecondaryPortal(portal.getGunID());
-        }
-        if (linkedPortal != null) {
-            linkedPortal.setLinkedPortal(null);
-        }
+        ActivePortalsHandler.closePortal(portal);
     }
 
     private String getPortalTypeName(CommandSender sender, PortalType type) {
