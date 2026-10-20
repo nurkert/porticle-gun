@@ -4,6 +4,11 @@ import eu.nurkert.porticlegun.PorticleGun;
 import eu.nurkert.porticlegun.handlers.gravity.GravityGun;
 import eu.nurkert.porticlegun.portals.Portal;
 import eu.nurkert.porticlegun.util.WorldGuardIntegration;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.UUID;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.entity.Entity;
@@ -15,18 +20,13 @@ import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.util.Vector;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.UUID;
-
 public class TeleportationHandler implements Listener {
 
     private static final long TELEPORT_COOLDOWN_MS = 1000;
 
     private final Map<UUID, Long> teleportCooldown;
     private final Map<UUID, Portal> portalReentryLock;
+
     public TeleportationHandler() {
         teleportCooldown = new HashMap<>();
         portalReentryLock = new HashMap<>();
@@ -65,7 +65,6 @@ public class TeleportationHandler implements Listener {
                 clearPortalLockIfMatches(player, portal);
             }
         }
-
     }
 
     private void tickEntityTeleports() {
@@ -82,7 +81,8 @@ public class TeleportationHandler implements Listener {
                 continue;
             }
 
-            Collection<Entity> nearbyEntities = portalLocation.getWorld().getNearbyEntities(portalLocation, 1.0, 1.5, 1.0);
+            Collection<Entity> nearbyEntities =
+                    portalLocation.getWorld().getNearbyEntities(portalLocation, 1.0, 1.5, 1.0);
             for (Entity entity : nearbyEntities) {
                 if (entity instanceof Player) {
                     continue;
@@ -114,7 +114,9 @@ public class TeleportationHandler implements Listener {
         teleportCooldown.entrySet().removeIf(entry -> now - entry.getValue() > TELEPORT_COOLDOWN_MS * 10);
         portalReentryLock.entrySet().removeIf(entry -> {
             Portal lockedPortal = entry.getValue();
-            if (lockedPortal == null || lockedPortal.getLocation() == null || lockedPortal.getLocation().getWorld() == null) {
+            if (lockedPortal == null
+                    || lockedPortal.getLocation() == null
+                    || lockedPortal.getLocation().getWorld() == null) {
                 return true;
             }
             Entity entity = Bukkit.getEntity(entry.getKey());
@@ -144,7 +146,8 @@ public class TeleportationHandler implements Listener {
         Vector preTeleportVelocity = entity.getVelocity().clone();
         Vector preTeleportLook = null;
         if (entity instanceof LivingEntity) {
-            preTeleportLook = ((LivingEntity) entity).getLocation().getDirection().clone();
+            preTeleportLook =
+                    ((LivingEntity) entity).getLocation().getDirection().clone();
         }
 
         PortalBasis sourceBasis = createPortalBasis(portal.getDirection());
@@ -152,7 +155,10 @@ public class TeleportationHandler implements Listener {
 
         Vector transformedVelocity = transformVector(preTeleportVelocity, sourceBasis, destinationBasis);
 
-        Location destination = linkedPortal.getLocation().clone().add(0.5, linkedPortal.getDirection().getY() == -1.0 ? -1 : 0, 0.5);
+        Location destination = linkedPortal
+                .getLocation()
+                .clone()
+                .add(0.5, linkedPortal.getDirection().getY() == -1.0 ? -1 : 0, 0.5);
 
         if (preTeleportLook != null) {
             Vector transformedLook = transformVector(preTeleportLook, sourceBasis, destinationBasis);
@@ -273,5 +279,4 @@ public class TeleportationHandler implements Listener {
             this.right = right;
         }
     }
-
 }

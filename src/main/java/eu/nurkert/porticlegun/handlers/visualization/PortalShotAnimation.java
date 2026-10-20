@@ -3,6 +3,7 @@ package eu.nurkert.porticlegun.handlers.visualization;
 import eu.nurkert.porticlegun.PorticleGun;
 import eu.nurkert.porticlegun.config.ConfigManager;
 import eu.nurkert.porticlegun.portals.PotentialPortal;
+import java.util.function.BooleanSupplier;
 import org.bukkit.Location;
 import org.bukkit.Particle;
 import org.bukkit.World;
@@ -10,19 +11,16 @@ import org.bukkit.entity.Player;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.util.Vector;
 
-import java.util.function.BooleanSupplier;
-
 public final class PortalShotAnimation {
 
     private static final double STEP_DISTANCE = 0.6;
     private static final double SWIRL_RADIUS = 0.35;
     private static final double IMPACT_RADIUS = 0.55;
 
-    private PortalShotAnimation() {
-    }
+    private PortalShotAnimation() {}
 
-    public static void play(Player player, PotentialPortal potentialTarget, PortalColor color,
-                            BooleanSupplier onImpact) {
+    public static void play(
+            Player player, PotentialPortal potentialTarget, PortalColor color, BooleanSupplier onImpact) {
         if (player == null) {
             return;
         }
@@ -88,14 +86,15 @@ public final class PortalShotAnimation {
         }.runTaskTimer(PorticleGun.getInstance(), 0L, 1L);
     }
 
-    private static void spawnTrail(World world, Location point, Vector right, Vector up,
-                                   Particle.DustOptions dustOptions, double progress) {
+    private static void spawnTrail(
+            World world, Location point, Vector right, Vector up, Particle.DustOptions dustOptions, double progress) {
         double swirlTurns = 5.0;
         double baseAngle = swirlTurns * Math.PI * 2 * progress;
 
         for (int arm = 0; arm < 2; arm++) {
             double angle = baseAngle + arm * Math.PI;
-            Vector offset = right.clone().multiply(Math.cos(angle) * SWIRL_RADIUS)
+            Vector offset = right.clone()
+                    .multiply(Math.cos(angle) * SWIRL_RADIUS)
                     .add(up.clone().multiply(Math.sin(angle) * SWIRL_RADIUS));
             Location swirl = point.clone().add(offset);
             world.spawnParticle(Particle.DUST, swirl, 1, 0.0, 0.0, 0.0, 0.0, dustOptions);
@@ -104,8 +103,13 @@ public final class PortalShotAnimation {
         world.spawnParticle(Particle.CRIT, point.getX(), point.getY(), point.getZ(), 2, 0.0, 0.0, 0.0, 0.0);
     }
 
-    private static void spawnImpact(World world, Location impactPoint, Vector right, Vector up,
-                                    Particle.DustOptions dustOptions, boolean success) {
+    private static void spawnImpact(
+            World world,
+            Location impactPoint,
+            Vector right,
+            Vector up,
+            Particle.DustOptions dustOptions,
+            boolean success) {
         if (impactPoint == null) {
             return;
         }
@@ -114,7 +118,8 @@ public final class PortalShotAnimation {
             int sparks = 12;
             for (int i = 0; i < sparks; i++) {
                 double angle = (Math.PI * 2 / sparks) * i;
-                Vector offset = right.clone().multiply(Math.cos(angle) * IMPACT_RADIUS)
+                Vector offset = right.clone()
+                        .multiply(Math.cos(angle) * IMPACT_RADIUS)
                         .add(up.clone().multiply(Math.sin(angle) * IMPACT_RADIUS));
                 Location particleLocation = impactPoint.clone().add(offset);
                 world.spawnParticle(Particle.CLOUD, particleLocation, 1, 0.0, 0.0, 0.0, 0.01);

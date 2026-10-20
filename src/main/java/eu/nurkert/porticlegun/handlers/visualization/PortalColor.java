@@ -1,10 +1,5 @@
 package eu.nurkert.porticlegun.handlers.visualization;
 
-import org.bukkit.ChatColor;
-import org.bukkit.Color;
-import org.bukkit.DyeColor;
-import org.bukkit.Particle;
-
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Iterator;
@@ -14,6 +9,10 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.logging.Logger;
+import org.bukkit.ChatColor;
+import org.bukkit.Color;
+import org.bukkit.DyeColor;
+import org.bukkit.Particle;
 
 public final class PortalColor {
 
@@ -22,18 +21,24 @@ public final class PortalColor {
     private static final List<PortalColor> DEFAULT_COLORS = new ArrayList<>();
 
     public static final PortalColor BLACK = registerDefault("BLACK", ChatColor.BLACK, Color.BLACK, DyeColor.BLACK);
-    public static final PortalColor DARK_BLUE = registerDefault("DARK_BLUE", ChatColor.DARK_BLUE, Color.fromBGR(170, 0, 0), DyeColor.BLUE);
-    public static final PortalColor DARK_GREEN = registerDefault("DARK_GREEN", ChatColor.DARK_GREEN, Color.GREEN, DyeColor.GREEN);
-    public static final PortalColor DARK_AQUA = registerDefault("DARK_AQUA", ChatColor.DARK_AQUA, Color.AQUA, DyeColor.CYAN);
+    public static final PortalColor DARK_BLUE =
+            registerDefault("DARK_BLUE", ChatColor.DARK_BLUE, Color.fromBGR(170, 0, 0), DyeColor.BLUE);
+    public static final PortalColor DARK_GREEN =
+            registerDefault("DARK_GREEN", ChatColor.DARK_GREEN, Color.GREEN, DyeColor.GREEN);
+    public static final PortalColor DARK_AQUA =
+            registerDefault("DARK_AQUA", ChatColor.DARK_AQUA, Color.AQUA, DyeColor.CYAN);
     public static final PortalColor DARK_RED = registerDefault("DARK_RED", ChatColor.DARK_RED, Color.RED, DyeColor.RED);
-    public static final PortalColor DARK_PURPLE = registerDefault("DARK_PURPLE", ChatColor.DARK_PURPLE, Color.PURPLE, DyeColor.PURPLE);
+    public static final PortalColor DARK_PURPLE =
+            registerDefault("DARK_PURPLE", ChatColor.DARK_PURPLE, Color.PURPLE, DyeColor.PURPLE);
     public static final PortalColor GOLD = registerDefault("GOLD", ChatColor.GOLD, Color.ORANGE, DyeColor.ORANGE);
-    public static final PortalColor DARK_GRAY = registerDefault("DARK_GRAY", ChatColor.DARK_GRAY, Color.fromBGR(85, 85, 85), DyeColor.GRAY);
+    public static final PortalColor DARK_GRAY =
+            registerDefault("DARK_GRAY", ChatColor.DARK_GRAY, Color.fromBGR(85, 85, 85), DyeColor.GRAY);
     public static final PortalColor BLUE = registerDefault("BLUE", ChatColor.BLUE, Color.BLUE, DyeColor.LIGHT_BLUE);
     public static final PortalColor GREEN = registerDefault("GREEN", ChatColor.GREEN, Color.LIME, DyeColor.LIME);
     public static final PortalColor AQUA = registerDefault("AQUA", ChatColor.AQUA, Color.TEAL, DyeColor.LIGHT_BLUE);
     public static final PortalColor RED = registerDefault("RED", ChatColor.RED, Color.MAROON, DyeColor.PINK);
-    public static final PortalColor LIGHT_PURPLE = registerDefault("LIGHT_PURPLE", ChatColor.LIGHT_PURPLE, Color.FUCHSIA, DyeColor.MAGENTA);
+    public static final PortalColor LIGHT_PURPLE =
+            registerDefault("LIGHT_PURPLE", ChatColor.LIGHT_PURPLE, Color.FUCHSIA, DyeColor.MAGENTA);
     public static final PortalColor YELLOW = registerDefault("YELLOW", ChatColor.YELLOW, Color.YELLOW, DyeColor.YELLOW);
     public static final PortalColor WHITE = registerDefault("WHITE", ChatColor.WHITE, Color.WHITE, DyeColor.WHITE);
 
@@ -59,7 +64,8 @@ public final class PortalColor {
         return color;
     }
 
-    private static PortalColor register(String name, String chatColor, Color bukkitColor, DyeColor dyeColor, boolean custom) {
+    private static PortalColor register(
+            String name, String chatColor, Color bukkitColor, DyeColor dyeColor, boolean custom) {
         Objects.requireNonNull(name, "name");
         Objects.requireNonNull(chatColor, "chatColor");
         Objects.requireNonNull(bukkitColor, "bukkitColor");
@@ -209,7 +215,10 @@ public final class PortalColor {
             Object dyeSource = rawEntry.get("banner-dye");
             DyeColor dyeColor = parseDyeColor(dyeSource);
             if (dyeColor == null && dyeSource != null) {
-                log(logger, "Invalid banner-dye '" + dyeSource + "' for custom portal color '" + name + "'. Banners only support vanilla dye colours.");
+                log(
+                        logger,
+                        "Invalid banner-dye '" + dyeSource + "' for custom portal color '" + name
+                                + "'. Banners only support vanilla dye colours.");
             }
 
             if (bukkitColor == null) {
@@ -287,7 +296,9 @@ public final class PortalColor {
         try {
             return toHexChatCode(String.format("%06X", color.asRGB()));
         } catch (IllegalArgumentException exception) {
-            log(logger, "Unable to create chat color for custom portal color '" + name + "': " + exception.getMessage());
+            log(
+                    logger,
+                    "Unable to create chat color for custom portal color '" + name + "': " + exception.getMessage());
             return ChatColor.WHITE.toString();
         }
     }

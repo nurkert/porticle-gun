@@ -1,6 +1,5 @@
 package eu.nurkert.porticlegun.portals;
 
-import eu.nurkert.porticlegun.PorticleGun;
 import eu.nurkert.porticlegun.handlers.PersistentHandler;
 import eu.nurkert.porticlegun.handlers.item.ItemHandler;
 import eu.nurkert.porticlegun.handlers.visualization.GunColorHandler;
@@ -23,7 +22,12 @@ public class Portal extends PotentialPortal {
 
     private long visualizationResumeTimeMillis;
 
-    public Portal(Location location, Vector direction, String gunID, PortalType type, PortalVisualizationType visualizationType) {
+    public Portal(
+            Location location,
+            Vector direction,
+            String gunID,
+            PortalType type,
+            PortalVisualizationType visualizationType) {
         super(location, direction);
         this.gunID = gunID;
         this.linkedPortal = null;
@@ -52,7 +56,11 @@ public class Portal extends PotentialPortal {
 
     private static Location extractLocation(String from) {
         String[] args = from.split(":");
-        return new Location(Bukkit.getWorld(args[0]), Double.parseDouble(args[1]), Double.parseDouble(args[2]), Double.parseDouble(args[3]));
+        return new Location(
+                Bukkit.getWorld(args[0]),
+                Double.parseDouble(args[1]),
+                Double.parseDouble(args[2]),
+                Double.parseDouble(args[3]));
     }
 
     private static Vector extractVector(String from) {
@@ -67,11 +75,11 @@ public class Portal extends PotentialPortal {
     public void setGunID(String gunID) {
         this.gunID = gunID;
     }
-    
+
     public void setLinkedPortal(Portal linkedPortal) {
         this.linkedPortal = linkedPortal;
     }
-    
+
     public Portal getLinkedPortal() {
         return linkedPortal;
     }
@@ -112,7 +120,9 @@ public class Portal extends PotentialPortal {
     }
 
     public String getPositionString() {
-        return location.getWorld().getName() + ":" + location.getX() + ":" + location.getY() + ":" + location.getZ() + ":" + getDirection().getX() + ":" + getDirection().getY() + ":" + getDirection().getZ();
+        return location.getWorld().getName() + ":" + location.getX() + ":" + location.getY() + ":" + location.getZ()
+                + ":" + getDirection().getX() + ":" + getDirection().getY() + ":"
+                + getDirection().getZ();
     }
 
     public void saveAll() {
@@ -124,14 +134,19 @@ public class Portal extends PotentialPortal {
     }
 
     public static void saveColor(String gunID, PortalType type, PortalColor color) {
-        PersistentHandler.set("porticleguns." + ItemHandler.saveable(gunID) + "." + type.toString().toLowerCase() + ".color", color.toString());
+        PersistentHandler.set(
+                "porticleguns." + ItemHandler.saveable(gunID) + "."
+                        + type.toString().toLowerCase() + ".color",
+                color.toString());
     }
 
     public void delete() {
-        PersistentHandler.set("porticleguns." + ItemHandler.saveable(gunID) + "." + type.toString().toLowerCase(), null);
+        PersistentHandler.set(
+                "porticleguns." + ItemHandler.saveable(gunID) + "."
+                        + type.toString().toLowerCase(),
+                null);
         PersistentHandler.saveAll(); // Ensure the changes are saved
     }
-
 
     public PortalType getType() {
         return this.type;

@@ -11,6 +11,7 @@ import com.sk89q.worldguard.protection.flags.registry.FlagConflictException;
 import com.sk89q.worldguard.protection.flags.registry.FlagRegistry;
 import com.sk89q.worldguard.protection.regions.RegionContainer;
 import com.sk89q.worldguard.protection.regions.RegionQuery;
+import java.util.logging.Level;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.entity.Entity;
@@ -18,8 +19,6 @@ import org.bukkit.entity.Player;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.util.Vector;
-
-import java.util.logging.Level;
 
 public final class WorldGuardIntegration {
 
@@ -30,8 +29,7 @@ public final class WorldGuardIntegration {
     private static StateFlag portalUseFlag;
     private static StateFlag gravityGunFlag;
 
-    private WorldGuardIntegration() {
-    }
+    private WorldGuardIntegration() {}
 
     public static void init(JavaPlugin plugin) {
         Plugin wgPlugin = Bukkit.getPluginManager().getPlugin("WorldGuard");
@@ -52,8 +50,11 @@ public final class WorldGuardIntegration {
 
             plugin.getLogger().log(Level.INFO, "Enabled WorldGuard support with PorticleGun flags.");
         } catch (FlagConflictException conflict) {
-            plugin.getLogger().log(Level.WARNING, "A conflicting WorldGuard flag prevented PorticleGun integration: {0}",
-                    conflict.getMessage());
+            plugin.getLogger()
+                    .log(
+                            Level.WARNING,
+                            "A conflicting WorldGuard flag prevented PorticleGun integration: {0}",
+                            conflict.getMessage());
         } catch (Throwable throwable) {
             plugin.getLogger().log(Level.WARNING, "Failed to initialise WorldGuard integration", throwable);
         }

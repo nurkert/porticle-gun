@@ -185,10 +185,10 @@ Reihenfolge = Priorität. Unter jedem Punkt: Problem, Lösungsansatz, Notizen be
   - Ansatz: In `PersistentHandler` und `VisualizationHandler` umbenennen, Referenzen anpassen.
   - Notizen: `PersistentHandler`, `VisualizationHandler` umbenannt, zusätzlich `RectangularVisualisation` → `RectangularVisualization` (einheitlich US-Schreibweise wie `EllipticVisualization`).
 
-- [ ] **PG-10 GravityGun: gemischte Einrückung und auskommentierter Altcode**
+- [x] **PG-10 GravityGun: gemischte Einrückung und auskommentierter Altcode**
   - Ort: `handlers/gravity/GravityGun.java`
   - Ansatz: Einheitlich Spaces, toten Code entfernen. Als eigener Commit ohne Logikänderung.
-  - Notizen:
+  - Notizen: Auskommentierten Altcode in `GravityGun` und `PorticleGunCommand` entfernt, leeren `else`-Zweig gelöscht. Einrückung über Spotless (siehe PG-17) vereinheitlicht, keine Tabs mehr im Projekt.
 
 - [ ] **PG-11 Keine Tests, obwohl Surefire eingerichtet ist**
   - Ort: `handlers/portals/TeleportationHandler.java:229` (`createPortalBasis`/`transformVector`)

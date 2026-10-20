@@ -14,6 +14,7 @@ import eu.nurkert.porticlegun.portals.Portal;
 import eu.nurkert.porticlegun.portals.PortalTracing;
 import eu.nurkert.porticlegun.portals.PotentialPortal;
 import eu.nurkert.porticlegun.util.WorldGuardIntegration;
+import java.util.List;
 import org.bukkit.Location;
 import org.bukkit.block.Block;
 import org.bukkit.entity.Player;
@@ -27,8 +28,6 @@ import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.metadata.MetadataValue;
 import org.bukkit.util.Vector;
 
-import java.util.List;
-
 public class PortalOpenHandler implements Listener {
 
     @EventHandler
@@ -38,18 +37,20 @@ public class PortalOpenHandler implements Listener {
         }
 
         // check if it is possible to place portal
-        if(event.getItem() == null || event.getPlayer().isSneaking()) {
+        if (event.getItem() == null || event.getPlayer().isSneaking()) {
             return;
         }
 
         String gunID = ItemHandler.isValidGun(event.getItem());
-        if(gunID == null) {
+        if (gunID == null) {
             return;
         }
 
         Action action = event.getAction();
-        if(action != Action.LEFT_CLICK_AIR && action != Action.LEFT_CLICK_BLOCK
-                && action != Action.RIGHT_CLICK_AIR && action != Action.RIGHT_CLICK_BLOCK) {
+        if (action != Action.LEFT_CLICK_AIR
+                && action != Action.LEFT_CLICK_BLOCK
+                && action != Action.RIGHT_CLICK_AIR
+                && action != Action.RIGHT_CLICK_BLOCK) {
             return;
         }
 
@@ -62,39 +63,39 @@ public class PortalOpenHandler implements Listener {
         PotentialPortal snapshot = clonePotential(traced);
 
         Portal.PortalType type = (action == Action.LEFT_CLICK_AIR || action == Action.LEFT_CLICK_BLOCK)
-                ? Portal.PortalType.PRIMARY : Portal.PortalType.SECONDARY;
+                ? Portal.PortalType.PRIMARY
+                : Portal.PortalType.SECONDARY;
         PortalColor color = GunColorHandler.getColors(gunID).get(type);
 
-        PortalShotAnimation.play(player, snapshot, color, () ->
-                attemptPortalPlacement(player, gunID, type, snapshot));
+        PortalShotAnimation.play(player, snapshot, color, () -> attemptPortalPlacement(player, gunID, type, snapshot));
     }
-
-
 
     @EventHandler
     public void on(BlockPlaceEvent event) {
-        if(ItemHandler.isValidGun(event.getItemInHand()) != null) {
+        if (ItemHandler.isValidGun(event.getItemInHand()) != null) {
             event.setCancelled(true);
         }
     }
 
     @EventHandler
     public void on(BlockBreakEvent event) {
-        if(ItemHandler.isValidGun(event.getPlayer().getItemInHand()) != null) {
+        if (ItemHandler.isValidGun(event.getPlayer().getItemInHand()) != null) {
             event.setCancelled(true);
         }
     }
 
     private boolean hasRequiredBackingBlocks(PotentialPortal potential) {
         Location portalBase = potential.getLocation();
-        Block lowerBacking = portalBase.clone().subtract(potential.getDirection()).getBlock();
+        Block lowerBacking =
+                portalBase.clone().subtract(potential.getDirection()).getBlock();
         if (!lowerBacking.getType().isOccluding()) {
             return false;
         }
 
         if (Math.abs(potential.getDirection().getY()) < 0.5) {
             Location upperPortalLocation = portalBase.clone().add(0, 1, 0);
-            Block upperBacking = upperPortalLocation.subtract(potential.getDirection()).getBlock();
+            Block upperBacking =
+                    upperPortalLocation.subtract(potential.getDirection()).getBlock();
             if (!upperBacking.getType().isOccluding()) {
                 return false;
             }
@@ -115,7 +116,8 @@ public class PortalOpenHandler implements Listener {
         return new PotentialPortal(location, direction);
     }
 
-    private boolean attemptPortalPlacement(Player player, String gunID, Portal.PortalType type, PotentialPortal potential) {
+    private boolean attemptPortalPlacement(
+            Player player, String gunID, Portal.PortalType type, PotentialPortal potential) {
         if (player == null || !player.isOnline()) {
             return false;
         }
@@ -135,8 +137,15 @@ public class PortalOpenHandler implements Listener {
             return false;
         }
 
-        Location playersHight = potential.getLocation().clone().add(0,
-                potential.getDirection().getY() != 0.0 ? potential.getDirection().getY() : 1, 0);
+        Location playersHight = potential
+                .getLocation()
+                .clone()
+                .add(
+                        0,
+                        potential.getDirection().getY() != 0.0
+                                ? potential.getDirection().getY()
+                                : 1,
+                        0);
         if (playersHight.getBlock().getType().isSolid()) {
             AudioHandler.playSound(player, AudioHandler.PortalSound.DENY);
             return false;

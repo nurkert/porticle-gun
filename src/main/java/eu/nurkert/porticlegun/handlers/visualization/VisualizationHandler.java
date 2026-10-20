@@ -2,8 +2,8 @@ package eu.nurkert.porticlegun.handlers.visualization;
 
 import eu.nurkert.porticlegun.PorticleGun;
 import eu.nurkert.porticlegun.handlers.portals.ActivePortalsHandler;
-import eu.nurkert.porticlegun.handlers.visualization.GunColorHandler;
 import eu.nurkert.porticlegun.portals.Portal;
+import java.util.ArrayList;
 import org.bukkit.Color;
 import org.bukkit.Location;
 import org.bukkit.Particle;
@@ -11,14 +11,11 @@ import org.bukkit.event.Listener;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.util.Vector;
 
-import java.util.ArrayList;
-
 public class VisualizationHandler implements Listener {
 
     public VisualizationHandler() {
-         visualizePortals();
+        visualizePortals();
     }
-
 
     private static void visualizePortals() {
         new BukkitRunnable() {
@@ -38,8 +35,11 @@ public class VisualizationHandler implements Listener {
                     }
 
                     double radians = Math.toRadians(System.currentTimeMillis() / 5);
-                    Vector[] locs = {portal.getParticleLocation(radians), portal.getParticleLocation(radians + Math.PI)};
-                    Color color = GunColorHandler.getColors(portal.getGunID()).get(portal.getType()).getBukkitColor();
+                    Vector[] locs = {portal.getParticleLocation(radians), portal.getParticleLocation(radians + Math.PI)
+                    };
+                    Color color = GunColorHandler.getColors(portal.getGunID())
+                            .get(portal.getType())
+                            .getBukkitColor();
                     Particle.DustOptions dustOptions = new Particle.DustOptions(color, 1);
 
                     for (Vector loc : locs) {
@@ -47,14 +47,9 @@ public class VisualizationHandler implements Listener {
                             continue;
                         }
 
-                        portalLocation.getWorld().spawnParticle(
-                                Particle.DUST,
-                                loc.getX(),
-                                loc.getY(),
-                                loc.getZ(),
-                                1,
-                                dustOptions
-                        );
+                        portalLocation
+                                .getWorld()
+                                .spawnParticle(Particle.DUST, loc.getX(), loc.getY(), loc.getZ(), 1, dustOptions);
                     }
                 }
             }

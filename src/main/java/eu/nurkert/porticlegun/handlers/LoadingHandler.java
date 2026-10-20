@@ -1,5 +1,7 @@
 package eu.nurkert.porticlegun.handlers;
 
+import static eu.nurkert.porticlegun.PorticleGun.developMode;
+
 import eu.nurkert.porticlegun.PorticleGun;
 import eu.nurkert.porticlegun.commands.PorticleGunCommand;
 import eu.nurkert.porticlegun.config.ConfigManager;
@@ -9,8 +11,8 @@ import eu.nurkert.porticlegun.handlers.item.RecipeHandler;
 import eu.nurkert.porticlegun.handlers.portals.*;
 import eu.nurkert.porticlegun.handlers.visualization.*;
 import eu.nurkert.porticlegun.handlers.visualization.concrete.PortalVisualizationType;
-import eu.nurkert.porticlegun.portals.Portal;
 import eu.nurkert.porticlegun.messages.MessageManager;
+import eu.nurkert.porticlegun.portals.Portal;
 import org.bukkit.Bukkit;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.PluginCommand;
@@ -18,12 +20,10 @@ import org.bukkit.command.TabCompleter;
 import org.bukkit.event.HandlerList;
 import org.bukkit.event.Listener;
 
-import static eu.nurkert.porticlegun.PorticleGun.developMode;
-
 public class LoadingHandler {
 
     // Singleton construction
-    final private static LoadingHandler instance = new LoadingHandler();
+    private static final LoadingHandler instance = new LoadingHandler();
 
     private final PorticleGunCommand porticleGunCommand;
     private GravityGun gravityGun;
@@ -34,7 +34,6 @@ public class LoadingHandler {
         registerEvents();
         registerCommands();
         loadPortals();
-
     }
 
     /**
@@ -55,14 +54,14 @@ public class LoadingHandler {
         register(new TitleHandler());
         updateGravityGunRegistration();
 
-        if(developMode) register(new DebugHandler());
+        if (developMode) register(new DebugHandler());
     }
 
     private void updateGravityGunRegistration() {
         if (ConfigManager.isGravityGunEnabled()) {
             if (gravityGun == null) {
-                gravityGun = new GravityGun(ConfigManager.getGravityGunBlockBlacklist(),
-                        ConfigManager.isGravityGunPlayerCaptureEnabled());
+                gravityGun = new GravityGun(
+                        ConfigManager.getGravityGunBlockBlacklist(), ConfigManager.isGravityGunPlayerCaptureEnabled());
                 register(gravityGun);
             } else {
                 gravityGun.updateBlockBlacklist(ConfigManager.getGravityGunBlockBlacklist());
@@ -109,10 +108,14 @@ public class LoadingHandler {
                 String basePath = "porticleguns." + porticlegun;
                 String gunID = ItemHandler.useable(porticlegun);
                 if (gunID == null) {
-                    PorticleGun.getInstance().getLogger().warning("Skipping persisted entry '" + porticlegun + "' because it contains invalid characters.");
+                    PorticleGun.getInstance()
+                            .getLogger()
+                            .warning("Skipping persisted entry '" + porticlegun
+                                    + "' because it contains invalid characters.");
                     return;
                 }
-                PortalVisualizationType visualizationType = PortalVisualizationType.fromString(PersistentHandler.get(basePath + ".shape"));
+                PortalVisualizationType visualizationType =
+                        PortalVisualizationType.fromString(PersistentHandler.get(basePath + ".shape"));
                 if (PersistentHandler.exists(basePath + ".primary")) {
                     PortalColor primaryColor;
                     if (PersistentHandler.exists(basePath + ".primary.color")) {

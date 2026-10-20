@@ -15,7 +15,6 @@ public class AudioHandler {
     }
 
     public enum PortalSound {
-
         INV_OPEN(Sound.BLOCK_IRON_DOOR_OPEN, 0.5F, 7.5F),
         INV_CLOSE(Sound.BLOCK_IRON_DOOR_CLOSE, 0.5F, 7.5F),
         PORTAL_OPEN(Sound.BLOCK_BEACON_POWER_SELECT, 0.5F, 10F),
@@ -32,7 +31,6 @@ public class AudioHandler {
             this.sound = sound;
             this.volume = volume;
             this.pitch = pitch;
-
         }
 
         public Sound getSound() {

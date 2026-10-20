@@ -22,11 +22,11 @@ public class RectangularVisualization implements PortalVisualization {
                 y = 0.05;
             } else if (progress < width + height) {
                 // Rechte Kante (von unten nach oben)
-                x = width  + 0.05;
+                x = width + 0.05;
                 y = progress - width + 0.05;
             } else if (progress < 2 * width + height) {
                 // Obere Kante (von rechts nach links)
-                x = width - (progress - (width + height))  + 0.05;
+                x = width - (progress - (width + height)) + 0.05;
                 y = height + 0.05;
             } else {
                 // Linke Kante (von oben nach unten)
@@ -49,8 +49,7 @@ public class RectangularVisualization implements PortalVisualization {
             return new Vector(
                     loc.getX() + rotatedX - 0.5 * direction.getZ(),
                     loc.getY() + y,
-                    loc.getZ() + rotatedZ  + 0.5 * direction.getX()
-            );
+                    loc.getZ() + rotatedZ + 0.5 * direction.getX());
 
         } else if (direction.getY() < 0.0) {
             // Nach unten gerichtetes Portal
@@ -75,11 +74,7 @@ public class RectangularVisualization implements PortalVisualization {
             // Anpassung von loc wie im ursprünglichen Code
             loc = loc.clone().add(0.5, 0.9, 0.5);
 
-            return new Vector(
-                    loc.getX() + x - 0.5,
-                    loc.getY(),
-                    loc.getZ() + z - 0.5
-            );
+            return new Vector(loc.getX() + x - 0.5, loc.getY(), loc.getZ() + z - 0.5);
 
         } else if (direction.getY() > 0.0) {
             // Nach oben gerichtetes Portal
@@ -104,11 +99,7 @@ public class RectangularVisualization implements PortalVisualization {
             // Anpassung von loc wie im ursprünglichen Code
             loc = loc.clone().add(0.5, 0.1, 0.5);
 
-            return new Vector(
-                    loc.getX() + x - 0.5,
-                    loc.getY(),
-                    loc.getZ() + z - 0.5
-            );
+            return new Vector(loc.getX() + x - 0.5, loc.getY(), loc.getZ() + z - 0.5);
         }
         return null;
     }

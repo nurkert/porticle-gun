@@ -18,11 +18,12 @@ public class GunColors {
     public PortalColor getSecondary() {
         return secondary;
     }
+
     public PortalColor get(Portal.PortalType type) {
-        if(type == Portal.PortalType.PRIMARY)
-            return primary;
+        if (type == Portal.PortalType.PRIMARY) return primary;
         return secondary;
     }
+
     private void setPrimary(PortalColor primary, String gunID) {
         this.primary = primary;
     }

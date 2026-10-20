@@ -1,12 +1,11 @@
 package eu.nurkert.porticlegun.handlers.portals;
 
 import eu.nurkert.porticlegun.portals.Portal;
+import java.util.ArrayList;
+import java.util.HashMap;
 import org.bukkit.Location;
 import org.bukkit.entity.Player;
 import org.bukkit.event.Listener;
-
-import java.util.ArrayList;
-import java.util.HashMap;
 
 public class ActivePortalsHandler implements Listener {
 
@@ -15,7 +14,7 @@ public class ActivePortalsHandler implements Listener {
 
     public static void setPrimaryPortal(String gunID, Portal portal) {
         primaryPortals.put(gunID, portal);
-        if(secondaryPortals.containsKey(gunID)) {
+        if (secondaryPortals.containsKey(gunID)) {
             portal.setLinkedPortal(secondaryPortals.get(gunID));
             secondaryPortals.get(gunID).setLinkedPortal(portal);
         }
@@ -23,7 +22,7 @@ public class ActivePortalsHandler implements Listener {
 
     public static void setSecondaryPortal(String gunID, Portal portal) {
         secondaryPortals.put(gunID, portal);
-        if(primaryPortals.containsKey(gunID)) {
+        if (primaryPortals.containsKey(gunID)) {
             portal.setLinkedPortal(primaryPortals.get(gunID));
             primaryPortals.get(gunID).setLinkedPortal(portal);
         }
@@ -54,10 +53,12 @@ public class ActivePortalsHandler implements Listener {
     }
 
     public static ArrayList<Portal> getAllPortal() {
-        return new ArrayList<Portal>() {{
-            addAll(primaryPortals.values());
-            addAll(secondaryPortals.values());
-        }};
+        return new ArrayList<Portal>() {
+            {
+                addAll(primaryPortals.values());
+                addAll(secondaryPortals.values());
+            }
+        };
     }
 
     public static void clear() {

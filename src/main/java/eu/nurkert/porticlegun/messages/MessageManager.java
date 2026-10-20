@@ -1,12 +1,5 @@
 package eu.nurkert.porticlegun.messages;
 
-import org.bukkit.ChatColor;
-import org.bukkit.command.CommandSender;
-import org.bukkit.configuration.file.FileConfiguration;
-import org.bukkit.configuration.file.YamlConfiguration;
-import org.bukkit.entity.Player;
-import org.bukkit.plugin.java.JavaPlugin;
-
 import java.io.File;
 import java.util.Collections;
 import java.util.HashMap;
@@ -17,6 +10,12 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.logging.Level;
+import org.bukkit.ChatColor;
+import org.bukkit.command.CommandSender;
+import org.bukkit.configuration.file.FileConfiguration;
+import org.bukkit.configuration.file.YamlConfiguration;
+import org.bukkit.entity.Player;
+import org.bukkit.plugin.java.JavaPlugin;
 
 public final class MessageManager {
 
@@ -25,8 +24,7 @@ public final class MessageManager {
     private static JavaPlugin plugin;
     private static String defaultLanguage = "en";
 
-    private MessageManager() {
-    }
+    private MessageManager() {}
 
     public static void init(JavaPlugin javaPlugin) {
         plugin = javaPlugin;
@@ -58,7 +56,11 @@ public final class MessageManager {
             Set<String> languages = getAvailableLanguages();
             if (!languages.isEmpty()) {
                 defaultLanguage = languages.iterator().next();
-                plugin.getLogger().log(Level.WARNING, "Default language missing from messages.yml. Falling back to {0}.", defaultLanguage);
+                plugin.getLogger()
+                        .log(
+                                Level.WARNING,
+                                "Default language missing from messages.yml. Falling back to {0}.",
+                                defaultLanguage);
             }
         }
     }

@@ -1,7 +1,6 @@
 package eu.nurkert.porticlegun.builders;
 
 import java.util.Arrays;
-
 import org.bukkit.DyeColor;
 import org.bukkit.Material;
 import org.bukkit.block.banner.Pattern;
@@ -20,7 +19,7 @@ public class BannerBuilder {
 
     public BannerBuilder setName(String name) {
         ItemMeta meta = getItemMeta();
-        meta.setDisplayName("§r"+name);
+        meta.setDisplayName("§r" + name);
         item.setItemMeta(meta);
         return this;
     }
@@ -41,7 +40,7 @@ public class BannerBuilder {
 
     public BannerBuilder hideItemFlags() {
         ItemMeta meta = getItemMeta();
-        for(ItemFlag flag : ItemFlag.values()) {
+        for (ItemFlag flag : ItemFlag.values()) {
             meta.addItemFlags(flag);
         }
         item.setItemMeta(meta);

@@ -13,7 +13,9 @@ public final class PorticleGun extends JavaPlugin {
     @Override
     public void onEnable() {
         if (!isSupportedServerVersion(Bukkit.getBukkitVersion())) {
-            getLogger().severe("PorticleGun requires Minecraft 1.21.4 or newer (found " + Bukkit.getBukkitVersion() + "). Disabling.");
+            getLogger()
+                    .severe("PorticleGun requires Minecraft 1.21.4 or newer (found " + Bukkit.getBukkitVersion()
+                            + "). Disabling.");
             getServer().getPluginManager().disablePlugin(this);
             return;
         }

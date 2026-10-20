@@ -1,7 +1,5 @@
 package eu.nurkert.porticlegun.util;
 
-import org.bukkit.plugin.java.JavaPlugin;
-
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.net.URL;
@@ -13,14 +11,14 @@ import java.nio.file.StandardCopyOption;
 import java.security.CodeSource;
 import java.util.Optional;
 import java.util.logging.Level;
+import org.bukkit.plugin.java.JavaPlugin;
 
 /**
  * Utility methods for working with the plugin's jar file.
  */
 public final class PluginJarRenamer {
 
-    private PluginJarRenamer() {
-    }
+    private PluginJarRenamer() {}
 
     public enum RenameResult {
         SUCCESS,
@@ -103,4 +101,3 @@ public final class PluginJarRenamer {
         }
     }
 }
-

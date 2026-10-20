@@ -1,17 +1,16 @@
 package eu.nurkert.porticlegun.handlers;
 
 import eu.nurkert.porticlegun.PorticleGun;
-import org.bukkit.configuration.file.FileConfiguration;
-import org.bukkit.configuration.file.YamlConfiguration;
-
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import org.bukkit.configuration.file.FileConfiguration;
+import org.bukkit.configuration.file.YamlConfiguration;
 
 public class PersistentHandler {
     // Singleton construction
-    final private static PersistentHandler instance = new PersistentHandler();
+    private static final PersistentHandler instance = new PersistentHandler();
 
     private static PortalsFile portalsFile;
     private static FileConfiguration config;
@@ -59,7 +58,7 @@ public class PersistentHandler {
 
     public class PortalsFile {
 
-        final private String filename = "portals.yml";
+        private final String filename = "portals.yml";
         String path;
 
         File dataFolder, portalYML;
@@ -79,7 +78,8 @@ public class PersistentHandler {
             if (!fileExists()) {
                 try {
                     new File(path, filename).createNewFile();
-                } catch (IOException ignored) {}
+                } catch (IOException ignored) {
+                }
             }
             portalYML = new File(path, filename);
             portals = YamlConfiguration.loadConfiguration(portalYML);

@@ -50,5 +50,4 @@ public class PotentialPortal {
     public void setDirection(Vector direction) {
         this.location.setDirection(direction);
     }
-
 }
