@@ -4,6 +4,9 @@ import org.bukkit.Location;
 import org.bukkit.Sound;
 import org.bukkit.entity.Player;
 
+/**
+ * Plays the plugin's sound effects ({@link PortalSound}).
+ */
 public class AudioHandler {
 
     public static void playSound(Location loc, PortalSound sound) {

@@ -2,6 +2,9 @@ package eu.nurkert.porticlegun.visualization;
 
 import eu.nurkert.porticlegun.portals.Portal;
 
+/**
+ * The primary and secondary portal colour of one gun.
+ */
 public class GunColors {
     PortalColor primary;
     PortalColor secondary;

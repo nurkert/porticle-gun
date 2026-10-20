@@ -17,6 +17,9 @@ import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;
 
+/**
+ * Loads messages.yml and resolves player-facing texts in the player's language, with placeholders and colour codes.
+ */
 public final class MessageManager {
 
     private static final Map<UUID, String> PLAYER_LANGUAGES = new HashMap<>();
@@ -133,6 +136,12 @@ public final class MessageManager {
         return false;
     }
 
+    /**
+     * Overrides the language used for a player instead of matching their Minecraft locale.
+     *
+     * @param playerId the player
+     * @param language a language key from messages.yml (e.g. {@code de}), or {@code null} for automatic detection
+     */
     public static void setPlayerLanguage(UUID playerId, String language) {
         if (language == null) {
             PLAYER_LANGUAGES.remove(playerId);

@@ -10,6 +10,9 @@ import org.bukkit.event.inventory.CraftItemEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.ShapedRecipe;
 
+/**
+ * Registers the crafting recipe of the gun and gives every crafted gun a new id.
+ */
 public class RecipeHandler implements Listener {
 
     NamespacedKey key;

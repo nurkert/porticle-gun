@@ -14,6 +14,9 @@ import org.bukkit.event.player.PlayerItemHeldEvent;
 import org.bukkit.event.player.PlayerSwapHandItemsEvent;
 import org.bukkit.inventory.ItemStack;
 
+/**
+ * Shows which portals of the held gun are open, as a title in the portal colours.
+ */
 public class TitleHandler implements Listener {
 
     @EventHandler

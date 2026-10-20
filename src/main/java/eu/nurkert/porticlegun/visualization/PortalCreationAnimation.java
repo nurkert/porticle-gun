@@ -12,6 +12,9 @@ import org.bukkit.World;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.util.Vector;
 
+/**
+ * Particle animation played when a portal opens.
+ */
 public final class PortalCreationAnimation {
 
     public static final int ANIMATION_DURATION_TICKS = 30;

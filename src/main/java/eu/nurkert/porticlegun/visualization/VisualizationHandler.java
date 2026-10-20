@@ -11,6 +11,9 @@ import org.bukkit.event.Listener;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.util.Vector;
 
+/**
+ * Draws the particle outline of every open portal near players.
+ */
 public class VisualizationHandler implements Listener {
 
     public VisualizationHandler() {

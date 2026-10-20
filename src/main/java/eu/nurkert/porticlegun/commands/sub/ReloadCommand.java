@@ -6,6 +6,9 @@ import eu.nurkert.porticlegun.commands.SubCommand;
 import eu.nurkert.porticlegun.messages.MessageManager;
 import org.bukkit.command.CommandSender;
 
+/**
+ * {@code /porticlegun reload}: reloads configuration, messages and stored portals.
+ */
 public class ReloadCommand implements SubCommand {
 
     @Override

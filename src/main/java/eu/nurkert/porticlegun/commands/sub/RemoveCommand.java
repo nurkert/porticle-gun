@@ -13,6 +13,9 @@ import java.util.Objects;
 import java.util.stream.Collectors;
 import org.bukkit.command.CommandSender;
 
+/**
+ * {@code /porticlegun remove <id>}: closes the portals of a gun and deletes its data.
+ */
 public class RemoveCommand implements SubCommand {
 
     @Override

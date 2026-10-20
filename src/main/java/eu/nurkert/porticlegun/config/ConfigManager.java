@@ -10,6 +10,9 @@ import java.util.Set;
 import org.bukkit.Material;
 import org.bukkit.configuration.file.FileConfiguration;
 
+/**
+ * Reads config.yml: portal distances, gravity gun settings and custom portal colours.
+ */
 public final class ConfigManager {
 
     private static final int DEFAULT_MAX_TARGET_DISTANCE = 128;

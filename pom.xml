@@ -10,6 +10,15 @@
     <packaging>jar</packaging>
 
     <name>PorticleGun</name>
+    <description>Minecraft server plugin that adds a portal gun and a gravity gun</description>
+    <url>https://github.com/nurkert/porticle-gun</url>
+
+    <licenses>
+        <license>
+            <name>GNU General Public License v3.0</name>
+            <url>https://www.gnu.org/licenses/gpl-3.0.txt</url>
+        </license>
+    </licenses>
 
     <properties>
         <java.version>21</java.version>

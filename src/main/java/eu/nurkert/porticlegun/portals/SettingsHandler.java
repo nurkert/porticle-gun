@@ -28,6 +28,9 @@ import org.bukkit.inventory.InventoryView;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 
+/**
+ * The settings menu of a gun (sneak and right click): portal colours, portal shape and closing the portals.
+ */
 public class SettingsHandler implements Listener {
 
     final ItemStack up = new BannerBuilder()

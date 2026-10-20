@@ -3,6 +3,9 @@ package eu.nurkert.porticlegun.visualization.concrete;
 import org.bukkit.Location;
 import org.bukkit.util.Vector;
 
+/**
+ * Draws a portal as an ellipse.
+ */
 public class EllipticVisualization implements PortalVisualization {
 
     @Override

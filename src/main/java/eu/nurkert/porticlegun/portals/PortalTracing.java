@@ -13,6 +13,9 @@ import org.bukkit.entity.Player;
 import org.bukkit.util.BlockIterator;
 import org.bukkit.util.Vector;
 
+/**
+ * Finds the block face a player is aiming at, where a portal would be placed.
+ */
 public class PortalTracing {
 
     private static final Set<Material> TRANSPARENT_BLOCKS = createTransparentBlockSet();
