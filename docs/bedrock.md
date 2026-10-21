@@ -22,8 +22,8 @@ If Geyser runs on Velocity or BungeeCord, copy the two files from the
 
 ## What Bedrock players get
 
-- The 3D gun model in hand and a gun icon in the inventory. Bedrock has no item tints, so the lights are always orange
-  and blue instead of the gun's portal colours.
+- The 3D gun model in hand and a gun icon in the inventory. Bedrock has no item tints, so the claw tips are always
+  orange and the windows blue instead of the gun's portal colours.
 - On a controller the right trigger attacks (primary portal) and the left trigger uses (secondary portal). The portal
   status title is mirrored for controller players so its left marker belongs to the left trigger.
 - Guns created before 1.3 hid their id in a lore line that Bedrock displayed as garbage; they are converted
@@ -35,7 +35,7 @@ These need testing with a real Bedrock client (`scripts/dev-server.sh` starts a 
 19132):
 
 - whether shooting the primary portal (left click into the air) works on touch devices
-- position and size of the 3D model in first and third person (`bedrock_animations()` in
+- position and size of the 3D model in first and third person (derived from the Java display values in
   `scripts/generate_resourcepack.py`)
 - particle colours, block displays of carried chests and teleport smoothness
 

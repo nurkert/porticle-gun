@@ -17,28 +17,33 @@
       "scripts": {
         "pre_animation": [
           "v.main_hand = c.item_slot == 'main_hand';",
-          "v.off_hand = c.item_slot == 'off_hand';"
+          "v.off_hand = c.item_slot == 'off_hand';",
+          "v.head = c.item_slot == 'head';"
         ],
         "animate": [
           {
             "thirdperson_main_hand": "v.main_hand && !c.is_first_person"
           },
           {
-            "firstperson_main_hand": "v.main_hand && c.is_first_person"
-          },
-          {
             "thirdperson_off_hand": "v.off_hand && !c.is_first_person"
           },
           {
+            "firstperson_main_hand": "v.main_hand && c.is_first_person"
+          },
+          {
             "firstperson_off_hand": "v.off_hand && c.is_first_person"
+          },
+          {
+            "head": "v.head"
           }
         ]
       },
       "animations": {
-        "firstperson_main_hand": "animation.porticlegun.portal_gun.firstperson_main_hand",
         "thirdperson_main_hand": "animation.porticlegun.portal_gun.thirdperson_main_hand",
+        "thirdperson_off_hand": "animation.porticlegun.portal_gun.thirdperson_off_hand",
+        "firstperson_main_hand": "animation.porticlegun.portal_gun.firstperson_main_hand",
         "firstperson_off_hand": "animation.porticlegun.portal_gun.firstperson_off_hand",
-        "thirdperson_off_hand": "animation.porticlegun.portal_gun.thirdperson_off_hand"
+        "head": "animation.porticlegun.portal_gun.head"
       },
       "render_controllers": [
         "controller.render.item_default"

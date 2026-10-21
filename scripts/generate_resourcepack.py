@@ -6,7 +6,7 @@ item mapping (src/main/resourcepack/geyser). Re-run after changing the model:
 
     python3 scripts/generate_resourcepack.py [--preview <dir>]
 
---preview additionally renders side/top/front views as PNGs to check the shape without starting the game.
+--preview additionally renders the model from several angles as PNGs to check it without starting the game.
 """
 
 import argparse
@@ -22,6 +22,8 @@ OUT = os.path.join(ROOT, "src", "main", "resourcepack")
 NAMESPACE = "porticlegun"
 ITEM = "portal_gun"
 IDENTIFIER = f"{NAMESPACE}:{ITEM}"
+# Bedrock icon shorthand in item_texture.json; set explicitly in the Geyser mapping
+ICON = f"{NAMESPACE}_{ITEM}"
 BASE_ITEM = "minecraft:brewing_stand"
 
 # default portal colours (gold / dark_blue in config.yml), shown when the item carries no colours
@@ -30,20 +32,19 @@ DEFAULT_TINTS = [0xFFA500, 0x0000AA]
 # Bedrock packs need stable UUIDs, never change them (bump the version instead)
 BEDROCK_HEADER_UUID = "6f2a1c3e-8b4d-4e7a-9c15-2d8f0b7e4a61"
 BEDROCK_MODULE_UUID = "a3d95b72-1e6c-4f08-b2a4-7c9e5d13f8b0"
-BEDROCK_VERSION = [1, 0, 0]
+BEDROCK_VERSION = [1, 1, 0]
 
-# --- texture atlas (32x32 px) --------------------------------------------------------------------------------------
-# region of each material in pixels: (x, y, size)
+# --- texture atlas (32x32 px, one 8x8 tile per material) ------------------------------------------------------------
 TEXTURE_SIZE = 32
 REGIONS = {
-    "body": (0, 0, 8),
+    "white": (0, 0, 8),
     "dark": (8, 0, 8),
-    "metal": (16, 0, 8),
-    "glow": (24, 0, 8),  # grey scale, tinted on Java
-    "glow_primary": (0, 8, 8),  # pre-coloured for Bedrock (no tints)
-    "glow_secondary": (8, 8, 8),
-    "accent": (16, 8, 8),
+    "glow": (16, 0, 8),  # grey scale, tinted with the portal colours on Java
+    "glow_primary": (24, 0, 8),  # pre-coloured for Bedrock, which has no item tints
+    "glow_secondary": (0, 8, 8),
 }
+BEDROCK_PRIMARY = 0xFF9A1F
+BEDROCK_SECONDARY = 0x36C2FF
 
 
 def hex_rgb(value):
@@ -57,90 +58,110 @@ def shade(rgb, factor):
 def paint_atlas():
     pixels = [[(0, 0, 0, 0)] * TEXTURE_SIZE for _ in range(TEXTURE_SIZE)]
 
-    def region(name, painter):
+    def tile(name, painter):
         x0, y0, size = REGIONS[name]
         for y in range(size):
             for x in range(size):
-                edge = x in (0, size - 1) or y in (0, size - 1)
-                pixels[y0 + y][x0 + x] = (*painter(x, y, size, edge), 255)
+                pixels[y0 + y][x0 + x] = (*painter(x, y, size - 1), 255)
 
-    body = hex_rgb(0xE6E9EC)
-    region("body", lambda x, y, s, e: shade(body, 0.86 if e else (1.03 if y < 2 else 1.0)))
-    dark = hex_rgb(0x2B3038)
-    region("dark", lambda x, y, s, e: shade(dark, 1.25 if (x + y) % 3 == 0 else 1.0))
-    metal_top, metal_bottom = hex_rgb(0xB3BBC4), hex_rgb(0x6C7580)
-    region(
-        "metal",
-        lambda x, y, s, e: tuple(round(a + (b - a) * y / (s - 1)) for a, b in zip(metal_top, metal_bottom)),
-    )
-
-    def glow(color):
-        def painter(x, y, s, e):
-            distance = math.hypot(x - (s - 1) / 2, y - (s - 1) / 2) / (s / 2)
-            return shade(color, 1.0 - 0.25 * min(1.0, distance))
+    # every tile is one "voxel": a slightly bevelled square, so the blocks read as separate bricks
+    def brick(base, light, dark):
+        def painter(x, y, last):
+            if x == 0 or y == 0:
+                return light
+            if x == last or y == last:
+                return dark
+            return base
 
         return painter
 
-    region("glow", glow((255, 255, 255)))
-    region("glow_primary", glow(hex_rgb(DEFAULT_TINTS[0])))
-    region("glow_secondary", glow(hex_rgb(0x2D4BFF)))  # lighter than #0000AA so it still reads as a light
-    accent = hex_rgb(0xAEB5BE)
-    region("accent", lambda x, y, s, e: shade(accent, 0.9 if e else 1.0))
+    tile("white", brick(hex_rgb(0xECEEF1), hex_rgb(0xFFFFFF), hex_rgb(0xC3C8CF)))
+    tile("dark", brick(hex_rgb(0x24272C), hex_rgb(0x3B4048), hex_rgb(0x15171A)))
+
+    def glow(color):
+        def painter(x, y, last):
+            distance = max(abs(x - last / 2), abs(y - last / 2)) / (last / 2)
+            return shade(color, 1.0 - 0.3 * distance)
+
+        return painter
+
+    tile("glow", glow((255, 255, 255)))
+    tile("glow_primary", glow(hex_rgb(BEDROCK_PRIMARY)))
+    tile("glow_secondary", glow(hex_rgb(BEDROCK_SECONDARY)))
     return pixels
 
 
 # --- model ----------------------------------------------------------------------------------------------------------
-# Java model space: barrel along +X (front at x=16), top at +Y, centred around z=8.
-# material "glow0"/"glow1" are lit by the primary/secondary portal colour.
+# Designed in "gun space": barrel along +X from the rear pod (x=0) to the claw tips (x~31), top at +Y, centred at
+# z=8. OFFSET moves it so its centre sits at the model centre (8, 8, 8) that display transforms rotate around.
+# Materials: white, dark, glow0 (primary portal colour), glow1 (secondary portal colour).
+OFFSET = (-7.75, 0, 0)
+
+
+def box(name, material, start, end):
+    return {"name": name, "material": material, "from": list(start), "to": list(end)}
+
+
 ELEMENTS = [
-    {"name": "rear_body", "material": "body", "from": [0, 5, 5], "to": [7, 11, 11]},
-    {"name": "front_body", "material": "body", "from": [7, 5.5, 5.5], "to": [11, 10.5, 10.5]},
-    {"name": "bottom_plate", "material": "accent", "from": [1, 4.5, 6], "to": [6.5, 5, 10]},
-    {"name": "top_fin", "material": "body", "from": [2, 11, 6.5], "to": [9, 12.5, 9.5]},
-    {"name": "fin_light", "material": "glow1", "from": [3, 12.5, 7.25], "to": [8, 13, 8.75]},
-    {
-        "name": "grip",
-        "material": "dark",
-        "from": [3, 0.5, 6.5],
-        "to": [6, 5, 9.5],
-        "rotation": {"axis": "z", "angle": -22.5, "origin": [4.5, 5, 8]},
-    },
-    {"name": "core_band", "material": "glow0", "from": [8, 5.2, 5.2], "to": [10, 10.8, 10.8]},
-    {"name": "emitter_ring", "material": "dark", "from": [11, 6, 6], "to": [12.5, 10, 10]},
-    {"name": "emitter_crystal", "material": "glow0", "from": [12.5, 7, 7], "to": [13.5, 9, 9]},
-    {
-        "name": "prong_top",
-        "material": "metal",
-        "from": [12, 10, 7.5],
-        "to": [16, 11, 8.5],
-        "rotation": {"axis": "z", "angle": -22.5, "origin": [12, 10.5, 8]},
-    },
-    {
-        "name": "prong_left",
-        "material": "metal",
-        "from": [12, 6.5, 5],
-        "to": [16, 7.5, 6],
-        "rotation": {"axis": "y", "angle": -22.5, "origin": [12, 7, 5.5]},
-    },
-    {
-        "name": "prong_right",
-        "material": "metal",
-        "from": [12, 6.5, 10],
-        "to": [16, 7.5, 11],
-        "rotation": {"axis": "y", "angle": 22.5, "origin": [12, 7, 10.5]},
-    },
-    {"name": "rear_cap", "material": "dark", "from": [-0.5, 6.5, 6.5], "to": [0, 9.5, 9.5]},
+    # rear pod: a voxel ball, widest in the middle and stepping in towards both ends
+    box("pod_mid_y", "white", (2, 3, 4), (8, 13, 12)),
+    box("pod_mid_z", "white", (2, 4, 3), (8, 12, 13)),
+    box("pod_mid_top", "white", (2, 2, 5), (8, 14, 11)),
+    box("pod_mid_side", "white", (2, 5, 2), (8, 11, 14)),
+    box("pod_back_ring", "white", (1, 4, 4), (2, 12, 12)),
+    box("pod_back_ring_y", "white", (1, 3, 5), (2, 13, 11)),
+    box("pod_back_ring_z", "white", (1, 5, 3), (2, 11, 13)),
+    box("pod_front_ring", "white", (8, 4, 4), (9, 12, 12)),
+    box("pod_front_ring_y", "white", (8, 3, 5), (9, 13, 11)),
+    box("pod_front_ring_z", "white", (8, 5, 3), (9, 11, 13)),
+    box("pod_back_end", "white", (0, 5, 5), (1, 11, 11)),
+    box("pod_front_end", "white", (9, 5, 5), (10, 11, 11)),
+    box("pod_window", "glow1", (3.5, 14, 6.5), (6.5, 14.4, 9.5)),
+    box("pod_rear_plug", "dark", (-0.4, 6.5, 6.5), (0, 9.5, 9.5)),
+    box("collar", "dark", (10, 4.5, 4.5), (12, 11.5, 11.5)),
+    # barrel with a glowing side window and a hump on top
+    box("barrel", "dark", (12, 5, 5), (19, 11, 11)),
+    box("barrel_window", "glow1", (13, 6, 4.6), (18, 10, 11.4)),
+    box("hump_low", "dark", (15, 11, 5.5), (21, 12.5, 10.5)),
+    box("hump_high", "dark", (16.5, 12.5, 6.5), (19.5, 13.5, 9.5)),
+    # front head with framed emitter, side windows and white side plates
+    box("head", "dark", (19, 4, 4), (25, 12, 12)),
+    box("head_window_left", "glow1", (20, 6.5, 3.6), (23, 9.5, 4)),
+    box("head_window_right", "glow1", (20, 6.5, 12), (23, 9.5, 12.4)),
+    box("emitter", "glow1", (25, 5.5, 5.5), (25.5, 10.5, 10.5)),
+    box("emitter_frame_bottom", "dark", (25, 4, 4), (26, 5.5, 12)),
+    box("emitter_frame_top", "dark", (25, 10.5, 4), (26, 12, 12)),
+    box("emitter_frame_left", "dark", (25, 5.5, 4), (26, 10.5, 5.5)),
+    box("emitter_frame_right", "dark", (25, 5.5, 10.5), (26, 10.5, 12)),
+    box("plate_left", "white", (17, 2.5, 3), (21, 6, 5)),
+    box("plate_right", "white", (17, 2.5, 11), (21, 6, 13)),
+    # upper claw, stepping up from the hump and curling forward
+    box("claw_top_1", "dark", (17, 13.5, 7), (19, 16.5, 9)),
+    box("claw_top_2", "dark", (18, 16.5, 7), (22, 18.5, 9)),
+    box("claw_top_3", "white", (21.5, 17.5, 6.5), (24.5, 19.5, 9.5)),
+    box("claw_top_4", "dark", (24, 16.5, 7), (27, 18.5, 9)),
+    box("claw_top_5", "dark", (26.5, 14, 7), (28.5, 17, 9)),
+    box("claw_top_tip", "glow0", (28.5, 13.5, 7), (30, 15.5, 9)),
+    # lower claw, the mirror image hanging below the head
+    box("claw_bottom_1", "dark", (19, -0.5, 7), (21, 4, 9)),
+    box("claw_bottom_2", "dark", (19.5, -2.5, 7), (23.5, -0.5, 9)),
+    box("claw_bottom_3", "white", (23, -3.5, 6.5), (26, -1.5, 9.5)),
+    box("claw_bottom_4", "dark", (25.5, -2.5, 7), (28.5, -0.5, 9)),
+    box("claw_bottom_5", "dark", (28, -1, 7), (30, 2, 9)),
+    box("claw_bottom_tip", "glow0", (30, 0.5, 7), (31.5, 2.5, 9)),
 ]
 
 FACES = ["north", "east", "south", "west", "up", "down"]
 
 
+def placed(element):
+    start = [element["from"][i] + OFFSET[i] for i in range(3)]
+    end = [element["to"][i] + OFFSET[i] for i in range(3)]
+    return start, end
+
+
 def java_material(material):
-    if material == "glow0":
-        return "glow", 0
-    if material == "glow1":
-        return "glow", 1
-    return material, None
+    return {"glow0": ("glow", 0), "glow1": ("glow", 1)}.get(material, (material, None))
 
 
 def bedrock_material(material):
@@ -153,6 +174,20 @@ def region_uv16(name):
     return [x * scale, y * scale, (x + size) * scale, (y + size) * scale]
 
 
+# Display transforms. The barrel lies along +X like the tip of the vanilla handheld sword, so a y rotation of -90
+# points it forward. Bedrock animations are derived from these values.
+DISPLAY = {
+    "firstperson_righthand": {"rotation": [0, -90, 0], "translation": [1.5, 2.5, 1.5], "scale": [0.42] * 3},
+    "firstperson_lefthand": {"rotation": [0, 90, 0], "translation": [1.5, 2.5, 1.5], "scale": [0.42] * 3},
+    "thirdperson_righthand": {"rotation": [0, -90, 0], "translation": [0, 3, 1], "scale": [0.38] * 3},
+    "thirdperson_lefthand": {"rotation": [0, 90, 0], "translation": [0, 3, 1], "scale": [0.38] * 3},
+    "gui": {"rotation": [20, -35, 0], "translation": [0, 0, 0], "scale": [0.5] * 3},
+    "ground": {"rotation": [0, 0, 0], "translation": [0, 2, 0], "scale": [0.3] * 3},
+    "fixed": {"rotation": [0, 180, 0], "translation": [0, 0, 0], "scale": [0.5] * 3},
+    "head": {"rotation": [0, -90, 0], "translation": [0, 10, 0], "scale": [0.5] * 3},
+}
+
+
 def java_model():
     elements = []
     for element in ELEMENTS:
@@ -160,14 +195,13 @@ def java_model():
         face = {"uv": region_uv16(material), "texture": "#gun"}
         if tint is not None:
             face["tintindex"] = tint
+        start, end = placed(element)
         entry = {
             "name": element["name"],
-            "from": element["from"],
-            "to": element["to"],
+            "from": start,
+            "to": end,
             "faces": {direction: dict(face) for direction in FACES},
         }
-        if "rotation" in element:
-            entry["rotation"] = element["rotation"]
         if tint is not None:
             entry["light_emission"] = 15
         elements.append(entry)
@@ -176,17 +210,7 @@ def java_model():
         "textures": {"gun": f"{NAMESPACE}:item/{ITEM}", "particle": f"{NAMESPACE}:item/{ITEM}"},
         "elements": elements,
         "gui_light": "front",
-        # barrel along +X: like the vanilla handheld sword (whose tip is +X) a y rotation of -90 points it forward
-        "display": {
-            "firstperson_righthand": {"rotation": [0, -90, 0], "translation": [1.5, 2.5, 1.5], "scale": [0.7, 0.7, 0.7]},
-            "firstperson_lefthand": {"rotation": [0, 90, 0], "translation": [1.5, 2.5, 1.5], "scale": [0.7, 0.7, 0.7]},
-            "thirdperson_righthand": {"rotation": [0, -90, 0], "translation": [0, 3, 1], "scale": [0.6, 0.6, 0.6]},
-            "thirdperson_lefthand": {"rotation": [0, 90, 0], "translation": [0, 3, 1], "scale": [0.6, 0.6, 0.6]},
-            "gui": {"rotation": [15, -30, 0], "translation": [0, 0.5, 0], "scale": [0.85, 0.85, 0.85]},
-            "ground": {"rotation": [0, 0, 0], "translation": [0, 2, 0], "scale": [0.5, 0.5, 0.5]},
-            "fixed": {"rotation": [0, 180, 0], "scale": [0.9, 0.9, 0.9]},
-            "head": {"rotation": [0, -90, 0], "translation": [0, 10, 0], "scale": [0.8, 0.8, 0.8]},
-        },
+        "display": DISPLAY,
     }
 
 
@@ -217,52 +241,73 @@ def java_pack_mcmeta():
 
 
 # --- Bedrock --------------------------------------------------------------------------------------------------------
+# Bone layout and hand poses follow the attachables that the common Java-to-Bedrock converter generates for Geyser:
+# a root bone bound to the hand, plus one bone per rotation axis that replays the Java display transform.
+ROOT_BONE = NAMESPACE
+AXIS_BONES = [f"{NAMESPACE}_x", f"{NAMESPACE}_y", f"{NAMESPACE}_z"]
+
+
 def bedrock_geometry():
     cubes = []
     for element in ELEMENTS:
-        start, end = element["from"], element["to"]
-        size = [end[i] - start[i] for i in range(3)]
+        start, end = placed(element)
+        size = [round(end[i] - start[i], 4) for i in range(3)]
         # Bedrock mirrors the x axis compared to Java models and centres x/z at 0
-        cube = {"origin": [8 - end[0], start[1], start[2] - 8], "size": size}
-        if "rotation" in element:
-            rotation = element["rotation"]
-            axis = "xyz".index(rotation["axis"])
-            angles = [0, 0, 0]
-            angles[axis] = rotation["angle"] if axis == 0 else -rotation["angle"]
-            origin = rotation["origin"]
-            cube["pivot"] = [8 - origin[0], origin[1], origin[2] - 8]
-            cube["rotation"] = angles
+        cube = {"origin": [round(8 - end[0], 4), start[1], round(start[2] - 8, 4)], "size": size}
         x, y, region_size = REGIONS[bedrock_material(element["material"])]
         cube["uv"] = {direction: {"uv": [x, y], "uv_size": [region_size, region_size]} for direction in FACES}
         cubes.append(cube)
 
+    bones = [
+        {
+            "name": ROOT_BONE,
+            "pivot": [0, 8, 0],
+            "binding": "c.item_slot == 'head' ? 'head' : q.item_slot_to_bone_name(c.item_slot)",
+        }
+    ]
+    parent = ROOT_BONE
+    for bone in AXIS_BONES:
+        bones.append({"name": bone, "parent": parent, "pivot": [0, 8, 0]})
+        parent = bone
+    bones[-1]["cubes"] = cubes
+
     return {
-        "format_version": "1.12.0",
+        "format_version": "1.16.0",
         "minecraft:geometry": [
             {
                 "description": {
                     "identifier": f"geometry.{NAMESPACE}.{ITEM}",
                     "texture_width": TEXTURE_SIZE,
                     "texture_height": TEXTURE_SIZE,
-                    "visible_bounds_width": 3,
-                    "visible_bounds_height": 3,
-                    "visible_bounds_offset": [0, 0.5, 0],
+                    "visible_bounds_width": 4,
+                    "visible_bounds_height": 4.5,
+                    "visible_bounds_offset": [0, 0.75, 0],
                 },
-                "bones": [
-                    {
-                        "name": "porticlegun_root",
-                        "pivot": [0, 8, 0],
-                        "binding": "c.item_slot == 'head' ? 'head' : q.item_slot_to_bone_name(c.item_slot)",
-                    },
-                    {"name": "porticlegun_gun", "parent": "porticlegun_root", "pivot": [0, 8, 0], "cubes": cubes},
-                ],
+                "bones": bones,
             }
         ],
     }
 
 
+CONTEXTS = {
+    # context: (java display key, root pose, mirrored for the left hand)
+    "thirdperson_main_hand": ("thirdperson_righthand", {"rotation": [90, 0, 0], "position": [0, 13, -3]}, False),
+    "thirdperson_off_hand": ("thirdperson_lefthand", {"rotation": [90, 0, 0], "position": [0, 13, -3]}, True),
+    "firstperson_main_hand": (
+        "firstperson_righthand",
+        {"rotation": [90, 60, -40], "position": [4, 10, 4], "scale": 1.5},
+        False,
+    ),
+    "firstperson_off_hand": (
+        "firstperson_lefthand",
+        {"rotation": [90, 60, -40], "position": [4, 10, 4], "scale": 1.5},
+        True,
+    ),
+    "head": ("head", {"position": [0, 19.9, 0], "scale": 0.625}, False),
+}
+
+
 def bedrock_attachable():
-    contexts = ["firstperson_main_hand", "thirdperson_main_hand", "firstperson_off_hand", "thirdperson_off_hand"]
     return {
         "format_version": "1.10.0",
         "minecraft:attachable": {
@@ -278,15 +323,17 @@ def bedrock_attachable():
                     "pre_animation": [
                         "v.main_hand = c.item_slot == 'main_hand';",
                         "v.off_hand = c.item_slot == 'off_hand';",
+                        "v.head = c.item_slot == 'head';",
                     ],
                     "animate": [
                         {"thirdperson_main_hand": "v.main_hand && !c.is_first_person"},
-                        {"firstperson_main_hand": "v.main_hand && c.is_first_person"},
                         {"thirdperson_off_hand": "v.off_hand && !c.is_first_person"},
+                        {"firstperson_main_hand": "v.main_hand && c.is_first_person"},
                         {"firstperson_off_hand": "v.off_hand && c.is_first_person"},
+                        {"head": "v.head"},
                     ],
                 },
-                "animations": {name: f"animation.{NAMESPACE}.{ITEM}.{name}" for name in contexts},
+                "animations": {name: f"animation.{NAMESPACE}.{ITEM}.{name}" for name in CONTEXTS},
                 "render_controllers": ["controller.render.item_default"],
             }
         },
@@ -294,20 +341,20 @@ def bedrock_attachable():
 
 
 def bedrock_animations():
-    # positions of the gun relative to the hand bone; tune these with a Bedrock client if the gun sits oddly
-    poses = {
-        "firstperson_main_hand": {"rotation": [90, 60, -40], "position": [4, 10, 4], "scale": [1.2, 1.2, 1.2]},
-        "firstperson_off_hand": {"rotation": [90, -60, 40], "position": [-4, 10, 4], "scale": [1.2, 1.2, 1.2]},
-        "thirdperson_main_hand": {"rotation": [90, 90, 0], "position": [0, 13, -3], "scale": [0.8, 0.8, 0.8]},
-        "thirdperson_off_hand": {"rotation": [90, -90, 0], "position": [0, 13, -3], "scale": [0.8, 0.8, 0.8]},
-    }
-    return {
-        "format_version": "1.8.0",
-        "animations": {
-            f"animation.{NAMESPACE}.{ITEM}.{name}": {"loop": True, "bones": {"porticlegun_root": pose}}
-            for name, pose in poses.items()
-        },
-    }
+    animations = {}
+    for name, (java_key, root_pose, left) in CONTEXTS.items():
+        display = DISPLAY[java_key]
+        rx, ry, rz = display["rotation"]
+        tx, ty, tz = display["translation"]
+        x_bone = {"rotation": [-rx, 0, 0], "position": [tx if left else -tx, ty, tz], "scale": display["scale"]}
+        bones = {
+            ROOT_BONE: root_pose,
+            AXIS_BONES[0]: x_bone,
+            AXIS_BONES[1]: {"rotation": [0, ry if left else -ry, 0]},
+            AXIS_BONES[2]: {"rotation": [0, 0, -rz if left else rz]},
+        }
+        animations[f"animation.{NAMESPACE}.{ITEM}.{name}"] = {"loop": True, "bones": bones}
+    return {"format_version": "1.8.0", "animations": animations}
 
 
 def bedrock_manifest():
@@ -328,7 +375,7 @@ def bedrock_item_texture():
     return {
         "resource_pack_name": "PorticleGun",
         "texture_name": "atlas.items",
-        "texture_data": {IDENTIFIER: {"textures": [f"textures/items/{ITEM}"]}},
+        "texture_data": {ICON: {"textures": [f"textures/items/{ITEM}"]}},
     }
 
 
@@ -342,53 +389,41 @@ def geyser_mappings():
                     "model": IDENTIFIER,
                     "bedrock_identifier": IDENTIFIER,
                     "display_name": "PorticleGun",
-                    "bedrock_options": {"display_handheld": True},
+                    # without an explicit icon Geyser looks for "porticlegun.portal_gun" in item_texture.json
+                    "bedrock_options": {"icon": ICON, "display_handheld": True},
                 }
             ]
         },
     }
 
 
-# --- rendering (icon and preview) -----------------------------------------------------------------------------------
-def rotate(point, rotation):
-    if rotation is None:
-        return point
-    angle = math.radians(rotation["angle"])
-    c, s = math.cos(angle), math.sin(angle)
-    x, y, z = (point[i] - rotation["origin"][i] for i in range(3))
-    if rotation["axis"] == "x":
-        y, z = y * c - z * s, y * s + z * c
-    elif rotation["axis"] == "y":
-        x, z = x * c + z * s, -x * s + z * c
-    else:
-        x, y = x * c - y * s, x * s + y * c
-    return [x + rotation["origin"][0], y + rotation["origin"][1], z + rotation["origin"][2]]
+# --- rendering (icons and previews) ---------------------------------------------------------------------------------
+FACE_SHADE = {"up": 1.0, "down": 0.55, "north": 0.8, "south": 0.8, "east": 0.68, "west": 0.68}
 
 
-def corners(element):
-    f, t = element["from"], element["to"]
-    points = [[x, y, z] for x in (f[0], t[0]) for y in (f[1], t[1]) for z in (f[2], t[2])]
-    return [rotate(p, element.get("rotation")) for p in points]
+def face_quads(start, end):
+    (x0, y0, z0), (x1, y1, z1) = start, end
+    return {
+        "north": ([(x1, y0, z0), (x0, y0, z0), (x0, y1, z0), (x1, y1, z0)], (0, 0, -1)),
+        "south": ([(x0, y0, z1), (x1, y0, z1), (x1, y1, z1), (x0, y1, z1)], (0, 0, 1)),
+        "west": ([(x0, y0, z0), (x0, y0, z1), (x0, y1, z1), (x0, y1, z0)], (-1, 0, 0)),
+        "east": ([(x1, y0, z1), (x1, y0, z0), (x1, y1, z0), (x1, y1, z1)], (1, 0, 0)),
+        "up": ([(x0, y1, z1), (x1, y1, z1), (x1, y1, z0), (x0, y1, z0)], (0, 1, 0)),
+        "down": ([(x0, y0, z0), (x1, y0, z0), (x1, y0, z1), (x0, y0, z1)], (0, -1, 0)),
+    }
 
 
-def convex_hull(points):
-    points = sorted(set(points))
-    if len(points) <= 2:
-        return points
+def make_view(yaw, pitch):
+    cy, sy = math.cos(math.radians(yaw)), math.sin(math.radians(yaw))
+    cp, sp = math.cos(math.radians(pitch)), math.sin(math.radians(pitch))
 
-    def cross(o, a, b):
-        return (a[0] - o[0]) * (b[1] - o[1]) - (a[1] - o[1]) * (b[0] - o[0])
+    def transform(point):
+        x, y, z = point[0] - 8, point[1] - 8, point[2] - 8
+        x, z = x * cy + z * sy, -x * sy + z * cy
+        y, z = y * cp - z * sp, y * sp + z * cp
+        return x, y, z
 
-    lower, upper = [], []
-    for p in points:
-        while len(lower) >= 2 and cross(lower[-2], lower[-1], p) <= 0:
-            lower.pop()
-        lower.append(p)
-    for p in reversed(points):
-        while len(upper) >= 2 and cross(upper[-2], upper[-1], p) <= 0:
-            upper.pop()
-        upper.append(p)
-    return lower[:-1] + upper[:-1]
+    return transform
 
 
 def inside(polygon, x, y):
@@ -403,44 +438,61 @@ def inside(polygon, x, y):
     return result
 
 
-def material_color(material, tinted):
-    atlas_material = bedrock_material(material) if tinted else java_material(material)[0]
-    x, y, size = REGIONS[atlas_material]
+def material_color(material):
+    x, y, size = REGIONS[bedrock_material(material)]
     return ATLAS[y + size // 2][x + size // 2][:3]
 
 
-def render(view, scale, width_units, height_units, offset, outline=True):
-    """Orthographic render. view: 'side' (from +Z), 'top' (from +Y) or 'front' (from +X)."""
-    axes = {"side": (0, 1, 2), "top": (0, 2, 1), "front": (2, 1, 0)}[view]
-    flip_v = view == "top"
-    width, height = round(width_units * scale), round(height_units * scale)
-    image = [[(0, 0, 0, 0)] * width for _ in range(height)]
-    owner = [[None] * width for _ in range(height)]
-    polygons = []
+def render(yaw, pitch, size, margin=1, outline=True):
+    """Orthographic render from the given angle, scaled to fit a size x size image."""
+    transform = make_view(yaw, pitch)
+    faces = []
     for index, element in enumerate(ELEMENTS):
-        points = corners(element)
-        projected = [(p[axes[0]] - offset[0], p[axes[1]] - offset[1]) for p in points]
-        depth = max(p[axes[2]] for p in points)
-        polygons.append((depth, index, convex_hull(projected), element))
-    for depth, index, polygon, element in sorted(polygons, key=lambda item: item[0]):
-        color = material_color(element["material"], True)
-        for py in range(height):
-            v = (py + 0.5) / scale
-            v = v if flip_v else height_units - v
-            for px in range(width):
-                if inside(polygon, (px + 0.5) / scale, v):
+        start, end = placed(element)
+        for direction, (quad, normal) in face_quads(start, end).items():
+            n = transform((normal[0] + 8, normal[1] + 8, normal[2] + 8))
+            if n[2] <= 1e-6:
+                continue  # facing away
+            points = [transform(p) for p in quad]
+            faces.append((sum(p[2] for p in points) / 4, index, direction, points, element["material"]))
+
+    xs = [p[0] for f in faces for p in f[3]]
+    ys = [p[1] for f in faces for p in f[3]]
+    span = max(max(xs) - min(xs), max(ys) - min(ys))
+    scale = (size - 2 * margin) / span
+    cx, cy = (max(xs) + min(xs)) / 2, (max(ys) + min(ys)) / 2
+
+    image = [[(0, 0, 0, 0)] * size for _ in range(size)]
+    owner = [[None] * size for _ in range(size)]
+    for depth, index, direction, points, material in sorted(faces, key=lambda f: f[0]):
+        polygon = [((p[0] - cx) * scale + size / 2, (cy - p[1]) * scale + size / 2) for p in points]
+        color = material_color(material)
+        if not material.startswith("glow"):
+            color = shade(color, FACE_SHADE[direction])
+        min_x = max(0, int(min(p[0] for p in polygon)))
+        max_x = min(size - 1, int(max(p[0] for p in polygon)) + 1)
+        min_y = max(0, int(min(p[1] for p in polygon)))
+        max_y = min(size - 1, int(max(p[1] for p in polygon)) + 1)
+        for py in range(min_y, max_y + 1):
+            for px in range(min_x, max_x + 1):
+                if inside(polygon, px + 0.5, py + 0.5):
                     image[py][px] = (*color, 255)
                     owner[py][px] = index
+
     if outline:
-        for py in range(height):
-            for px in range(width):
+        result = [row[:] for row in image]
+        for py in range(size):
+            for px in range(size):
                 if owner[py][px] is None:
                     continue
                 for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1)):
                     nx, ny = px + dx, py + dy
-                    if not (0 <= nx < width and 0 <= ny < height) or owner[ny][nx] != owner[py][px]:
-                        image[py][px] = (*shade(image[py][px][:3], 0.72), 255)
+                    if not (0 <= nx < size and 0 <= ny < size) or owner[ny][nx] is None:
+                        # lights stay bright at the edge, everything else gets a dark rim
+                        if not ELEMENTS[owner[py][px]]["material"].startswith("glow"):
+                            result[py][px] = (*shade(image[py][px][:3], 0.55), 255)
                         break
+        image = result
     return image
 
 
@@ -466,6 +518,7 @@ def write_json(path, data):
 
 
 ATLAS = paint_atlas()
+ICON_VIEW = (-20, 15)
 
 
 def main():
@@ -478,9 +531,7 @@ def main():
     write_json(os.path.join(java, "assets", NAMESPACE, "items", f"{ITEM}.json"), java_item_definition())
     write_json(os.path.join(java, "assets", NAMESPACE, "models", "item", f"{ITEM}.json"), java_model())
     write_png(os.path.join(java, "assets", NAMESPACE, "textures", "item", f"{ITEM}.png"), ATLAS)
-
-    icon = render("side", 2, 17, 17, (-0.5, -2))
-    write_png(os.path.join(java, "pack.png"), render("side", 4, 17, 17, (-0.5, -2)))
+    write_png(os.path.join(java, "pack.png"), render(*ICON_VIEW, 128, margin=6))
 
     bedrock = os.path.join(OUT, "bedrock")
     write_json(os.path.join(bedrock, "manifest.json"), bedrock_manifest())
@@ -489,15 +540,16 @@ def main():
     write_json(os.path.join(bedrock, "animations", f"{ITEM}.animation.json"), bedrock_animations())
     write_json(os.path.join(bedrock, "textures", "item_texture.json"), bedrock_item_texture())
     write_png(os.path.join(bedrock, "textures", "entity", NAMESPACE, f"{ITEM}.png"), ATLAS)
-    write_png(os.path.join(bedrock, "textures", "items", f"{ITEM}.png"), icon)
-    write_png(os.path.join(bedrock, "pack_icon.png"), render("side", 4, 17, 17, (-0.5, -2)))
+    write_png(os.path.join(bedrock, "textures", "items", f"{ITEM}.png"), render(*ICON_VIEW, 32))
+    write_png(os.path.join(bedrock, "pack_icon.png"), render(*ICON_VIEW, 128, margin=6))
 
     write_json(os.path.join(OUT, "geyser", f"{NAMESPACE}_mappings.json"), geyser_mappings())
 
     if args.preview:
-        write_png(os.path.join(args.preview, "side.png"), render("side", 16, 17, 15, (-0.5, -1)))
-        write_png(os.path.join(args.preview, "top.png"), render("top", 16, 17, 12, (-0.5, 2)))
-        write_png(os.path.join(args.preview, "front.png"), render("front", 16, 12, 15, (2, -1)))
+        views = {"iso": (-35, 25), "iso_back": (145, 25), "side": (0, 0), "top": (0, 90), "rear": (90, 0)}
+        for name, (yaw, pitch) in views.items():
+            write_png(os.path.join(args.preview, f"{name}.png"), render(yaw, pitch, 320, margin=12))
+        icon = render(*ICON_VIEW, 32)
         enlarged = [[p for p in row for _ in range(8)] for row in icon for _ in range(8)]
         write_png(os.path.join(args.preview, "icon_x8.png"), enlarged)
 

@@ -1,10 +1,106 @@
 {
   "format_version": "1.8.0",
   "animations": {
+    "animation.porticlegun.portal_gun.thirdperson_main_hand": {
+      "loop": true,
+      "bones": {
+        "porticlegun": {
+          "rotation": [
+            90,
+            0,
+            0
+          ],
+          "position": [
+            0,
+            13,
+            -3
+          ]
+        },
+        "porticlegun_x": {
+          "rotation": [
+            0,
+            0,
+            0
+          ],
+          "position": [
+            0,
+            3,
+            1
+          ],
+          "scale": [
+            0.38,
+            0.38,
+            0.38
+          ]
+        },
+        "porticlegun_y": {
+          "rotation": [
+            0,
+            90,
+            0
+          ]
+        },
+        "porticlegun_z": {
+          "rotation": [
+            0,
+            0,
+            0
+          ]
+        }
+      }
+    },
+    "animation.porticlegun.portal_gun.thirdperson_off_hand": {
+      "loop": true,
+      "bones": {
+        "porticlegun": {
+          "rotation": [
+            90,
+            0,
+            0
+          ],
+          "position": [
+            0,
+            13,
+            -3
+          ]
+        },
+        "porticlegun_x": {
+          "rotation": [
+            0,
+            0,
+            0
+          ],
+          "position": [
+            0,
+            3,
+            1
+          ],
+          "scale": [
+            0.38,
+            0.38,
+            0.38
+          ]
+        },
+        "porticlegun_y": {
+          "rotation": [
+            0,
+            90,
+            0
+          ]
+        },
+        "porticlegun_z": {
+          "rotation": [
+            0,
+            0,
+            0
+          ]
+        }
+      }
+    },
     "animation.porticlegun.portal_gun.firstperson_main_hand": {
       "loop": true,
       "bones": {
-        "porticlegun_root": {
+        "porticlegun": {
           "rotation": [
             90,
             60,
@@ -15,10 +111,37 @@
             10,
             4
           ],
+          "scale": 1.5
+        },
+        "porticlegun_x": {
+          "rotation": [
+            0,
+            0,
+            0
+          ],
+          "position": [
+            -1.5,
+            2.5,
+            1.5
+          ],
           "scale": [
-            1.2,
-            1.2,
-            1.2
+            0.42,
+            0.42,
+            0.42
+          ]
+        },
+        "porticlegun_y": {
+          "rotation": [
+            0,
+            90,
+            0
+          ]
+        },
+        "porticlegun_z": {
+          "rotation": [
+            0,
+            0,
+            0
           ]
         }
       }
@@ -26,65 +149,92 @@
     "animation.porticlegun.portal_gun.firstperson_off_hand": {
       "loop": true,
       "bones": {
-        "porticlegun_root": {
+        "porticlegun": {
           "rotation": [
             90,
-            -60,
-            40
+            60,
+            -40
           ],
           "position": [
-            -4,
+            4,
             10,
             4
           ],
+          "scale": 1.5
+        },
+        "porticlegun_x": {
+          "rotation": [
+            0,
+            0,
+            0
+          ],
+          "position": [
+            1.5,
+            2.5,
+            1.5
+          ],
           "scale": [
-            1.2,
-            1.2,
-            1.2
+            0.42,
+            0.42,
+            0.42
+          ]
+        },
+        "porticlegun_y": {
+          "rotation": [
+            0,
+            90,
+            0
+          ]
+        },
+        "porticlegun_z": {
+          "rotation": [
+            0,
+            0,
+            0
           ]
         }
       }
     },
-    "animation.porticlegun.portal_gun.thirdperson_main_hand": {
+    "animation.porticlegun.portal_gun.head": {
       "loop": true,
       "bones": {
-        "porticlegun_root": {
+        "porticlegun": {
+          "position": [
+            0,
+            19.9,
+            0
+          ],
+          "scale": 0.625
+        },
+        "porticlegun_x": {
           "rotation": [
-            90,
-            90,
+            0,
+            0,
             0
           ],
           "position": [
             0,
-            13,
-            -3
+            10,
+            0
           ],
           "scale": [
-            0.8,
-            0.8,
-            0.8
+            0.5,
+            0.5,
+            0.5
           ]
-        }
-      }
-    },
-    "animation.porticlegun.portal_gun.thirdperson_off_hand": {
-      "loop": true,
-      "bones": {
-        "porticlegun_root": {
+        },
+        "porticlegun_y": {
           "rotation": [
-            90,
-            -90,
-            0
-          ],
-          "position": [
             0,
-            13,
-            -3
-          ],
-          "scale": [
-            0.8,
-            0.8,
-            0.8
+            90,
+            0
+          ]
+        },
+        "porticlegun_z": {
+          "rotation": [
+            0,
+            0,
+            0
           ]
         }
       }
