@@ -5,6 +5,12 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+## [1.3.1] - 2026-10-21
+
+### Fixed
+- Existing guns also get the 3D model and their colours when they are picked up or used, not only on join, slot
+  changes and when inventories are opened or closed.
+
 ## [1.3.0] - 2026-10-21
 
 ### Added
