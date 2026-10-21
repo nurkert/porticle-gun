@@ -31,6 +31,8 @@ Formatting is enforced with Spotless (palantir-java-format). Fix it with `mvn sp
   [bedrock.md](bedrock.md)); CI also checks that the generated JSON files are up to date.
 - Recipe images: `python3 scripts/render_recipes.py <minecraft client jar>` (needs Pillow) re-renders the crafting
   recipe images in `images/` from the PorticleGun recipe screenshot, vanilla textures and the generated models.
+- Animated images: `python3 scripts/render_gifs.py` (needs Pillow) renders the turntables, the tank, the item icons
+  and the rift into `images/animations/` with a transparent background and a fixed scale.
 - Manual testing: `scripts/dev-server.sh` builds the plugin and starts Paper with Geyser and Floodgate in `run/dev`.
   Java clients connect to `localhost:25565`, Bedrock clients to `localhost:19132`.
 

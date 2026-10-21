@@ -45,8 +45,11 @@ import org.joml.Vector3f;
  */
 public class RiftPortalManager implements Listener {
 
-    private static final Particle.DustOptions GREEN = new Particle.DustOptions(Color.fromRGB(0x39FF5A), 1.4f);
-    private static final Particle.DustOptions LIGHT_GREEN = new Particle.DustOptions(Color.fromRGB(0xB6FF7A), 1.0f);
+    // the colours of the swirl texture: pale rim with white speckles, light and dark green bands, no black
+    private static final Particle.DustOptions RIM = new Particle.DustOptions(Color.fromRGB(0x9BD94C), 1.4f);
+    private static final Particle.DustOptions SPECKLE = new Particle.DustOptions(Color.fromRGB(0xF4FFE6), 0.9f);
+    private static final Particle.DustOptions LIGHT_GREEN = new Particle.DustOptions(Color.fromRGB(0xA6DE52), 1.0f);
+    private static final Particle.DustOptions DARK_GREEN = new Particle.DustOptions(Color.fromRGB(0x2E9E2A), 1.0f);
     private static final float WIDTH = (float) (RiftPortal.HALF_WIDTH * 2.2);
     private static final float HEIGHT = (float) (RiftPortal.HEIGHT * 1.05);
     private static final int OPEN_TICKS = 8;
@@ -254,9 +257,10 @@ public class RiftPortalManager implements Listener {
             Location rim = centre.clone()
                     .add(portal.right.clone().multiply(Math.cos(angle) * RiftPortal.HALF_WIDTH * 1.05))
                     .add(0, Math.sin(angle) * RiftPortal.HEIGHT / 2 * 1.05, 0);
-            world.spawnParticle(Particle.DUST, rim, 1, 0, 0, 0, 0, GREEN);
+            world.spawnParticle(Particle.DUST, rim, 1, 0, 0, 0, 0, i % 3 == 0 ? SPECKLE : RIM);
         }
-        world.spawnParticle(Particle.DUST, centre, 3, 0.35, 0.6, 0.05, 0, LIGHT_GREEN);
+        world.spawnParticle(Particle.DUST, centre, 2, 0.35, 0.6, 0.05, 0, LIGHT_GREEN);
+        world.spawnParticle(Particle.DUST, centre, 2, 0.3, 0.5, 0.05, 0, DARK_GREEN);
     }
 
     private void travel(RiftPortal portal) {

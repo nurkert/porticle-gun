@@ -1,6 +1,6 @@
 # Interdimensional gun
 
-![The interdimensional gun](../images/interdimensional_gun_3d.png)
+![The interdimensional gun](../images/animations/interdimensional_gun.gif)
 
 The interdimensional gun opens green rifts: one directly in front of the player and one at the chosen destination.
 Both wobble, can be walked through in both directions and close again on their own.

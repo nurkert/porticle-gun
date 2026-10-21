@@ -27,8 +27,8 @@
 </p>
 
 <p align="center">
-  <img src="images/portal_gun_3d.png" alt="The PorticleGun" width="400">
-  <img src="images/interdimensional_gun_3d.png" alt="The interdimensional gun" width="400">
+  <img src="images/animations/portal_gun.gif" alt="The PorticleGun" width="360">
+  <img src="images/animations/interdimensional_gun.gif" alt="The interdimensional gun" width="360">
 </p>
 
 <p align="center"><sub><b>PorticleGun</b> · two portals on any wall &nbsp;&nbsp;|&nbsp;&nbsp; <b>Interdimensional gun</b> · green rifts to anywhere</sub></p>
@@ -42,13 +42,15 @@
     <td width="33%" valign="top">
       <img src="images/basic_preview.gif" alt="Placing portals" width="100%"><br>
       <b>Real portal physics</b><br>
-      Walk, fall or fly through linked portals on walls, floors and ceilings. Speed and view direction carry over, so
-      you can fling yourself across the map. Mobs, items and arrows travel too.
+      Left- or right-click to place a portal where you look. Walk, fall or fly through linked portals on walls, floors
+      and ceilings. Speed and view direction carry over, so you can fling yourself across the map. Mobs, items and
+      arrows travel too.
     </td>
     <td width="33%" valign="top">
-      <img src="images/gravity_preview.gif" alt="Gravity gun" width="100%"><br>
+      <img src="images/gravity_preview.gif" alt="Gravity gun carrying a spawner" width="49%">
+      <img src="images/gravity_preview_mobs.gif" alt="Gravity gun carrying a pig" width="49%"><br>
       <b>Gravity gun included</b><br>
-      Pick up blocks and mobs and carry them around. Chests keep their contents, spawners their mob, even across
+      Press the drop key and carry animals, monsters or even blocks around. Chests keep their contents, spawners their mob, even across
       restarts.
     </td>
     <td width="33%" valign="top">
@@ -96,15 +98,23 @@ been built over move to the nearest safe spot. A rift pair closes when you walk 
 ### Portal fluid and rift shards
 
 <p align="center">
-  <img src="images/rift_items.png" alt="Rift shard, portal fluid, rift compass and a rift" width="860">
+  <img src="images/animations/rift_shard.gif" alt="Rift shard" width="200">
+  <img src="images/animations/portal_fluid.gif" alt="Portal fluid" width="200">
+  <img src="images/animations/rift_compass.gif" alt="Rift compass" width="200">
+  <img src="images/animations/rift_portal.gif" alt="A rift" width="200">
 </p>
+
+<p align="center"><sub><img src="images/animations/rift_shard_icon.gif" alt="" width="32"> <b>Rift shard</b>
+&nbsp;|&nbsp; <img src="images/animations/portal_fluid_icon.gif" alt="" width="32"> <b>Portal fluid</b>
+&nbsp;|&nbsp; <img src="images/animations/rift_compass_icon.gif" alt="" width="32"> <b>Rift compass</b>
+&nbsp;|&nbsp; <b>A rift</b> · 3D in hand, animated icons in the inventory</sub></p>
 
 The gun runs on **portal fluid**. Where the End frays, **rift shards** are left behind: mine end stone or hunt endermen
 (fortune and looting help), distil three shards with a glass bottle and glowstone dust, and pour the fluid into the
 gun's tank from its menu. One bottle opens four rifts, and the glass dome on top of the gun shows how full it is:
 
 <p align="center">
-  <img src="images/interdimensional_gun_tank.png" alt="The tank from empty to full" width="100%">
+  <img src="images/animations/interdimensional_gun_tank.gif" alt="The tank filling up and draining" width="360">
 </p>
 
 <p align="center">
@@ -233,7 +243,8 @@ everyone by default, `porticlegun.admin` to operators. The console can run all a
 | [Development](docs/development.md) | Building, tests, smoke tests, releasing |
 
 <p align="center">
-  <img src="images/freebuild_showcase.gif" alt="Freebuild showcase" width="640">
+  <img src="images/freebuild_showcase.gif" alt="Portals on a freebuild server" width="320"><br>
+  <sub>Great on any freebuild server to make playing even more fun.</sub>
 </p>
 
 <p align="center"><img src="images/divider.png" alt="" width="100%"></p>

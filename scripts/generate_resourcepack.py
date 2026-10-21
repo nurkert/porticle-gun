@@ -427,7 +427,7 @@ def rift_shard_elements():
     """A cluster of three leaning crystals on a chunk of end rock; a green core shows through the main crystal."""
     lean_right = ("z", -22.5, (8, 1.5, 8))
     lean_left = ("z", 22.5, (5.75, 1.5, 7.25))
-    lean_back = ("x", -22.5, (9.25, 1.5, 9.75))
+    lean_back = ("x", 22.5, (9.25, 1.5, 10))  # backwards, away from the main crystal
     return [
         box("rock", "rock", (5, 0, 5.5), (11, 2, 10.5)),
         box("rock_front", "rock", (6, 0, 4.5), (10, 1.5, 5.5)),
@@ -436,8 +436,8 @@ def rift_shard_elements():
         box("crystal_main_tip", "crystal_tip", (7.5, 10, 7.5), (8.5, 11.5, 8.5), lean_right),
         box("crystal_left", "crystal", (5, 1.5, 6.5), (6.5, 7, 8), lean_left),
         box("crystal_left_tip", "crystal_tip", (5.3, 7, 6.8), (6.2, 8, 7.7), lean_left),
-        box("crystal_back", "crystal", (8.5, 1.5, 9), (10, 6, 10.5), lean_back),
-        box("crystal_back_tip", "crystal_tip", (8.8, 6, 9.3), (9.7, 7, 10.2), lean_back),
+        box("crystal_back", "crystal", (8.5, 1.5, 9.25), (10, 6, 10.75), lean_back),
+        box("crystal_back_tip", "crystal_tip", (8.8, 6, 9.55), (9.7, 7, 10.45), lean_back),
     ]
 
 
@@ -1070,8 +1070,11 @@ def java_flat_item_model(item):
 
 
 def rift_portal_frames():
-    """Animated swirl, frames stacked vertically: dark green spiral arms around a bright core, a glowing rim."""
+    """Animated swirl, frames stacked vertically: light and dark green bands spiralling into a bright core, a pale
+    rim with white speckles. Only greens and white, never black."""
     size = RIFT_PORTAL_SIZE
+    bands = [hex_rgb(c) for c in (0x2E9E2A, 0x4DB236, 0x7FCC3F, 0xA6DE52, 0xCDEE78)]  # dark to light
+    rim, speck = hex_rgb(0x9BD94C), hex_rgb(0xF4FFE6)
     frames = []
     for frame in range(RIFT_PORTAL_FRAMES):
         phase = 2 * math.pi * frame / RIFT_PORTAL_FRAMES
@@ -1081,22 +1084,25 @@ def rift_portal_frames():
                 dx, dy = (x + 0.5 - size / 2) / (size / 2), (y + 0.5 - size / 2) / (size / 2)
                 r = math.hypot(dx, dy)
                 angle = math.atan2(dy, dx)
-                # the rim wobbles and flickers like a living rift
-                edge = 0.9 + 0.05 * math.sin(5 * angle + phase) + 0.03 * math.sin(11 * angle - 2 * phase)
+                # the edge wobbles like a living rift
+                edge = 0.92 + 0.05 * math.sin(5 * angle + phase) + 0.03 * math.sin(11 * angle - 2 * phase)
                 if r > edge:
                     row.append((0, 0, 0, 0))
                     continue
-                if r > edge - 0.12:
-                    flicker = 0.85 + 0.15 * math.sin(7 * angle + 3 * phase)
-                    row.append((*shade(hex_rgb(0xB6FF7A), flicker), 255))
+                if r > edge - 0.2:
+                    # white speckles drift around the rim
+                    spin = angle - phase / 4
+                    sparkle = math.sin(13 * spin + 7 * r) * math.sin(29 * r - 5 * spin + 1.3)
+                    row.append((*(speck if sparkle > 0.55 else rim), 255))
                     continue
                 r = r / edge
-                spiral = math.sin(3 * math.atan2(dy, dx) + 9 * r - phase)
-                light = 0.35 + 0.35 * spiral + 0.45 * (1 - r) ** 2
-                green = tuple(max(0, min(255, round(c * light))) for c in hex_rgb(RIFT_GREEN))
-                core = max(0.0, 1 - r / 0.25)
-                color = tuple(round(g + (255 - g) * core * 0.85) for g in green)
-                row.append((*color, 255))
+                swirl = (math.sin(3 * angle + 10 * r - phase)
+                         + 0.35 * math.sin(7 * angle - 6 * r - 2 * phase)
+                         + 0.6 * (1 - r) ** 2)
+                level = max(0, min(len(bands) - 1, int((swirl + 1.2) / 2.9 * len(bands))))
+                if r < 0.18:
+                    level = len(bands) - 1  # the bright core
+                row.append((*bands[level], 255))
             frames.append(row)
     return frames
 
@@ -1286,13 +1292,9 @@ def render(yaw, pitch, size, margin=1, outline=True, model=PORTAL_GUN):
     return image
 
 
-def render_showcase(yaw, pitch, size, supersample=3, margin=0.06, tints=None, model=PORTAL_GUN):
-    """High quality render for the README: textured faces, smooth edges, transparent background.
-
-    tints: optional (primary, secondary) RGB ints; the lights are then coloured like Java tints them in game.
-    """
+def showcase_faces(yaw, pitch, model):
+    """The visible faces of a model seen from yaw/pitch: (depth, direction, projected points, material)."""
     transform = make_view(yaw, pitch)
-    full = size * supersample
     faces = []
     for element in model["elements"]:
         start, end = placed(element, model["offset"])
@@ -1305,16 +1307,34 @@ def render_showcase(yaw, pitch, size, supersample=3, margin=0.06, tints=None, mo
                 continue
             points = [transform(p) for p in quad]
             faces.append((sum(p[2] for p in points) / 4, direction, points, element["material"]))
+    return faces
 
-    xs = [p[0] for f in faces for p in f[2]]
-    ys = [p[1] for f in faces for p in f[2]]
-    span = max(max(xs) - min(xs), max(ys) - min(ys))
+
+def showcase_fit(views, model):
+    """Framing (centre x, centre y, span) that holds the model in every (yaw, pitch) view, so a turntable keeps
+    one scale instead of zooming in and out while it turns."""
+    points = [p for yaw, pitch in views for face in showcase_faces(yaw, pitch, model) for p in face[2]]
+    xs, ys = [p[0] for p in points], [p[1] for p in points]
+    return (max(xs) + min(xs)) / 2, (max(ys) + min(ys)) / 2, max(max(xs) - min(xs), max(ys) - min(ys))
+
+
+def render_showcase(yaw, pitch, size, supersample=3, margin=0.06, tints=None, model=PORTAL_GUN, swirl_frame=0,
+                    fit=None):
+    """High quality render for the README: textured faces, smooth edges, transparent background.
+
+    tints: optional (primary, secondary) RGB ints; the lights are then coloured like Java tints them in game.
+    swirl_frame: which frame of the animated rift swirl to show (rift portal only).
+    fit: fixed framing from showcase_fit; by default the model fills the image in this one view.
+    """
+    full = size * supersample
+    faces = showcase_faces(yaw, pitch, model)
+    cx, cy, span = fit or showcase_fit([(yaw, pitch)], model)
     scale = full * (1 - 2 * margin) / span
-    cx, cy = (max(xs) + min(xs)) / 2, (max(ys) + min(ys)) / 2
 
     canvas = [[None] * full for _ in range(full)]
     depths = [[-math.inf] * full for _ in range(full)]
-    swirl = rift_portal_frames()[:RIFT_PORTAL_SIZE]
+    first_row = (swirl_frame % RIFT_PORTAL_FRAMES) * RIFT_PORTAL_SIZE
+    swirl = rift_portal_frames()[first_row:first_row + RIFT_PORTAL_SIZE]
     for depth, direction, points, material in faces:
         polygon = [((p[0] - cx) * scale + full / 2, (cy - p[1]) * scale + full / 2) for p in points]
         tint = None

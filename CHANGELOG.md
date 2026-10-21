@@ -14,10 +14,17 @@ All notable changes to this project are documented here. The format follows
   it (inside caves for underground structures). Recipe: three rift shards, a compass and an eye of ender.
 - The rift is a 3D voxel ring with depth around the animated swirl.
 - Graphical crafting recipes for portal fluid, the interdimensional gun and the rift compass in the README and docs.
+- Animated README images: turning items at a fixed scale, the filling tank, the inventory icons and the rift, all
+  with a transparent background (`scripts/render_gifs.py`).
 
 ### Changed
 - Both guns are shown side by side at the top of the README.
 - README renders use a depth buffer, so overlapping parts are drawn correctly.
+- The rift swirl and its particles use light and dark greens with white speckles at the rim, no black.
+- The gameplay GIFs in the README are cut to the scene, their texts moved into the README.
+
+### Fixed
+- The back crystal of the rift shard no longer pokes into the main crystal.
 
 ## [1.5.0] - 2026-10-21
 
