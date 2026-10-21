@@ -5,6 +5,12 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+## [1.4.1] - 2026-10-21
+
+### Changed
+- Overlay rings are now clearly different: an outlined ring while a portal is closed, a filled ring while it is
+  open (drawn at double resolution).
+
 ## [1.4.0] - 2026-10-21
 
 ### Added
