@@ -23,6 +23,15 @@ resource-pack:
   # optional message shown in the download prompt
   prompt: ""
 
+# Portal status shown while holding the gun.
+hud:
+  # Two rings around the crosshair in the portal colours (Java players who loaded the resource pack).
+  # Players without the pack, and false here, get the classic title.
+  overlay: true
+  # The same rings for Bedrock players. Off by default until it has been checked on a Bedrock client;
+  # see docs/bedrock.md.
+  bedrock-overlay: false
+
 # 3D model of the gun for Bedrock players connected through Geyser.
 bedrock:
   # Copy the Bedrock pack and the Geyser item mapping into plugins/Geyser-Spigot on startup.

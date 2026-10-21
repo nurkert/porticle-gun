@@ -26,6 +26,15 @@ Development builds (`-SNAPSHOT`) have no release, so they only send the pack whe
 
 The pack also works as a normal client pack: put the zip into `.minecraft/resourcepacks`.
 
+## Portal status overlay
+
+The pack also contains the glyphs of the overlay: two half rings that the plugin sends as a title, which Minecraft
+draws around the screen centre, coloured with each portal's colour. They live in the default font on Private Use Area
+code points (`U+E9A0`-`U+E9A5`); Java merges font files of all packs, so this only adds characters and changes no other
+text. The overlay is only sent to players whose client reported the pack as loaded, everyone else keeps the classic
+title. The glyphs are defined in `HUD_GLYPHS` in `scripts/generate_resourcepack.py`; the validator checks that they
+match `PortalHud.java`.
+
 ## Bedrock players
 
 See [bedrock.md](bedrock.md). The Bedrock pack contains the same model as an attachable and a 2D icon.

@@ -1,0 +1,20 @@
+{
+  "providers": [
+    {
+      "type": "bitmap",
+      "file": "porticlegun:font/portal_hud.png",
+      "ascent": 1,
+      "height": 8,
+      "chars": [
+        "\ue9a0\ue9a1\ue9a2\ue9a3"
+      ]
+    },
+    {
+      "type": "space",
+      "advances": {
+        "\ue9a4": 7,
+        "\ue9a5": 1
+      }
+    }
+  ]
+}

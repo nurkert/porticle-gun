@@ -5,6 +5,17 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+## [1.4.0] - 2026-10-21
+
+### Added
+- Portal status overlay: while holding the gun, two rings around the crosshair show which portals are open, in the
+  portal colours. Java players who loaded the resource pack get it automatically; everyone else keeps the classic
+  title. Bedrock players can be switched over with `hud.bedrock-overlay` once checked on a Bedrock client.
+- README redesign with colour-variant renders of the gun.
+
+### Changed
+- The resource pack validator also checks the overlay glyphs in the Java font, the Bedrock glyph sheet and the plugin.
+
 ## [1.3.2] - 2026-10-21
 
 ### Fixed

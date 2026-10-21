@@ -179,6 +179,49 @@ def check_attachable(identifier, attachable, geometries, animations):
             error(f"attachable texture should be square, is {size}")
 
 
+def check_hud():
+    """The overlay glyphs must exist in the Java font, the Bedrock glyph sheet and PortalHud.java alike."""
+    java_pack = os.path.join(ROOT, "src", "main", "resourcepack", "java")
+    font = load(os.path.join(java_pack, "assets", "minecraft", "font", "default.json"))
+    glyphs = ""
+    for provider in font["providers"]:
+        if provider["type"] != "bitmap":
+            continue
+        namespace, path = provider["file"].split(":", 1)
+        texture = os.path.join(java_pack, "assets", namespace, "textures", path)
+        if not os.path.isfile(texture):
+            error(f"Java font texture {provider['file']} is missing")
+            continue
+        chars = "".join(provider["chars"])
+        width, height = png_size(texture) or (0, 0)
+        if len(chars) == 0 or width % len(chars) or not 0 <= provider["ascent"] <= provider["height"]:
+            error(f"Java font provider for {provider['file']} does not match its texture")
+        glyphs += chars
+    for char in glyphs:
+        if not 0xE000 <= ord(char) <= 0xF8FF or 0xE000 <= ord(char) <= 0xE1FF:
+            error(f"overlay glyph U+{ord(char):04X} must be in the Private Use Area outside Bedrock's E0xx/E1xx icons")
+
+    sheets = {ord(char) >> 8 for char in glyphs}
+    for high in sheets:
+        sheet = os.path.join(PACK, "font", f"glyph_{high:02X}.png")
+        if not os.path.isfile(sheet):
+            error(f"Bedrock glyph sheet font/glyph_{high:02X}.png is missing")
+        elif png_size(sheet) != (256, 256):
+            error(f"font/glyph_{high:02X}.png must be 256x256")
+
+    java_source = os.path.join(ROOT, "src", "main", "java", "eu", "nurkert", "porticlegun", "visualization",
+                               "PortalHud.java")
+    with open(java_source, encoding="utf-8") as file:
+        source = file.read()
+    used = {chr(int(code, 16)) for code in re.findall(r"static final char \w+ = \(char\) 0x([0-9A-Fa-f]{4});", source)}
+    if not used:
+        error("found no glyph constants in PortalHud.java")
+    space_glyphs = {c for p in font["providers"] if p["type"] == "space" for c in p["advances"]}
+    missing = used - set(glyphs) - space_glyphs
+    if missing:
+        error("PortalHud.java uses glyphs missing from the font: " + ", ".join(f"U+{ord(c):04X}" for c in missing))
+
+
 def check_schemas(schema_root):
     try:
         import jsonschema
@@ -204,6 +247,7 @@ def main():
 
     check_manifest()
     check_references()
+    check_hud()
     if args.schemas:
         check_schemas(args.schemas)
 

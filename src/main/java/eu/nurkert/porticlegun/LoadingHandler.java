@@ -16,6 +16,7 @@ import eu.nurkert.porticlegun.portals.TeleportationHandler;
 import eu.nurkert.porticlegun.resourcepack.ResourcePackHandler;
 import eu.nurkert.porticlegun.visualization.GunColorHandler;
 import eu.nurkert.porticlegun.visualization.PortalColor;
+import eu.nurkert.porticlegun.visualization.PortalHud;
 import eu.nurkert.porticlegun.visualization.TitleHandler;
 import eu.nurkert.porticlegun.visualization.VisualizationHandler;
 import eu.nurkert.porticlegun.visualization.concrete.PortalVisualizationType;
@@ -45,6 +46,7 @@ public class LoadingHandler implements Listener {
     private final PorticleGunCommand porticleGunCommand;
     private GravityGun gravityGun;
     private final ResourcePackHandler resourcePackHandler = new ResourcePackHandler();
+    private PortalHud portalHud;
     private final List<PendingPortal> pendingPortals = new ArrayList<>();
 
     public LoadingHandler(PorticleGun plugin) {
@@ -70,6 +72,8 @@ public class LoadingHandler implements Listener {
         register(new TeleportationHandler(activePortals));
         register(new SettingsHandler(activePortals, gunColors, persistence));
         register(new TitleHandler());
+        portalHud = new PortalHud(plugin, resourcePackHandler);
+        register(portalHud);
         updateGravityGunRegistration();
     }
 
@@ -216,11 +220,18 @@ public class LoadingHandler implements Listener {
      * Releases everything that must not outlive the plugin, e.g. blocks carried with the gravity gun.
      */
     public void shutdown() {
+        if (portalHud != null) {
+            portalHud.shutdown();
+        }
         if (gravityGun != null) {
             gravityGun.shutdown();
             HandlerList.unregisterAll(gravityGun);
             gravityGun = null;
         }
+    }
+
+    public PortalHud getPortalHud() {
+        return portalHud;
     }
 
     public void reload() {

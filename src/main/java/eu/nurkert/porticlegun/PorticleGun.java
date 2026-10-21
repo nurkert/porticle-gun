@@ -8,6 +8,7 @@ import eu.nurkert.porticlegun.resourcepack.BedrockPackInstaller;
 import eu.nurkert.porticlegun.util.BedrockSupport;
 import eu.nurkert.porticlegun.util.WorldGuardIntegration;
 import eu.nurkert.porticlegun.visualization.GunColorHandler;
+import eu.nurkert.porticlegun.visualization.PortalHud;
 import org.bukkit.Bukkit;
 import org.bukkit.plugin.java.JavaPlugin;
 
@@ -129,5 +130,12 @@ public final class PorticleGun extends JavaPlugin {
 
     public LoadingHandler getLoadingHandler() {
         return loadingHandler;
+    }
+
+    /**
+     * @return the portal status overlay, or {@code null} while the plugin is not enabled
+     */
+    public PortalHud getPortalHud() {
+        return loadingHandler != null ? loadingHandler.getPortalHud() : null;
     }
 }
