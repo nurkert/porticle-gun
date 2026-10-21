@@ -11,14 +11,16 @@ Install Geyser-Spigot and Floodgate on the same server as PorticleGun. On startu
 - copies `porticlegun.mcpack` into `plugins/Geyser-Spigot/packs/` and `porticlegun_mappings.json` into
   `plugins/Geyser-Spigot/custom_mappings/`. PorticleGun loads before Geyser, so this works on the very first start.
 
-Geyser's `enable-custom-content` must be `true` (the default); PorticleGun warns if it is not. Turn the automatic
-installation off with `bedrock.install-pack: false`.
+Geyser's `enable-custom-content` and `force-resource-packs` must be `true` (the defaults); PorticleGun warns on startup
+if either is turned off, because Bedrock players could not see the gun then. Turn the automatic installation off with
+`bedrock.install-pack: false`.
 
 ### Geyser on a proxy
 
-If Geyser runs on Velocity or BungeeCord, copy the two files from the
-[release](https://github.com/nurkert/porticle-gun/releases) (`PorticleGun-bedrock-<version>.mcpack` and
-`porticlegun_mappings.json`) into Geyser's `packs` and `custom_mappings` folders on the proxy and restart it.
+If Geyser runs on Velocity or BungeeCord, PorticleGun notices that Floodgate is installed without Geyser and puts both
+files into `plugins/PorticleGun/bedrock/`. Copy `porticlegun.mcpack` into Geyser's `packs` folder and
+`porticlegun_mappings.json` into its `custom_mappings` folder on the proxy, then restart it. The files are also attached
+to every [release](https://github.com/nurkert/porticle-gun/releases).
 
 ## What Bedrock players get
 
@@ -28,6 +30,15 @@ If Geyser runs on Velocity or BungeeCord, copy the two files from the
   status title is mirrored for controller players so its left marker belongs to the left trigger.
 - Guns created before 1.3 hid their id in a lore line that Bedrock displayed as garbage; they are converted
   automatically when they show up in an inventory.
+
+## How the Bedrock pack is kept working
+
+The attachable, geometry and animations reproduce what [java2bedrock](https://github.com/Kas-tle/java2bedrock.sh), the
+converter most Geyser servers use for 3D items, generates. `scripts/validate_bedrock_pack.py` checks every reference
+Bedrock and Geyser resolve at runtime (icon, attachable, geometry, animations, bones, textures, UVs) and validates the
+files against the [Bedrock JSON schemas](https://github.com/Blockception/Minecraft-bedrock-json-schemas); CI runs it on
+every change. A broken reference produces no error anywhere, the item is just invisible, which is what happened in
+1.3.0-beta.1.
 
 ## Known limitations and open checks
 

@@ -1,5 +1,6 @@
 package eu.nurkert.porticlegun.resourcepack;
 
+import eu.nurkert.porticlegun.util.BedrockSupport;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -9,6 +10,7 @@ import java.nio.file.StandardCopyOption;
 import java.util.Arrays;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.plugin.java.JavaPlugin;
 
@@ -53,19 +55,66 @@ public final class BedrockPackInstaller {
     }
 
     /**
-     * Warns if Geyser is configured to ignore custom items, which the 3D gun needs.
+     * Warns about Geyser settings that would hide the 3D gun from Bedrock players, and explains what to do when Geyser
+     * runs on a proxy instead of this server.
      */
-    public static void checkGeyserConfig(JavaPlugin plugin) {
-        File config = new File(new File(plugin.getDataFolder().getParentFile(), GEYSER_FOLDER), "config.yml");
+    public static void checkGeyserSetup(JavaPlugin plugin) {
+        File geyserFolder = new File(plugin.getDataFolder().getParentFile(), GEYSER_FOLDER);
+        if (!geyserFolder.isDirectory()) {
+            if (BedrockSupport.isEnabled()) {
+                exportForProxy(plugin);
+            }
+            return;
+        }
+
+        File config = new File(geyserFolder, "config.yml");
         if (!config.isFile()) {
             return;
         }
         YamlConfiguration geyserConfig = YamlConfiguration.loadConfiguration(config);
-        if (geyserConfig.contains("enable-custom-content") && !geyserConfig.getBoolean("enable-custom-content")) {
-            Logger logger = plugin.getLogger();
+        Logger logger = plugin.getLogger();
+        if (Boolean.FALSE.equals(findBoolean(geyserConfig, "enable-custom-content"))) {
             logger.warning("Geyser has enable-custom-content set to false, so Bedrock players see the gun as a "
                     + "brewing stand. Set it to true in plugins/" + GEYSER_FOLDER + "/config.yml and restart.");
         }
+        if (Boolean.FALSE.equals(findBoolean(geyserConfig, "force-resource-packs"))) {
+            logger.warning("Geyser has force-resource-packs set to false: Bedrock players who decline the resource "
+                    + "pack cannot see the gun. Set it to true in plugins/" + GEYSER_FOLDER + "/config.yml.");
+        }
+    }
+
+    /**
+     * Finds a setting at the top level (older Geyser configs) or in any section (e.g. {@code gameplay} since Geyser
+     * 2.9).
+     *
+     * @return the value, or {@code null} if the setting is missing
+     */
+    static Boolean findBoolean(ConfigurationSection config, String key) {
+        for (String path : config.getKeys(true)) {
+            if ((path.equals(key) || path.endsWith("." + key)) && config.isBoolean(path)) {
+                return config.getBoolean(path);
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Floodgate is installed but Geyser is not: Geyser most likely runs on the proxy, which this plugin cannot reach.
+     * Puts both files into the plugin folder and tells the admin where they belong.
+     */
+    private static void exportForProxy(JavaPlugin plugin) {
+        Path folder = plugin.getDataFolder().toPath().resolve("bedrock");
+        try {
+            copy(plugin, PACK_RESOURCE, folder.resolve("porticlegun.mcpack"));
+            copy(plugin, MAPPINGS_RESOURCE, folder.resolve("porticlegun_mappings.json"));
+        } catch (IOException exception) {
+            plugin.getLogger().log(Level.WARNING, "Could not export the Bedrock pack", exception);
+            return;
+        }
+        plugin.getLogger()
+                .info("Floodgate is installed but Geyser is not on this server (proxy?). For the 3D gun on Bedrock, "
+                        + "copy plugins/PorticleGun/bedrock/porticlegun.mcpack into Geyser's packs folder and "
+                        + "porticlegun_mappings.json into its custom_mappings folder, then restart Geyser.");
     }
 
     private static boolean isGeyserInstalled(JavaPlugin plugin) {

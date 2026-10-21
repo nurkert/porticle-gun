@@ -84,6 +84,49 @@
         "porticlegun_y": {
           "rotation": [
             0,
+            -90,
+            0
+          ]
+        },
+        "porticlegun_z": {
+          "rotation": [
+            0,
+            0,
+            0
+          ]
+        }
+      }
+    },
+    "animation.porticlegun.portal_gun.head": {
+      "loop": true,
+      "bones": {
+        "porticlegun": {
+          "position": [
+            0,
+            19.9,
+            0
+          ]
+        },
+        "porticlegun_x": {
+          "rotation": [
+            0,
+            0,
+            0
+          ],
+          "position": [
+            0.0,
+            6.25,
+            0.0
+          ],
+          "scale": [
+            0.3125,
+            0.3125,
+            0.3125
+          ]
+        },
+        "porticlegun_y": {
+          "rotation": [
+            0,
             90,
             0
           ]
@@ -122,7 +165,7 @@
           "position": [
             -1.5,
             2.5,
-            1.5
+            -1.5
           ],
           "scale": [
             0.42,
@@ -171,7 +214,7 @@
           "position": [
             1.5,
             2.5,
-            1.5
+            -1.5
           ],
           "scale": [
             0.42,
@@ -182,7 +225,7 @@
         "porticlegun_y": {
           "rotation": [
             0,
-            90,
+            -90,
             0
           ]
         },
@@ -195,47 +238,12 @@
         }
       }
     },
-    "animation.porticlegun.portal_gun.head": {
+    "animation.porticlegun.disable": {
       "loop": true,
+      "override_previous_animation": true,
       "bones": {
         "porticlegun": {
-          "position": [
-            0,
-            19.9,
-            0
-          ],
-          "scale": 0.625
-        },
-        "porticlegun_x": {
-          "rotation": [
-            0,
-            0,
-            0
-          ],
-          "position": [
-            0,
-            10,
-            0
-          ],
-          "scale": [
-            0.5,
-            0.5,
-            0.5
-          ]
-        },
-        "porticlegun_y": {
-          "rotation": [
-            0,
-            90,
-            0
-          ]
-        },
-        "porticlegun_z": {
-          "rotation": [
-            0,
-            0,
-            0
-          ]
+          "scale": 0
         }
       }
     }
