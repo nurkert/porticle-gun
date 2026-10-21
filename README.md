@@ -101,13 +101,12 @@ been built over move to the nearest safe spot. A rift pair closes when you walk 
   <img src="images/animations/rift_shard.gif" alt="Rift shard" width="200">
   <img src="images/animations/portal_fluid.gif" alt="Portal fluid" width="200">
   <img src="images/animations/rift_compass.gif" alt="Rift compass" width="200">
-  <img src="images/animations/rift_portal.gif" alt="A rift" width="200">
 </p>
 
 <p align="center"><sub><img src="images/animations/rift_shard_icon.gif" alt="" width="32"> <b>Rift shard</b>
 &nbsp;|&nbsp; <img src="images/animations/portal_fluid_icon.gif" alt="" width="32"> <b>Portal fluid</b>
 &nbsp;|&nbsp; <img src="images/animations/rift_compass_icon.gif" alt="" width="32"> <b>Rift compass</b>
-&nbsp;|&nbsp; <b>A rift</b> · 3D in hand, animated icons in the inventory</sub></p>
+· 3D in hand, animated icons in the inventory</sub></p>
 
 The gun runs on **portal fluid**. Where the End frays, **rift shards** are left behind: mine end stone or hunt endermen
 (fortune and looting help), distil three shards with a glass bottle and glowstone dust, and pour the fluid into the
@@ -222,7 +221,7 @@ classic title instead, and for Bedrock players the overlay can be switched on on
 
 | Command | Description | Permission |
 |---|---|---|
-| `/porticlegun` | Opens the menu with a new gun | `porticlegun.command` |
+| `/porticlegun` or `/pg` | Opens a chest with every PorticleGun item, one click takes it (admins also get the interdimensional gun, shards, fluid and compass) | `porticlegun.command` |
 | `/porticlegun removeportal [linked]` | Closes the portal you look at (and its partner) | `porticlegun.command` |
 | `/porticlegun give <item> [player] [amount]` | Gives a PorticleGun, interdimensional gun, rift shards, portal fluid or rift compasses | `porticlegun.admin` |
 | `/porticlegun list` | Lists all stored guns and their portals | `porticlegun.admin` |

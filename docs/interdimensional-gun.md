@@ -99,8 +99,7 @@ Crafting and using the gun needs `porticlegun.interdimensional` (everyone by def
 ## Bedrock players
 
 Bedrock players get the 3D gun, the 3D shard and bottle in hand and their icons in the inventory through the Geyser
-pack. Rifts appear for them as green particles, because Geyser cannot show the wobbling display entity; it is hidden
-from them so nothing looks broken.
+pack. Rifts are made of particles, so they look exactly like on Java.
 
 ## Data
 

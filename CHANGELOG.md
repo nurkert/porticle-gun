@@ -12,7 +12,8 @@ All notable changes to this project are documented here. The format follows
   atlas** unlocks: rifts to the nearest village, outpost, temple, witch hut, igloo, mansion, trail ruins, ruined
   portal, ancient city, trial chambers, stronghold, nether fortress, bastion or end city, with safe landing next to
   it (inside caves for underground structures). Recipe: three rift shards, a compass and an eye of ender.
-- The rift is a 3D voxel ring with depth around the animated swirl.
+- `/porticlegun` (alias `/pg`) opens a chest with every PorticleGun item; one click puts it into the inventory.
+  Admins also get the interdimensional gun, rift shards, portal fluid and the rift compass there.
 - Graphical crafting recipes for portal fluid, the interdimensional gun and the rift compass in the README and docs.
 - Animated README images: turning items at a fixed scale, the filling tank, the inventory icons and the rift, all
   with a transparent background (`scripts/render_gifs.py`).
@@ -20,11 +21,17 @@ All notable changes to this project are documented here. The format follows
 ### Changed
 - Both guns are shown side by side at the top of the README.
 - README renders use a depth buffer, so overlapping parts are drawn correctly.
-- The rift swirl and its particles use light and dark greens with white speckles at the rim, no black.
+- Rifts are made of particles only: a wobbling oval rim with white speckles and three turning spiral arms in light and
+  dark green, growing open and shrinking shut. Java and Bedrock players see the same, without a resource pack.
+- Portal and rift particles are only sent while a player is near enough to see them.
 - The gameplay GIFs in the README are cut to the scene, their texts moved into the README.
 
 ### Fixed
 - The back crystal of the rift shard no longer pokes into the main crystal.
+- Opening a gun menu could freeze newer servers (26.x) for many seconds while they generated chunk 0 0.
+
+### Removed
+- The "rename plugin jar" button in the menu.
 
 ## [1.5.0] - 2026-10-21
 

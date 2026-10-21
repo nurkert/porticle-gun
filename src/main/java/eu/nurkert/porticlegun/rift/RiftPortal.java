@@ -2,7 +2,6 @@ package eu.nurkert.porticlegun.rift;
 
 import java.util.UUID;
 import org.bukkit.Location;
-import org.bukkit.entity.ItemDisplay;
 import org.bukkit.util.Vector;
 
 /**
@@ -19,7 +18,8 @@ final class RiftPortal {
     final Vector normal;
     final Vector right;
     RiftPortal partner;
-    ItemDisplay display;
+    long openedAt;
+    long closedAt;
 
     RiftPortal(UUID owner, Location feet, Vector normal) {
         this.owner = owner;

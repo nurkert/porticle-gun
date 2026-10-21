@@ -7,6 +7,7 @@ import java.util.ArrayList;
 import org.bukkit.Color;
 import org.bukkit.Location;
 import org.bukkit.Particle;
+import org.bukkit.entity.Player;
 import org.bukkit.event.Listener;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.util.Vector;
@@ -15,6 +16,9 @@ import org.bukkit.util.Vector;
  * Draws the particle outline of every open portal near players.
  */
 public class VisualizationHandler implements Listener {
+
+    // particles farther away than this are not shown by the client anyway
+    private static final double VIEW_DISTANCE = 48;
 
     private final ActivePortalsHandler activePortals;
     private final GunColorHandler gunColors;
@@ -31,6 +35,7 @@ public class VisualizationHandler implements Listener {
             @Override
             public void run() {
                 ArrayList<Portal> portals = activePortals.getAllPortal();
+                double radians = Math.toRadians(System.currentTimeMillis() / 5);
                 for (int i = 0; i < portals.size(); i++) {
                     Portal portal = portals.get(i);
                     if (!portal.isVisualizationReady()) {
@@ -38,11 +43,16 @@ public class VisualizationHandler implements Listener {
                     }
 
                     Location portalLocation = portal.getLocation();
-                    if (portalLocation == null || portalLocation.getWorld() == null) {
+                    // skip portals in unloaded chunks or without anyone near enough to see their particles
+                    if (portalLocation == null
+                            || portalLocation.getWorld() == null
+                            || !portalLocation
+                                    .getWorld()
+                                    .isChunkLoaded(portalLocation.getBlockX() >> 4, portalLocation.getBlockZ() >> 4)
+                            || !viewerNearby(portalLocation)) {
                         continue;
                     }
 
-                    double radians = Math.toRadians(System.currentTimeMillis() / 5);
                     Vector[] locs = {portal.getParticleLocation(radians), portal.getParticleLocation(radians + Math.PI)
                     };
                     Color color = gunColors
@@ -63,5 +73,14 @@ public class VisualizationHandler implements Listener {
                 }
             }
         }.runTaskTimer(PorticleGun.getInstance(), 0, 1);
+    }
+
+    private static boolean viewerNearby(Location location) {
+        for (Player player : location.getWorld().getPlayers()) {
+            if (player.getLocation().distanceSquared(location) < VIEW_DISTANCE * VIEW_DISTANCE) {
+                return true;
+            }
+        }
+        return false;
     }
 }
