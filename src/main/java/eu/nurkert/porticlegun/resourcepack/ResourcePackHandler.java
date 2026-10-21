@@ -5,8 +5,10 @@ import eu.nurkert.porticlegun.util.BedrockSupport;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
+import java.util.HashSet;
 import java.util.HexFormat;
 import java.util.Properties;
+import java.util.Set;
 import java.util.UUID;
 import java.util.logging.Level;
 import org.bukkit.configuration.file.FileConfiguration;
@@ -14,6 +16,8 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerJoinEvent;
+import org.bukkit.event.player.PlayerQuitEvent;
+import org.bukkit.event.player.PlayerResourcePackStatusEvent;
 
 /**
  * Sends the PorticleGun resource pack (3D gun model) to Java players in addition to any server or other plugin pack.
@@ -33,6 +37,8 @@ public class ResourcePackHandler implements Listener {
     private String url;
     private byte[] sha1;
     private String prompt;
+    // players whose client reported the pack as loaded; only they can display the overlay glyphs
+    private final Set<UUID> loaded = new HashSet<>();
 
     public ResourcePackHandler() {
         reload();
@@ -77,6 +83,31 @@ public class ResourcePackHandler implements Listener {
             return;
         }
         player.addResourcePack(PACK_ID, url, sha1, prompt, required);
+    }
+
+    @EventHandler
+    public void on(PlayerResourcePackStatusEvent event) {
+        if (!PACK_ID.equals(event.getID())) {
+            return;
+        }
+        switch (event.getStatus()) {
+            case SUCCESSFULLY_LOADED -> loaded.add(event.getPlayer().getUniqueId());
+            case DECLINED, FAILED_DOWNLOAD, INVALID_URL, FAILED_RELOAD, DISCARDED -> loaded.remove(
+                    event.getPlayer().getUniqueId());
+            default -> {}
+        }
+    }
+
+    @EventHandler
+    public void on(PlayerQuitEvent event) {
+        loaded.remove(event.getPlayer().getUniqueId());
+    }
+
+    /**
+     * @return whether the player's client has loaded the PorticleGun resource pack
+     */
+    public boolean isLoaded(Player player) {
+        return loaded.contains(player.getUniqueId());
     }
 
     private static Properties loadEmbeddedProperties() {

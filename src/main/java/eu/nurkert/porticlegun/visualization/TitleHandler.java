@@ -15,7 +15,8 @@ import org.bukkit.event.player.PlayerSwapHandItemsEvent;
 import org.bukkit.inventory.ItemStack;
 
 /**
- * Shows which portals of the held gun are open, as a title in the portal colours.
+ * Shows which portals of the held gun are open, as a title in the portal colours. Players who can display the
+ * {@link PortalHud} overlay get that instead.
  */
 public class TitleHandler implements Listener {
 
@@ -65,6 +66,10 @@ public class TitleHandler implements Listener {
     }
 
     public static void sendPortalStatus(Player player, String gunID) {
+        PortalHud hud = PorticleGun.getInstance().getPortalHud();
+        if (hud != null && hud.show(player, gunID)) {
+            return;
+        }
         String primaryColor = PorticleGun.getInstance()
                 .getGunColors()
                 .getColors(gunID)

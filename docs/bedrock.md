@@ -31,6 +31,14 @@ to every [release](https://github.com/nurkert/porticle-gun/releases).
 - Guns created before 1.3 hid their id in a lore line that Bedrock displayed as garbage; they are converted
   automatically when they show up in an inventory.
 
+## Portal status overlay on Bedrock
+
+Java players see rings around the crosshair while holding the gun. The Bedrock pack contains the same glyphs
+(`font/glyph_E9.png`), but whether Bedrock colours them and where it places them could not be checked without a
+Bedrock client, so Bedrock players keep the classic title by default. To try the overlay, set `hud.bedrock-overlay:
+true` in `config.yml` and run `/porticlegun reload`. If it looks wrong (white rings, boxes), set it back to `false`;
+nothing else changes.
+
 ## How the Bedrock pack is kept working
 
 The attachable, geometry and animations reproduce what [java2bedrock](https://github.com/Kas-tle/java2bedrock.sh), the

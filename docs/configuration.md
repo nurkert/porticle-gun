@@ -37,6 +37,13 @@ with a colour that no longer exists, it falls back to the default colour and a w
 | `gravity-gun.allow-chest-capture` | `true` | Whether chests can be picked up. Their contents travel with them and survive restarts. |
 | `gravity-gun.block-blacklist` | `[AIR]` | Blocks that cannot be picked up (Bukkit material names). |
 
+## Portal status overlay
+
+| Key | Default | Description |
+|---|---|---|
+| `hud.overlay` | `true` | Two rings around the crosshair in the portal colours for Java players who loaded the resource pack. `false` (or no pack) shows the classic title. |
+| `hud.bedrock-overlay` | `false` | The same rings for Bedrock players, see [bedrock.md](bedrock.md). |
+
 ## Resource pack (Java)
 
 | Key | Default | Description |

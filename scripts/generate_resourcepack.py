@@ -33,7 +33,7 @@ DEFAULT_TINTS = [0xFFA500, 0x0000AA]
 # Bedrock packs need stable UUIDs, never change them (bump the version instead)
 BEDROCK_HEADER_UUID = "6f2a1c3e-8b4d-4e7a-9c15-2d8f0b7e4a61"
 BEDROCK_MODULE_UUID = "a3d95b72-1e6c-4f08-b2a4-7c9e5d13f8b0"
-BEDROCK_VERSION = [1, 3, 0]
+BEDROCK_VERSION = [1, 4, 0]
 
 # --- texture atlas (32x32 px, one 8x8 tile per material) ------------------------------------------------------------
 TEXTURE_SIZE = 32
@@ -483,6 +483,70 @@ def geyser_mappings():
     }
 
 
+# --- portal status overlay (HUD) -----------------------------------------------------------------------------------
+# Two half rings around the crosshair, one per portal, filled while the portal is open. They are glyphs in the default
+# font on Private Use Area code points (far away from Bedrock's built-in E0xx/E1xx icons). Java merges font files from
+# all packs, so this only adds characters. The plugin sends them as a title, which Minecraft draws around the screen
+# centre, and colours each ring with the portal colour. Keep in sync with PortalHud.java.
+HUD_GLYPHS = {
+    "\ue9a0": ["..##", ".#..", "#...", "#...", "#...", "#...", ".#..", "..##"],  # left ring, portal closed
+    "\ue9a1": ["..##", ".###", "##..", "##..", "##..", "##..", ".###", "..##"],  # left ring, portal open
+    "\ue9a2": ["##..", "..#.", "...#", "...#", "...#", "...#", "..#.", "##.."],  # right ring, portal closed
+    "\ue9a3": ["##..", "###.", "..##", "..##", "..##", "..##", "###.", "##.."],  # right ring, portal open
+}
+HUD_GAP = "\ue9a4"  # space between the rings, so they sit left and right of the crosshair
+HUD_GAP_ADVANCE = 7
+# Minecraft centres a line including the 1 pixel spacing after its last glyph; one leading pixel balances that, so
+# the rings sit symmetrically: left ring from -8 to -4, right ring from 4 to 8 title pixels around the crosshair
+HUD_LEAD = "\ue9a5"
+HUD_CELL = 8
+# titles are drawn 4x scaled with the text line starting 10 units above the screen centre; an ascent of 1 centres an
+# 8 pixel glyph on the crosshair
+HUD_ASCENT = 1
+
+
+def hud_glyph_strip(scale=1):
+    cell = HUD_CELL * scale
+    pixels = [[(0, 0, 0, 0)] * (cell * len(HUD_GLYPHS)) for _ in range(cell)]
+    for index, rows in enumerate(HUD_GLYPHS.values()):
+        for y, row in enumerate(rows):
+            for x, value in enumerate(row):
+                if value == "#":
+                    for dy in range(scale):
+                        for dx in range(scale):
+                            pixels[y * scale + dy][index * cell + x * scale + dx] = (255, 255, 255, 255)
+    return pixels
+
+
+def java_font():
+    return {
+        "providers": [
+            {
+                "type": "bitmap",
+                "file": f"{NAMESPACE}:font/portal_hud.png",
+                "ascent": HUD_ASCENT,
+                "height": HUD_CELL,
+                "chars": ["".join(HUD_GLYPHS)],
+            },
+            {"type": "space", "advances": {HUD_GAP: HUD_GAP_ADVANCE, HUD_LEAD: 1}},
+        ]
+    }
+
+
+def bedrock_glyph_sheet():
+    """Bedrock draws U+E9xx from font/glyph_E9.png, a 16x16 grid of 16 pixel cells."""
+    size = 256
+    pixels = [[(0, 0, 0, 0)] * size for _ in range(size)]
+    strip = hud_glyph_strip(scale=2)
+    for index, char in enumerate(HUD_GLYPHS):
+        low = ord(char) & 0xFF
+        cx, cy = (low % 16) * 16, (low // 16) * 16
+        for y in range(16):
+            for x in range(16):
+                pixels[cy + y][cx + x] = strip[y][index * 16 + x]
+    return pixels
+
+
 # --- rendering (icons and previews) ---------------------------------------------------------------------------------
 FACE_SHADE = {"up": 1.0, "down": 0.55, "north": 0.8, "south": 0.8, "east": 0.68, "west": 0.68}
 
@@ -686,6 +750,44 @@ def render_divider(width=1200, height=8):
     return rows
 
 
+def render_hud_preview(primary=0xFFA500, secondary=0x3F7BFF, unit=6, width=520, height=200):
+    """Mock-up of the overlay: the rings as Minecraft draws them in a title (4x scale, with drop shadow)."""
+    cx, cy = width // 2, height // 2
+    rows = []
+    for y in range(height):
+        t = y / (height - 1)
+        top, bottom = (54, 93, 140), (138, 176, 214)
+        rows.append([(*[round(a + (b - a) * t) for a, b in zip(top, bottom)], 255) for _ in range(width)])
+
+    def plot(x, y, color):
+        if 0 <= x < width and 0 <= y < height:
+            rows[y][x] = (*color, 255)
+
+    # crosshair (Minecraft draws it inverted; white reads well on the sky)
+    arm = unit * 2 // 3 * 4
+    for d in range(-arm, arm + 1):
+        for w in range(-unit // 3, unit // 3 + 1):
+            plot(cx + d, cy + w, (240, 240, 240))
+            plot(cx + w, cy + d, (240, 240, 240))
+
+    glyphs = list(HUD_GLYPHS.values())
+    # left ring (open, primary) from -8 units, right ring (closed, secondary) from +4 units, 8 units high
+    for rows_art, left_unit, color in ((glyphs[1], -8, hex_rgb(primary)), (glyphs[2], 4, hex_rgb(secondary))):
+        for shadow in (True, False):
+            offset = unit if shadow else 0
+            tint = shade(color, 0.25) if shadow else color
+            for gy, line in enumerate(rows_art):
+                for gx, value in enumerate(line):
+                    if value != "#":
+                        continue
+                    x0 = round(cx + (left_unit + gx) * unit) + offset
+                    y0 = round(cy + (gy - 4) * unit) + offset
+                    for yy in range(unit):
+                        for xx in range(unit):
+                            plot(x0 + xx, y0 + yy, tint)
+    return rows
+
+
 def write_png(path, pixels):
     height, width = len(pixels), len(pixels[0])
     raw = b"".join(b"\x00" + b"".join(struct.pack("BBBB", *p) for p in row) for row in pixels)
@@ -724,6 +826,8 @@ def main():
     write_json(os.path.join(java, "assets", NAMESPACE, "models", "item", f"{ITEM}.json"), java_model())
     write_png(os.path.join(java, "assets", NAMESPACE, "textures", "item", f"{ITEM}.png"), ATLAS)
     write_png(os.path.join(java, "pack.png"), render(*ICON_VIEW, 128, margin=6))
+    write_json(os.path.join(java, "assets", "minecraft", "font", "default.json"), java_font())
+    write_png(os.path.join(java, "assets", NAMESPACE, "textures", "font", "portal_hud.png"), hud_glyph_strip())
 
     bedrock = os.path.join(OUT, "bedrock")
     write_json(os.path.join(bedrock, "manifest.json"), bedrock_manifest())
@@ -734,6 +838,7 @@ def main():
     write_png(os.path.join(bedrock, "textures", "entity", NAMESPACE, f"{ITEM}.png"), ATLAS)
     write_png(os.path.join(bedrock, "textures", "items", f"{ITEM}.png"), render(*ICON_VIEW, 32))
     write_png(os.path.join(bedrock, "pack_icon.png"), render(*ICON_VIEW, 128, margin=6))
+    write_png(os.path.join(bedrock, "font", "glyph_E9.png"), bedrock_glyph_sheet())
 
     write_json(os.path.join(OUT, "geyser", f"{NAMESPACE}_mappings.json"), geyser_mappings())
 
@@ -741,6 +846,7 @@ def main():
         write_png(os.path.join(ROOT, "images", "portal_gun_3d.png"), render_showcase(-35, 22, 720))
         write_png(os.path.join(ROOT, "images", "portal_gun_colors.png"), render_colour_variants())
         write_png(os.path.join(ROOT, "images", "divider.png"), render_divider())
+        write_png(os.path.join(ROOT, "images", "portal_hud.png"), render_hud_preview())
 
     if args.preview:
         views = {"iso": (-35, 25), "iso_back": (145, 25), "side": (0, 0), "top": (0, 90), "rear": (90, 0)}

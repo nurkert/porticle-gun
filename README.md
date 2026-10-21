@@ -77,6 +77,7 @@ Players without it simply see a brewing stand. More in [docs/resourcepack.md](do
 | **Portals** | Two linked portals per gun, oval or rectangular, in any of the configured colours |
 | **Physics** | Momentum and view direction are rotated into the exit portal, for players and other entities |
 | **Gravity gun** | Carry blocks and mobs; contents and spawner types survive restarts and crashes |
+| **Portal overlay** | Rings around the crosshair in the portal colours show which portals are open |
 | **3D model** | Own Java and Bedrock model, tinted in each gun's colours, installed into Geyser automatically |
 | **Bedrock** | Floodgate integration, portal status mirrored for controllers, Bedrock pack validated on every change |
 | **Protection** | WorldGuard flags for creating portals, using portals and the gravity gun |
@@ -122,8 +123,14 @@ Every gun has its own pair of portals. Placing a new primary or secondary portal
 | Drop the gun itself | Drop key twice quickly | Drop twice quickly |
 | Break free when carried by another player | Sneak | Sneak |
 
-The portal status shown while holding the gun marks which portals are open, in their colours. For Bedrock controller
-players it is mirrored, so the left marker belongs to the left trigger.
+<p align="center">
+  <img src="images/portal_hud.png" alt="Portal status overlay around the crosshair" width="520">
+</p>
+
+While you hold the gun, two rings around the crosshair show your portals in their colours: filled while a portal is
+open, outlined while it is not. The left ring belongs to the left button. Players without the resource pack get a
+classic title instead, and for Bedrock players the overlay can be switched on once checked
+([docs/bedrock.md](docs/bedrock.md)).
 
 <p align="center">
   <img src="images/change_settings.gif" alt="Changing the gun's settings" width="640">
