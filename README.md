@@ -118,14 +118,19 @@ gun's tank from its menu. One bottle opens four rifts, and the glass dome on top
 </p>
 
 <p align="center">
-  <img src="images/crafting_portal_fluid.png" alt="Portal fluid: three rift shards, a glass bottle and glowstone dust" width="280">
-  <img src="images/crafting_interdimensional_gun.png" alt="Interdimensional gun recipe" width="280">
-  <img src="images/crafting_rift_compass.png" alt="Rift compass: three rift shards, a compass and an eye of ender" width="280">
+  <img src="images/crafting_portal_fluid.png" alt="Portal fluid: three rift shards, a glass bottle and glowstone dust" width="640"><br>
+  <sub><b>Portal fluid</b> (shapeless): 3 rift shards · glass bottle · glowstone dust</sub>
 </p>
 
-<p align="center"><sub><b>Portal fluid</b> (shapeless): 3 rift shards · glass bottle · glowstone dust &nbsp;|&nbsp;
-<b>Interdimensional gun</b>: rift shards, nether star, echo shards, a PorticleGun, iron blocks and portal fluid
-&nbsp;|&nbsp; <b>Rift compass</b>: 3 rift shards · compass · eye of ender</sub></p>
+<p align="center">
+  <img src="images/crafting_interdimensional_gun.png" alt="Interdimensional gun recipe" width="640"><br>
+  <sub><b>Interdimensional gun</b>: rift shards, nether star, echo shards, a PorticleGun, iron blocks and portal fluid</sub>
+</p>
+
+<p align="center">
+  <img src="images/crafting_rift_compass.png" alt="Rift compass: three rift shards, a compass and an eye of ender" width="640"><br>
+  <sub><b>Rift compass</b>: 3 rift shards · compass · eye of ender</sub>
+</p>
 
 ### The rift compass and the rift atlas
 
@@ -172,7 +177,7 @@ Multiverse-Core.
 ### Crafting
 
 <p align="center">
-  <img src="images/crafting_recipe.png" alt="Crafting recipe" width="760">
+  <img src="images/crafting_recipe.png" alt="Crafting recipe" width="100%">
 </p>
 
 <p align="center">
