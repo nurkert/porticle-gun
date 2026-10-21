@@ -30,7 +30,7 @@ DEFAULT_TINTS = [0xFFA500, 0x0000AA]
 # Bedrock packs need stable UUIDs, never change them (bump the version instead)
 BEDROCK_HEADER_UUID = "6f2a1c3e-8b4d-4e7a-9c15-2d8f0b7e4a61"
 BEDROCK_MODULE_UUID = "a3d95b72-1e6c-4f08-b2a4-7c9e5d13f8b0"
-BEDROCK_VERSION = [1, 6, 0]
+BEDROCK_VERSION = [1, 7, 0]
 
 # --- texture atlas (32x32 px, one 8x8 tile per material) ------------------------------------------------------------
 TEXTURE_SIZE = 32
@@ -47,7 +47,14 @@ REGIONS = {
     "glass": (0, 16, 8),
     "screen": (8, 16, 8),
     "knob": (16, 16, 8),
+    # rift shard and portal fluid
+    "rock": (24, 16, 8),
+    "crystal": (0, 24, 8),
+    "crystal_tip": (8, 24, 8),  # glows
+    "cork": (16, 24, 8),
+    "bottle": (24, 24, 8),
 }
+EMISSIVE = {"liquid", "crystal_tip"}
 RIFT_GREEN = 0x39FF5A
 BEDROCK_PRIMARY = 0xFF9A1F
 BEDROCK_SECONDARY = 0x36C2FF
@@ -111,6 +118,11 @@ def paint_atlas():
 
     tile("screen", screen)
     tile("knob", brick(hex_rgb(0x2A2D31), hex_rgb(0x44484E), hex_rgb(0x17191B)))
+    tile("rock", brick(hex_rgb(0x3A2A4F), hex_rgb(0x53406B), hex_rgb(0x251933)))
+    tile("crystal", brick(hex_rgb(0xA77EE6), hex_rgb(0xD9C2FF), hex_rgb(0x6E45B0)))
+    tile("crystal_tip", glow(hex_rgb(0x8CFFA0)))
+    tile("cork", brick(hex_rgb(0x9C6A3C), hex_rgb(0xB98552), hex_rgb(0x6B4423)))
+    tile("bottle", brick(hex_rgb(0xCFE9EE), hex_rgb(0xF2FDFF), hex_rgb(0x9CC4CC)))
     return pixels
 
 
@@ -388,6 +400,83 @@ RIFT_GUN = {
 }
 GUNS = [PORTAL_GUN, RIFT_GUN]
 
+# Rift shard and portal fluid: 3D in hand, on the ground and in item frames, the pixel art icon in inventories, like
+# vanilla does for the trident and the spyglass.
+SMALL_ITEM_DISPLAY = {
+    "firstperson_righthand": {"rotation": [0, -25, 0], "translation": [1, 3, 1], "scale": [0.6] * 3},
+    "firstperson_lefthand": {"rotation": [0, 25, 0], "translation": [1, 3, 1], "scale": [0.6] * 3},
+    "thirdperson_righthand": {"rotation": [0, 0, 0], "translation": [0, 3, 1], "scale": [0.55] * 3},
+    "thirdperson_lefthand": {"rotation": [0, 0, 0], "translation": [0, 3, 1], "scale": [0.55] * 3},
+    "gui": {"rotation": [30, 45, 0], "translation": [0, 0, 0], "scale": [0.8] * 3},
+    "ground": {"rotation": [0, 0, 0], "translation": [0, 3, 0], "scale": [0.5] * 3},
+    "fixed": {"rotation": [0, 0, 0], "translation": [0, 0, 0], "scale": [0.9] * 3},
+    "head": {"rotation": [0, 0, 0], "translation": [0, 13, 0], "scale": [0.8] * 3},
+}
+
+
+def rift_shard_elements():
+    """A cluster of three leaning crystals on a chunk of end rock; a green core shows through the main crystal."""
+    lean_right = ("z", -22.5, (8, 1.5, 8))
+    lean_left = ("z", 22.5, (5.75, 1.5, 7.25))
+    lean_back = ("x", -22.5, (9.25, 1.5, 9.75))
+    return [
+        box("rock", "rock", (5, 0, 5.5), (11, 2, 10.5)),
+        box("rock_front", "rock", (6, 0, 4.5), (10, 1.5, 5.5)),
+        box("crystal_main", "crystal", (7, 1.5, 7), (9, 10, 9), lean_right),
+        box("crystal_main_core", "liquid", (7.6, 2, 6.9), (8.4, 9.5, 9.1), lean_right),
+        box("crystal_main_tip", "crystal_tip", (7.5, 10, 7.5), (8.5, 11.5, 8.5), lean_right),
+        box("crystal_left", "crystal", (5, 1.5, 6.5), (6.5, 7, 8), lean_left),
+        box("crystal_left_tip", "crystal_tip", (5.3, 7, 6.8), (6.2, 8, 7.7), lean_left),
+        box("crystal_back", "crystal", (8.5, 1.5, 9), (10, 6, 10.5), lean_back),
+        box("crystal_back_tip", "crystal_tip", (8.8, 6, 9.3), (9.7, 7, 10.2), lean_back),
+    ]
+
+
+def portal_fluid_elements():
+    """A round, corked bottle of glowing portal fluid, the vanilla potion bottle in voxels."""
+    elements = []
+    # glowing fluid fills the lower part of the round body, clear glass the rest
+    for material, y0, y1 in (("liquid", 1, 4.6), ("bottle", 4.6, 6)):
+        elements += [
+            box(f"body_{material}_core", material, (6, y0, 6), (10, y1, 10)),
+            box(f"body_{material}_front", material, (6.5, y0, 5.5), (9.5, y1, 6)),
+            box(f"body_{material}_back", material, (6.5, y0, 10), (9.5, y1, 10.5)),
+            box(f"body_{material}_left", material, (5.5, y0, 6.5), (6, y1, 9.5)),
+            box(f"body_{material}_right", material, (10, y0, 6.5), (10.5, y1, 9.5)),
+        ]
+    return elements + [
+        box("bottle_bottom", "bottle", (6.5, 0.5, 6.5), (9.5, 1, 9.5)),
+        box("bottle_shoulder", "bottle", (6.5, 6, 6.5), (9.5, 6.8, 9.5)),
+        box("bottle_neck", "bottle", (7.3, 6.8, 7.3), (8.7, 8.8, 8.7)),
+        box("bottle_lip", "bottle", (7, 8.8, 7), (9, 9.3, 9)),
+        box("cork", "cork", (7.4, 9.3, 7.4), (8.6, 10.6, 8.6)),
+        box("glint", "white", (6.6, 2.2, 5.45), (7.3, 5.4, 5.5)),
+    ]
+
+
+RIFT_SHARD = {
+    "item": "rift_shard",
+    "name": "Rift Shard",
+    "base": "minecraft:paper",
+    "elements": rift_shard_elements(),
+    "offset": (0, 2, 0),
+    "display": SMALL_ITEM_DISPLAY,
+    "tints": None,
+    "flat_icon": True,
+}
+PORTAL_FLUID = {
+    "item": "portal_fluid",
+    "name": "Portal Fluid",
+    "base": "minecraft:paper",
+    "elements": portal_fluid_elements(),
+    "offset": (0, 2.5, 0),
+    "display": SMALL_ITEM_DISPLAY,
+    "tints": None,
+    "flat_icon": True,
+}
+# every 3D item; guns are held like guns, the small items show their pixel art icon in inventories
+MODELS = [PORTAL_GUN, RIFT_GUN, RIFT_SHARD, PORTAL_FLUID]
+
 # flat items, drawn as pixel art (see FLAT_ITEM_ART)
 FLAT_ITEMS = [
     {"item": "rift_shard", "name": "Rift Shard", "base": "minecraft:paper"},
@@ -425,7 +514,7 @@ def java_model(model, elements=None):
                 "axis": rotation["axis"],
                 "origin": [rotation["origin"][i] + model["offset"][i] for i in range(3)],
             }
-        if tint is not None or material == "liquid":
+        if tint is not None or material in EMISSIVE:
             entry["light_emission"] = 15
         entries.append(entry)
 
@@ -439,6 +528,16 @@ def java_model(model, elements=None):
 
 def java_item_definition(model):
     item = model["item"]
+    if model.get("flat_icon"):
+        # 3D everywhere but in inventories, where the animated pixel art icon is shown
+        return {
+            "model": {
+                "type": "minecraft:select",
+                "property": "minecraft:display_context",
+                "cases": [{"when": ["gui"], "model": {"type": "minecraft:model", "model": f"{NAMESPACE}:item/{item}_icon"}}],
+                "fallback": {"type": "minecraft:model", "model": f"{NAMESPACE}:item/{item}"},
+            }
+        }
     if "variants" in model:
         # the plugin sets the first custom_model_data float to the variant number (rift gun: tank level)
         return {
@@ -670,14 +769,14 @@ def bedrock_item_texture():
         "resource_pack_name": "PorticleGun",
         "texture_name": "atlas.items",
         "texture_data": {
-            icon(entry["item"]): {"textures": [f"textures/items/{entry['item']}"]} for entry in GUNS + FLAT_ITEMS
+            icon(entry["item"]): {"textures": [f"textures/items/{entry['item']}"]} for entry in MODELS
         },
     }
 
 
 def geyser_mappings():
     items = {}
-    for entry in GUNS + FLAT_ITEMS:
+    for entry in MODELS:
         items.setdefault(entry["base"], []).append({
             "type": "definition",
             "model": identifier(entry["item"]),
@@ -987,7 +1086,7 @@ def inside(polygon, x, y):
 
 
 def glowing(material):
-    return material.startswith("glow") or material == "liquid"
+    return material.startswith("glow") or material in EMISSIVE
 
 
 def material_color(material):
@@ -1230,22 +1329,18 @@ def render_rift_showcase(size=360):
     return [sum((render[y] for render in renders), []) for y in range(size)]
 
 
-def render_items_showcase(cell=128, gap=48):
-    """The new items side by side: rift shard, portal fluid and a still frame of the rift portal."""
-    shard = enlarge(flat_item_texture("rift_shard"), cell // 16)
-    fluid = enlarge(flat_item_texture("portal_fluid"), cell // 16)
-    portal = enlarge(rift_portal_frames()[:RIFT_PORTAL_SIZE], cell // RIFT_PORTAL_SIZE)
-    images = [shard, fluid, portal]
-    width = len(images) * cell + (len(images) - 1) * gap
+def render_items_showcase(size=300, gap=60):
+    """The new items side by side: rift shard and portal fluid in 3D, and a still frame of the rift portal."""
+    shard = render_showcase(-35, 22, size, model=RIFT_SHARD)
+    fluid = render_showcase(-35, 22, size, model=PORTAL_FLUID)
+    swirl = enlarge(rift_portal_frames()[:RIFT_PORTAL_SIZE], size // RIFT_PORTAL_SIZE)
+    pad = (size - len(swirl)) // 2
+    portal = [[(0, 0, 0, 0)] * size for _ in range(size)]
+    for y, line in enumerate(swirl):
+        portal[pad + y][pad:pad + len(line)] = line
     rows = []
-    for y in range(cell):
-        row = []
-        for index, image in enumerate(images):
-            if index:
-                row += [(0, 0, 0, 0)] * gap
-            row += image[y]
-        rows.append(row)
-    assert len(rows[0]) == width
+    for y in range(size):
+        rows.append(shard[y] + [(0, 0, 0, 0)] * gap + fluid[y] + [(0, 0, 0, 0)] * gap + portal[y])
     return rows
 
 
@@ -1254,27 +1349,26 @@ def main():
     parser.add_argument("--preview", help="directory for preview renders")
     parser.add_argument("--showcase", action="store_true", help="also render the README images in images/")
     args = parser.parse_args()
-    for gun in GUNS:
-        for elements in gun.get("variants", [gun["elements"]]):
-            check_model({**gun, "elements": elements})
+    for model in MODELS:
+        for elements in model.get("variants", [model["elements"]]):
+            check_model({**model, "elements": elements})
 
     java = os.path.join(OUT, "java")
     java_assets = os.path.join(java, "assets", NAMESPACE)
     write_json(os.path.join(java, "pack.mcmeta"), java_pack_mcmeta())
     write_png(os.path.join(java_assets, "textures", "item", f"{ATLAS_NAME}.png"), ATLAS)
-    for gun in GUNS:
-        item = gun["item"]
-        write_json(os.path.join(java_assets, "items", f"{item}.json"), java_item_definition(gun))
-        if "variants" in gun:
-            for level, elements in enumerate(gun["variants"]):
-                write_json(os.path.join(java_assets, "models", "item", f"{item}_{level}.json"), java_model(gun, elements))
+    for model in MODELS:
+        item = model["item"]
+        write_json(os.path.join(java_assets, "items", f"{item}.json"), java_item_definition(model))
+        if "variants" in model:
+            for level, elements in enumerate(model["variants"]):
+                write_json(os.path.join(java_assets, "models", "item", f"{item}_{level}.json"),
+                           java_model(model, elements))
         else:
-            write_json(os.path.join(java_assets, "models", "item", f"{item}.json"), java_model(gun))
+            write_json(os.path.join(java_assets, "models", "item", f"{item}.json"), java_model(model))
     for entry in FLAT_ITEMS:
         item = entry["item"]
-        write_json(os.path.join(java_assets, "items", f"{item}.json"),
-                   {"model": {"type": "minecraft:model", "model": f"{NAMESPACE}:item/{item}"}})
-        write_json(os.path.join(java_assets, "models", "item", f"{item}.json"), java_flat_item_model(item))
+        write_json(os.path.join(java_assets, "models", "item", f"{item}_icon.json"), java_flat_item_model(item))
         write_png(os.path.join(java_assets, "textures", "item", f"{item}.png"),
                   [row for frame in flat_item_frames(item) for row in frame])
         write_json(os.path.join(java_assets, "textures", "item", f"{item}.png.mcmeta"), {"animation": {"frametime": 3}})
@@ -1291,14 +1385,13 @@ def main():
     bedrock = os.path.join(OUT, "bedrock")
     write_json(os.path.join(bedrock, "manifest.json"), bedrock_manifest())
     write_png(os.path.join(bedrock, "textures", "entity", NAMESPACE, f"{ATLAS_NAME}.png"), ATLAS)
-    for gun in GUNS:
-        item = gun["item"]
-        write_json(os.path.join(bedrock, "attachables", f"{item}.json"), bedrock_attachable(gun))
-        write_json(os.path.join(bedrock, "models", "entity", f"{item}.geo.json"), bedrock_geometry(gun))
-        write_json(os.path.join(bedrock, "animations", f"{item}.animation.json"), bedrock_animations(gun))
-        write_png(os.path.join(bedrock, "textures", "items", f"{item}.png"), render(*ICON_VIEW, 32, model=gun))
-    for entry in FLAT_ITEMS:
-        write_png(os.path.join(bedrock, "textures", "items", f"{entry['item']}.png"), flat_item_texture(entry["item"]))
+    for model in MODELS:
+        item = model["item"]
+        write_json(os.path.join(bedrock, "attachables", f"{item}.json"), bedrock_attachable(model))
+        write_json(os.path.join(bedrock, "models", "entity", f"{item}.geo.json"), bedrock_geometry(model))
+        write_json(os.path.join(bedrock, "animations", f"{item}.animation.json"), bedrock_animations(model))
+        icon_pixels = flat_item_texture(item) if model.get("flat_icon") else render(*ICON_VIEW, 32, model=model)
+        write_png(os.path.join(bedrock, "textures", "items", f"{item}.png"), icon_pixels)
     write_json(os.path.join(bedrock, "textures", "item_texture.json"), bedrock_item_texture())
     write_png(os.path.join(bedrock, "pack_icon.png"), render(*ICON_VIEW, 128, margin=6))
     write_png(os.path.join(bedrock, "font", "glyph_E9.png"), bedrock_glyph_sheet())
@@ -1317,7 +1410,7 @@ def main():
 
     if args.preview:
         views = {"iso": (-35, 25), "iso_back": (145, 25), "side": (0, 0), "top": (0, 90), "rear": (90, 0)}
-        for gun in GUNS:
+        for gun in MODELS:
             for name, (yaw, pitch) in views.items():
                 write_png(os.path.join(args.preview, f"{gun['item']}_{name}.png"),
                           render(yaw, pitch, 320, margin=12, model=gun))
