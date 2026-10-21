@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Renders the crafting recipe images of the interdimensional gun and portal fluid for the README and docs.
+"""Renders the crafting recipe images of all PorticleGun items for the README, docs and website, in one format.
 
     python3 scripts/render_recipes.py <minecraft client jar>
 
@@ -103,6 +103,18 @@ def main():
     fluid = flat(from_pixels(pack.flat_item_texture("portal_fluid")))
     porticle_gun = from_pixels(pack.render_showcase(-35, 22, SLOT_SIZE))
     rift_gun = from_pixels(pack.render_showcase(-35, 22, 220, model=pack.RIFT_GUN))
+
+    obsidian = iso_block(vanilla(jar, "block/obsidian"))
+    quartz = iso_block(vanilla(jar, "block/quartz_block_side"))
+    porticle_gun_recipe = recipe(
+        [
+            [obsidian, iso_block(vanilla(jar, "block/beacon")), obsidian],
+            [quartz, flat(vanilla(jar, "item/ender_pearl")), quartz],
+            [quartz, flat(vanilla(jar, "item/crossbow_standby")), quartz],
+        ],
+        from_pixels(pack.render_showcase(-35, 22, 220)),
+    )
+    porticle_gun_recipe.save(os.path.join(IMAGES, "crafting_porticle_gun.png"), optimize=True)
 
     gun = recipe(
         [

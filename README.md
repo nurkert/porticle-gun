@@ -177,7 +177,7 @@ Multiverse-Core.
 ### Crafting
 
 <p align="center">
-  <img src="images/crafting_recipe.png" alt="Crafting recipe" width="100%">
+  <img src="images/crafting_porticle_gun.png" alt="PorticleGun recipe" width="640">
 </p>
 
 <p align="center">
