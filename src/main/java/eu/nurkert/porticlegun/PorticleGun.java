@@ -44,7 +44,7 @@ public final class PorticleGun extends JavaPlugin {
         activePortals = new ActivePortalsHandler(persistence);
         loadingHandler = new LoadingHandler(this);
         BedrockSupport.init(this);
-        BedrockPackInstaller.checkGeyserConfig(this);
+        BedrockPackInstaller.checkGeyserSetup(this);
         worldGuardEnabled = false;
         try {
             Class.forName("com.sk89q.worldguard.WorldGuard");

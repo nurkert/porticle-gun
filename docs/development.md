@@ -27,6 +27,8 @@ Formatting is enforced with Spotless (palantir-java-format). Fix it with `mvn sp
   scripts/smoke-test.sh target/PorticleGun-<version>.jar 1.21.4 geyser   # with Geyser and Floodgate
   ```
 
+- Resource packs: `python3 scripts/validate_bedrock_pack.py --schemas <checkout>` checks the Bedrock pack (see
+  [bedrock.md](bedrock.md)); CI also checks that the generated JSON files are up to date.
 - Manual testing: `scripts/dev-server.sh` builds the plugin and starts Paper with Geyser and Floodgate in `run/dev`.
   Java clients connect to `localhost:25565`, Bedrock clients to `localhost:19132`.
 

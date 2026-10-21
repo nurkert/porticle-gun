@@ -39,3 +39,26 @@ jobs:
             target/PorticleGun-resourcepack-*.zip
             target/PorticleGun-bedrock-*.mcpack
           if-no-files-found: error
+
+  resource-packs:
+    name: Resource packs
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Generated files are up to date
+        run: |
+          python3 scripts/generate_resourcepack.py
+          # JSON only: PNG bytes may differ between zlib versions
+          git diff --exit-code -- 'src/main/resourcepack/*.json' 'src/main/resourcepack/*.mcmeta'
+
+      - name: Validate the Bedrock pack
+        run: |
+          pip install jsonschema
+          git clone --quiet https://github.com/Blockception/Minecraft-bedrock-json-schemas.git /tmp/schemas
+          git -C /tmp/schemas checkout --quiet 473d1aa94be63806a4f38345ad461b5d4e8d8a2a
+          python3 scripts/validate_bedrock_pack.py --schemas /tmp/schemas

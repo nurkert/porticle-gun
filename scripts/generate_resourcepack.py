@@ -33,7 +33,7 @@ DEFAULT_TINTS = [0xFFA500, 0x0000AA]
 # Bedrock packs need stable UUIDs, never change them (bump the version instead)
 BEDROCK_HEADER_UUID = "6f2a1c3e-8b4d-4e7a-9c15-2d8f0b7e4a61"
 BEDROCK_MODULE_UUID = "a3d95b72-1e6c-4f08-b2a4-7c9e5d13f8b0"
-BEDROCK_VERSION = [1, 1, 0]
+BEDROCK_VERSION = [1, 2, 0]
 
 # --- texture atlas (32x32 px, one 8x8 tile per material) ------------------------------------------------------------
 TEXTURE_SIZE = 32
@@ -286,28 +286,54 @@ def java_pack_mcmeta():
 
 
 # --- Bedrock --------------------------------------------------------------------------------------------------------
-# Bone layout and hand poses follow the attachables that the common Java-to-Bedrock converter generates for Geyser:
-# a root bone bound to the hand, plus one bone per rotation axis that replays the Java display transform.
+# The attachable, geometry and animations reproduce what java2bedrock (https://github.com/Kas-tle/java2bedrock.sh)
+# generates for 3D Java items, the converter most Geyser servers use: a root bone bound to the hand, one bone per
+# rotation axis replaying the Java display transform, the same base poses, material and UV conventions.
 ROOT_BONE = NAMESPACE
 AXIS_BONES = [f"{NAMESPACE}_x", f"{NAMESPACE}_y", f"{NAMESPACE}_z"]
+ATTACHABLE_MATERIAL = "entity_alphatest_one_sided"
+DISABLE_ANIMATION = f"animation.{NAMESPACE}.disable"
+# UVs are given in a 16x16 space like in the converter, inset slightly so neighbouring tiles never bleed in
+UV_SPACE = 16
+UV_INSET = 0.016
+
+
+def roundit(value):
+    return round(value * 10000) / 10000
+
+
+def bedrock_face_uv(material, direction):
+    x, y, size = REGIONS[bedrock_material(material)]
+    factor = UV_SPACE / TEXTURE_SIZE
+    u0, v0, u1, v1 = x * factor, y * factor, (x + size) * factor, (y + size) * factor
+    if direction in ("up", "down"):
+        # the converter flips top and bottom faces
+        return {
+            "uv": [roundit(u1 - UV_INSET), roundit(v1 - UV_INSET)],
+            "uv_size": [roundit(u0 - u1 + UV_INSET), roundit(v0 - v1 + UV_INSET)],
+        }
+    return {
+        "uv": [roundit(u0 + UV_INSET), roundit(v0 + UV_INSET)],
+        "uv_size": [roundit(u1 - u0 - UV_INSET), roundit(v1 - v0 - UV_INSET)],
+    }
 
 
 def bedrock_geometry():
     cubes = []
     for element in ELEMENTS:
         start, end = placed(element)
-        size = [round(end[i] - start[i], 4) for i in range(3)]
-        # Bedrock mirrors the x axis compared to Java models and centres x/z at 0
-        cube = {"origin": [round(8 - end[0], 4), start[1], round(start[2] - 8, 4)], "size": size}
-        x, y, region_size = REGIONS[bedrock_material(element["material"])]
-        cube["uv"] = {direction: {"uv": [x, y], "uv_size": [region_size, region_size]} for direction in FACES}
-        cubes.append(cube)
+        cubes.append({
+            # Bedrock mirrors the x axis compared to Java models and centres x/z at 0
+            "origin": [roundit(-end[0] + 8), roundit(start[1]), roundit(start[2] - 8)],
+            "size": [roundit(end[i] - start[i]) for i in range(3)],
+            "uv": {direction: bedrock_face_uv(element["material"], direction) for direction in FACES},
+        })
 
     bones = [
         {
             "name": ROOT_BONE,
-            "pivot": [0, 8, 0],
             "binding": "c.item_slot == 'head' ? 'head' : q.item_slot_to_bone_name(c.item_slot)",
+            "pivot": [0, 8, 0],
         }
     ]
     parent = ROOT_BONE
@@ -322,8 +348,8 @@ def bedrock_geometry():
             {
                 "description": {
                     "identifier": f"geometry.{NAMESPACE}.{ITEM}",
-                    "texture_width": TEXTURE_SIZE,
-                    "texture_height": TEXTURE_SIZE,
+                    "texture_width": UV_SPACE,
+                    "texture_height": UV_SPACE,
                     "visible_bounds_width": 4,
                     "visible_bounds_height": 4.5,
                     "visible_bounds_offset": [0, 0.75, 0],
@@ -334,22 +360,8 @@ def bedrock_geometry():
     }
 
 
-CONTEXTS = {
-    # context: (java display key, root pose, mirrored for the left hand)
-    "thirdperson_main_hand": ("thirdperson_righthand", {"rotation": [90, 0, 0], "position": [0, 13, -3]}, False),
-    "thirdperson_off_hand": ("thirdperson_lefthand", {"rotation": [90, 0, 0], "position": [0, 13, -3]}, True),
-    "firstperson_main_hand": (
-        "firstperson_righthand",
-        {"rotation": [90, 60, -40], "position": [4, 10, 4], "scale": 1.5},
-        False,
-    ),
-    "firstperson_off_hand": (
-        "firstperson_lefthand",
-        {"rotation": [90, 60, -40], "position": [4, 10, 4], "scale": 1.5},
-        True,
-    ),
-    "head": ("head", {"position": [0, 19.9, 0], "scale": 0.625}, False),
-}
+def animation_name(context):
+    return f"animation.{NAMESPACE}.{ITEM}.{context}"
 
 
 def bedrock_attachable():
@@ -358,7 +370,7 @@ def bedrock_attachable():
         "minecraft:attachable": {
             "description": {
                 "identifier": IDENTIFIER,
-                "materials": {"default": "entity_alphatest", "enchanted": "entity_alphatest_glint"},
+                "materials": {"default": ATTACHABLE_MATERIAL, "enchanted": ATTACHABLE_MATERIAL},
                 "textures": {
                     "default": f"textures/entity/{NAMESPACE}/{ITEM}",
                     "enchanted": "textures/misc/enchanted_item_glint",
@@ -373,33 +385,61 @@ def bedrock_attachable():
                     "animate": [
                         {"thirdperson_main_hand": "v.main_hand && !c.is_first_person"},
                         {"thirdperson_off_hand": "v.off_hand && !c.is_first_person"},
+                        {"thirdperson_head": "v.head && !c.is_first_person"},
                         {"firstperson_main_hand": "v.main_hand && c.is_first_person"},
                         {"firstperson_off_hand": "v.off_hand && c.is_first_person"},
-                        {"head": "v.head"},
+                        {"firstperson_head": "c.is_first_person && v.head"},
                     ],
                 },
-                "animations": {name: f"animation.{NAMESPACE}.{ITEM}.{name}" for name in CONTEXTS},
+                "animations": {
+                    "thirdperson_main_hand": animation_name("thirdperson_main_hand"),
+                    "thirdperson_off_hand": animation_name("thirdperson_off_hand"),
+                    "thirdperson_head": animation_name("head"),
+                    "firstperson_main_hand": animation_name("firstperson_main_hand"),
+                    "firstperson_off_hand": animation_name("firstperson_off_hand"),
+                    "firstperson_head": DISABLE_ANIMATION,
+                },
                 "render_controllers": ["controller.render.item_default"],
             }
         },
     }
 
 
+def axis_bones(display, position):
+    rx, ry, rz = display["rotation"]
+    return {
+        AXIS_BONES[0]: {"rotation": [-rx, 0, 0], "position": position, "scale": display["scale"]},
+        AXIS_BONES[1]: {"rotation": [0, -ry, 0]},
+        AXIS_BONES[2]: {"rotation": [0, 0, rz]},
+    }
+
+
 def bedrock_animations():
-    animations = {}
-    for name, (java_key, root_pose, left) in CONTEXTS.items():
+    third_person_root = {"rotation": [90, 0, 0], "position": [0, 13, -3]}
+    first_person_root = {"rotation": [90, 60, -40], "position": [4, 10, 4], "scale": 1.5}
+
+    def pose(java_key, root, mirror_x, negate_z):
         display = DISPLAY[java_key]
-        rx, ry, rz = display["rotation"]
         tx, ty, tz = display["translation"]
-        x_bone = {"rotation": [-rx, 0, 0], "position": [tx if left else -tx, ty, tz], "scale": display["scale"]}
-        bones = {
-            ROOT_BONE: root_pose,
-            AXIS_BONES[0]: x_bone,
-            AXIS_BONES[1]: {"rotation": [0, ry if left else -ry, 0]},
-            AXIS_BONES[2]: {"rotation": [0, 0, -rz if left else rz]},
-        }
-        animations[f"animation.{NAMESPACE}.{ITEM}.{name}"] = {"loop": True, "bones": bones}
-    return {"format_version": "1.8.0", "animations": animations}
+        position = [tx if mirror_x else -tx, ty, -tz if negate_z else tz]
+        return {"loop": True, "bones": {ROOT_BONE: root, **axis_bones(display, position)}}
+
+    head = DISPLAY["head"]
+    hx, hy, hz = head["translation"]
+    head_bones = axis_bones(head, [roundit(-hx * 0.625), roundit(hy * 0.625), roundit(hz * 0.625)])
+    head_bones[AXIS_BONES[0]]["scale"] = [roundit(value * 0.625) for value in head["scale"]]
+
+    return {
+        "format_version": "1.8.0",
+        "animations": {
+            animation_name("thirdperson_main_hand"): pose("thirdperson_righthand", third_person_root, False, False),
+            animation_name("thirdperson_off_hand"): pose("thirdperson_lefthand", third_person_root, True, False),
+            animation_name("head"): {"loop": True, "bones": {ROOT_BONE: {"position": [0, 19.9, 0]}, **head_bones}},
+            animation_name("firstperson_main_hand"): pose("firstperson_righthand", first_person_root, False, True),
+            animation_name("firstperson_off_hand"): pose("firstperson_lefthand", first_person_root, True, True),
+            DISABLE_ANIMATION: {"loop": True, "override_previous_animation": True, "bones": {ROOT_BONE: {"scale": 0}}},
+        },
+    }
 
 
 def bedrock_manifest():

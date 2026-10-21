@@ -7,6 +7,8 @@ All notable changes to this project are documented here. The format follows
 
 ### Added
 - New voxel portal gun model (rear pod, glowing barrel windows, curved claws).
+- Bedrock pack validation (references and JSON schemas) in CI; warnings when Geyser's settings would hide the gun;
+  the Bedrock files are exported for copying when Geyser runs on a proxy.
 - 3D portal gun model for Java and Bedrock players; its lights glow in the gun's portal colours (Java). The Java pack
   is sent in addition to other packs, the Bedrock pack is installed into Geyser automatically.
 - Bedrock support through Floodgate: the portal status title is mirrored for controller players, whose left trigger
@@ -27,6 +29,7 @@ All notable changes to this project are documented here. The format follows
 ### Fixed
 - Bedrock: the gun was invisible because Geyser looked for its icon under a different name; the attachable now uses
   the bone layout of the common Java-to-Bedrock converter (reported in 1.3.0-beta.1).
+- The Geyser config check never fired on Geyser 2.9+, whose settings moved into sections.
 - Gravity gun: chest contents were lost when the server stopped or crashed while a chest was carried.
 - Gravity gun: chest contents were dropped on the ground instead of put back into the chest when it landed.
 - Gravity gun: carried blocks disappeared after 30 seconds. Carried blocks no longer have gravity, so Bedrock clients
