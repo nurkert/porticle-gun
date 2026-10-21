@@ -26,6 +26,13 @@ Development builds (`-SNAPSHOT`) have no release, so they only send the pack whe
 
 The pack also works as a normal client pack: put the zip into `.minecraft/resourcepacks`.
 
+## Interdimensional gun and rift items
+
+The pack also contains the interdimensional gun (its glass dome shows the tank level in five steps, switched by the
+first custom model data float), the rift shard and the portal fluid, and the animated swirl of the rifts. The shard and
+the bottle are 3D in hand, on the ground and in item frames and show an animated vanilla-style pixel art icon in
+inventories, like vanilla's trident and spyglass. All of it is generated from `scripts/generate_resourcepack.py`.
+
 ## Portal status overlay
 
 The pack also contains the glyphs of the overlay: two half rings that the plugin sends as a title, which Minecraft

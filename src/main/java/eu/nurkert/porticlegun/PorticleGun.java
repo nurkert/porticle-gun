@@ -5,6 +5,7 @@ import eu.nurkert.porticlegun.messages.MessageManager;
 import eu.nurkert.porticlegun.persistence.PersistentHandler;
 import eu.nurkert.porticlegun.portals.ActivePortalsHandler;
 import eu.nurkert.porticlegun.resourcepack.BedrockPackInstaller;
+import eu.nurkert.porticlegun.rift.RiftModule;
 import eu.nurkert.porticlegun.util.BedrockSupport;
 import eu.nurkert.porticlegun.util.WorldGuardIntegration;
 import eu.nurkert.porticlegun.visualization.GunColorHandler;
@@ -135,6 +136,13 @@ public final class PorticleGun extends JavaPlugin {
     /**
      * @return the portal status overlay, or {@code null} while the plugin is not enabled
      */
+    /**
+     * @return the interdimensional gun, or {@code null} if it is disabled or the plugin is not enabled
+     */
+    public RiftModule getRiftModule() {
+        return loadingHandler != null ? loadingHandler.getRiftModule() : null;
+    }
+
     public PortalHud getPortalHud() {
         return loadingHandler != null ? loadingHandler.getPortalHud() : null;
     }

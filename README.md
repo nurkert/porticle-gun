@@ -4,7 +4,8 @@
 
 <p align="center">
   <b>Two portals. One gun. Every wall is a door.</b><br>
-  A portal gun and a gravity gun for Minecraft servers, with its own 3D model for Java and Bedrock players.
+  A portal gun, an interdimensional gun and a gravity gun for Minecraft servers, with their own 3D models for Java
+  and Bedrock players.
 </p>
 
 <p align="center">
@@ -18,6 +19,7 @@
 
 <p align="center">
   <a href="#quick-start">Quick start</a> ·
+  <a href="#the-interdimensional-gun">Interdimensional gun</a> ·
   <a href="#controls">Controls</a> ·
   <a href="#commands-and-permissions">Commands</a> ·
   <a href="#documentation">Documentation</a> ·
@@ -70,15 +72,62 @@ Players without it simply see a brewing stand. More in [docs/resourcepack.md](do
 
 <p align="center"><img src="images/divider.png" alt="" width="100%"></p>
 
+## The interdimensional gun
+
+<p align="center">
+  <img src="images/interdimensional_gun_3d.png" alt="The interdimensional gun" width="460">
+</p>
+
+The big brother of the PorticleGun. Instead of two portals on walls it tears **green rifts** right into the air: one in
+front of you, one at the destination, both wobbling and walkable in both directions, so friends can follow you before
+they close. Choose where to go in its menu (sneak + use):
+
+| Destination | |
+|---|---|
+| **Any world** | A random, safe landing spot: solid ground, room to stand, no lava, water, cactus or nether roof. The worlds of the server show up automatically (up to eight), including ones added later. |
+| **World spawn** | The spawn point of any world. |
+| **Homes** | Up to seven home points per player, set with one click. |
+| **Back** | Where you last stepped into a rift. |
+| **Last death** | Back to your belongings. |
+
+Rifts open where you would expect them: on the ground in front of you, closer when a wall is near, floating when you
+stand at an edge. At the destination you step out facing open space instead of a wall, and stored places that have
+been built over move to the nearest safe spot. A rift pair closes when you walk away from it or after half a minute.
+
+### Portal fluid and rift shards
+
+<p align="center">
+  <img src="images/rift_items.png" alt="Rift shard, portal fluid and a rift" width="760">
+</p>
+
+The gun runs on **portal fluid**. Where the End frays, **rift shards** are left behind: mine end stone or hunt endermen
+(fortune and looting help), distil three shards with a glass bottle and glowstone dust, and pour the fluid into the
+gun's tank from its menu. One bottle opens four rifts, and the glass dome on top of the gun shows how full it is:
+
+<p align="center">
+  <img src="images/interdimensional_gun_tank.png" alt="The tank from empty to full" width="100%">
+</p>
+
+| Recipe | |
+|---|---|
+| **Portal fluid** (shapeless) | 3 rift shards · glass bottle · glowstone dust |
+| **Interdimensional gun** | Rift shard · Nether star · Rift shard<br>Echo shard · **PorticleGun** · Echo shard<br>Iron block · Portal fluid · Iron block |
+
+The interdimensional gun is an upgrade: it needs the Overworld (echo shards from the Deep Dark), the Nether (a nether
+star) and the End (rift shards). Details in [docs/interdimensional-gun.md](docs/interdimensional-gun.md).
+
+<p align="center"><img src="images/divider.png" alt="" width="100%"></p>
+
 ## Features
 
 | | |
 |---|---|
 | **Portals** | Two linked portals per gun, oval or rectangular, in any of the configured colours |
 | **Physics** | Momentum and view direction are rotated into the exit portal, for players and other entities |
+| **Interdimensional gun** | Wobbling green rift pairs to homes, any world, spawns, back and your last death, fuelled by portal fluid |
 | **Gravity gun** | Carry blocks and mobs; contents and spawner types survive restarts and crashes |
 | **Portal overlay** | Rings around the crosshair in the portal colours show which portals are open |
-| **3D model** | Own Java and Bedrock model, tinted in each gun's colours, installed into Geyser automatically |
+| **3D models** | Own Java and Bedrock models for both guns and the new items, installed into Geyser automatically |
 | **Bedrock** | Floodgate integration, portal status mirrored for controllers, Bedrock pack validated on every change |
 | **Protection** | WorldGuard flags for creating portals, using portals and the gravity gun |
 | **Languages** | English and German, chosen per player from their game language, fully editable |
@@ -122,6 +171,8 @@ Every gun has its own pair of portals. Placing a new primary or secondary portal
 | Gravity gun: pick up / let go | Drop key (Q) | Drop |
 | Drop the gun itself | Drop key twice quickly | Drop twice quickly |
 | Break free when carried by another player | Sneak | Sneak |
+| Interdimensional gun: open a rift | Right click | Left trigger (LT / L2) |
+| Interdimensional gun: menu | Sneak + right click | Sneak + left trigger |
 
 <p align="center">
   <img src="images/portal_hud.png" alt="Portal status overlay around the crosshair" width="520">
@@ -144,13 +195,14 @@ classic title instead, and for Bedrock players the overlay can be switched on on
 |---|---|---|
 | `/porticlegun` | Opens the menu with a new gun | `porticlegun.command` |
 | `/porticlegun removeportal [linked]` | Closes the portal you look at (and its partner) | `porticlegun.command` |
+| `/porticlegun give <item> [player] [amount]` | Gives a PorticleGun, interdimensional gun, rift shards or portal fluid | `porticlegun.admin` |
 | `/porticlegun list` | Lists all stored guns and their portals | `porticlegun.admin` |
 | `/porticlegun remove <id>` | Closes a gun's portals and deletes its data | `porticlegun.admin` |
 | `/porticlegun clearplayer <player>` | Does the same for every gun an online player carries | `porticlegun.admin` |
 | `/porticlegun reload` | Reloads config, messages and portals | `porticlegun.admin` |
 
-`porticlegun.command` is granted to everyone by default, `porticlegun.admin` to operators. The console can run all
-admin commands.
+`porticlegun.command` and `porticlegun.interdimensional` (crafting and using the interdimensional gun) are granted to
+everyone by default, `porticlegun.admin` to operators. The console can run all admin commands.
 
 <p align="center"><img src="images/divider.png" alt="" width="100%"></p>
 
@@ -158,6 +210,7 @@ admin commands.
 
 | Guide | Covers |
 |---|---|
+| [Interdimensional gun](docs/interdimensional-gun.md) | Destinations, placement, tank, drops, recipes |
 | [Configuration](docs/configuration.md) | Every option in `config.yml`, custom portal colours |
 | [Resource pack and 3D model](docs/resourcepack.md) | How the model is delivered, self-hosting, changing the model |
 | [Bedrock / Geyser](docs/bedrock.md) | Setup, proxies, what Bedrock players get |

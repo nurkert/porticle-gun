@@ -10,13 +10,16 @@ loadbefore: [Geyser-Spigot]
 commands:
   porticlegun:
     description: Manage or obtain a PorticleGun
-    usage: /<command> [removeportal [linked]|list|remove <id>|clearplayer <player>|reload]
+    usage: /<command> [removeportal [linked]|give <item> [player] [amount]|list|remove <id>|clearplayer <player>|reload]
     permission: porticlegun.command
     tab-completer: eu.nurkert.porticlegun.commands.PorticleGunCommand
 
 permissions:
   porticlegun.command:
     description: Allows using /porticlegun to obtain a gun
+    default: true
+  porticlegun.interdimensional:
+    description: Allows crafting and using the interdimensional gun
     default: true
   porticlegun.admin:
     description: Allows administrative PorticleGun management commands

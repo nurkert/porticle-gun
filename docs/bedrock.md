@@ -31,6 +31,13 @@ to every [release](https://github.com/nurkert/porticle-gun/releases).
 - Guns created before 1.3 hid their id in a lore line that Bedrock displayed as garbage; they are converted
   automatically when they show up in an inventory.
 
+## Interdimensional gun on Bedrock
+
+The interdimensional gun, the rift shard and the portal fluid are in the Bedrock pack as 3D attachables with inventory
+icons. The gun's menu is a normal chest menu with single-click actions, so it works with controllers and touch screens.
+Rifts show as green particles for Bedrock players; the wobbling display entity is hidden from them. The tank level is
+shown in the item's lore and the action bar (the dome on the Bedrock model always looks full).
+
 ## Portal status overlay on Bedrock
 
 Java players see rings around the crosshair while holding the gun. The Bedrock pack contains the same glyphs

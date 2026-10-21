@@ -3,7 +3,7 @@
 Befunde aus dem Code-Review. Status: `[ ]` offen · `[~]` in Arbeit · `[x]` erledigt · `[!]` gesperrt, nur nach Rücksprache.
 
 > **Regel:** Das Einstellungs-GUI (`SettingsHandler`, Dropper-Menü) bleibt genau so, wie es ist. Keine Änderung an Layout, Slots, Bedienung oder Optik ohne vorherige Diskussion mit dem User.
-> **Release:** [`v1.4.1`](https://github.com/nurkert/porticle-gun/releases/tag/v1.4.1) (2026-10-21). Damit werden die offenen „Du:“-Punkte (PG-14, PG-15, PG-16, PG-20) auf dem Server getestet.
+> **Release:** [`v1.5.0`](https://github.com/nurkert/porticle-gun/releases/tag/v1.5.0) (2026-10-21). Damit werden die offenen „Du:“-Punkte (PG-14, PG-15, PG-16, PG-20) auf dem Server getestet.
 
 Reihenfolge = Priorität. Unter jedem Punkt: Problem, Lösungsansatz, Notizen beim Abarbeiten.
 
@@ -120,6 +120,16 @@ Reihenfolge = Priorität. Unter jedem Punkt: Problem, Lösungsansatz, Notizen be
   - [x] Unit-Tests für die Overlay-Zeile, Validator prüft Schrift ↔ Textur ↔ Glyph-Sheet ↔ `PortalHud.java` (Gegenprobe mit falschem Zeichen schlägt an)
   - [ ] **Du:** Java ingame ansehen: sitzen die Ringe mittig ums Fadenkreuz? Die Höhe ist aus der Titel-Geometrie berechnet (Ascent 1) und nicht im Spiel gemessen
   - [ ] **Du:** Bedrock testen: `hud.bedrock-overlay: true`, `/porticlegun reload`, Gun halten. Farbig und sauber? Dann wird es Standard
+  - Notizen:
+
+- [~] **PG-23 Interdimensional Gun (Wunsch nach 1.4.1)**
+  - [x] Voxel-Modell im Stil der Vorlage (flacher Korpus, offene Front mit drei Linsen, Glaskuppel mit Tankstufen, rotes Display, Knopf, Lüftung, schräger Griff mit ausgerichteten Details)
+  - [x] Riss-Splitter und Portalflüssigkeit: animierte 16×16-Icons im Vanilla-Stil, 3D-Modelle in der Hand (Java und Bedrock)
+  - [x] Grüne Rift-Paare als wabernde Display-Entity mit animierter Textur, Partikel für alle, Display für Bedrock ausgeblendet, Durchgang in beide Richtungen
+  - [x] Ziele: zufälliger sicherer Ort und Spawn jeder Welt, Homes, Zurück, letzter Tod. Menü nur mit Einfachklicks
+  - [x] Smarte Platzierung von Eingang und Ausgang, Nachbessern unsicherer gespeicherter Orte, automatisches Schließen beim Weggehen oder nach Zeit
+  - [x] Drops, Rezepte mit echter Zutatenprüfung, `give`-Befehl, Recht, Config, Texte de/en, Unit-Tests, Smoke-Test, Doku
+  - [ ] **Du:** Ingame testen: Platzierung der Risse (Wände, Kanten, Höhlen), Landeplätze in Nether und End, Wabern, Menü am Controller/Touch, 3D-Items in der Hand
   - Notizen:
 
 ## P2 – Robustheit / Performance

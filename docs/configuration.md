@@ -28,6 +28,30 @@ portal:
 The shipped list contains the default palette; edit it to change the defaults or append entries. If a gun was saved
 with a colour that no longer exists, it falls back to the default colour and a warning is logged.
 
+## Interdimensional gun
+
+| Key | Default | Description |
+|---|---|---|
+| `interdimensional-gun.enabled` | `true` | `false` removes the gun, its items and recipes (restart required). |
+| `interdimensional-gun.tank-capacity` | `8` | Rifts a full tank holds. |
+| `interdimensional-gun.rifts-per-fluid` | `4` | Rifts one bottle of portal fluid adds. |
+| `interdimensional-gun.starting-charges` | `4` | Rifts a freshly crafted gun has. |
+| `interdimensional-gun.cooldown-seconds` | `3` | Seconds between two rifts. |
+| `interdimensional-gun.close-distance` | `12` | A rift pair closes when its opener is farther than this from both portals for two seconds. |
+| `interdimensional-gun.portal-seconds` | `30` | A rift pair closes after this many seconds at the latest. |
+| `interdimensional-gun.homes` | `5` | Home slots per player (0-7). |
+| `interdimensional-gun.random-radius` | `3000` | Radius around the world spawn for random destinations (overworld and other worlds). |
+| `interdimensional-gun.nether-radius` | `1000` | The same for the nether. |
+| `interdimensional-gun.end-radius` | `1500` | The same for the end (around 0, 0); the main island is the fallback. |
+| `interdimensional-gun.search-attempts` | `40` | Candidate spots checked, one per tick, before giving up. |
+| `interdimensional-gun.disabled-worlds` | `[]` | Worlds that never show up as destinations. |
+| `interdimensional-gun.drops.end-stone-chance` | `0.03` | Chance for a rift shard per mined end stone. |
+| `interdimensional-gun.drops.end-stone-fortune-bonus` | `0.01` | Added per fortune level. |
+| `interdimensional-gun.drops.enderman-chance` | `0.08` | Chance for a rift shard per enderman killed by a player. |
+| `interdimensional-gun.drops.enderman-looting-bonus` | `0.03` | Added per looting level. |
+
+See [interdimensional-gun.md](interdimensional-gun.md).
+
 ## Gravity gun
 
 | Key | Default | Description |
@@ -66,6 +90,7 @@ Details in [bedrock.md](bedrock.md).
 
 ## Data files
 
+- `rift.yml` stores the interdimensional gun's homes, back and death locations per player.
 - `portals.yml` stores every gun's portals, colours and shape. It is written shortly after changes and on shutdown;
   edit it only while the server is stopped.
 - `messages.yml` holds all texts, see [localization.md](localization.md).

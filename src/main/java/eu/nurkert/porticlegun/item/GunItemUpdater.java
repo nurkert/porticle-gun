@@ -1,5 +1,8 @@
 package eu.nurkert.porticlegun.item;
 
+import eu.nurkert.porticlegun.PorticleGun;
+import eu.nurkert.porticlegun.rift.RiftItems;
+import eu.nurkert.porticlegun.rift.RiftModule;
 import org.bukkit.entity.HumanEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -82,6 +85,10 @@ public class GunItemUpdater implements Listener {
         String gunID = ItemHandler.isValidGun(item);
         if (gunID != null) {
             changed |= GunAppearance.apply(item, gunID);
+        }
+        RiftModule rift = PorticleGun.getInstance().getRiftModule();
+        if (rift != null && RiftItems.isGun(item)) {
+            changed |= RiftItems.refresh(item, rift.settings());
         }
         return changed;
     }
