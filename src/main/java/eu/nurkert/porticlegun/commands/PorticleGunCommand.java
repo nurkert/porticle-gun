@@ -2,6 +2,7 @@ package eu.nurkert.porticlegun.commands;
 
 import eu.nurkert.porticlegun.PorticleGun;
 import eu.nurkert.porticlegun.commands.sub.ClearPlayerCommand;
+import eu.nurkert.porticlegun.commands.sub.GiveCommand;
 import eu.nurkert.porticlegun.commands.sub.ListCommand;
 import eu.nurkert.porticlegun.commands.sub.ReloadCommand;
 import eu.nurkert.porticlegun.commands.sub.RemoveCommand;
@@ -35,6 +36,7 @@ public class PorticleGunCommand implements CommandExecutor, TabCompleter {
         register(new RemoveCommand(gunData, plugin.getPersistence()));
         register(new ClearPlayerCommand(gunData));
         register(new ReloadCommand(plugin));
+        register(new GiveCommand());
     }
 
     private void register(SubCommand subCommand) {

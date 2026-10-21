@@ -33,11 +33,12 @@ public class SafeLocationFinder {
     }
 
     public void find(World world, RiftSettings settings, Consumer<Location> callback) {
-        int radius = switch (world.getEnvironment()) {
-            case NETHER -> settings.netherRadius();
-            case THE_END -> settings.endRadius();
-            default -> settings.randomRadius();
-        };
+        int radius =
+                switch (world.getEnvironment()) {
+                    case NETHER -> settings.netherRadius();
+                    case THE_END -> settings.endRadius();
+                    default -> settings.randomRadius();
+                };
         Location centre = world.getEnvironment() == World.Environment.THE_END
                 ? new Location(world, 0, 0, 0)
                 : world.getSpawnLocation();

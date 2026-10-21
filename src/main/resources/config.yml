@@ -38,6 +38,39 @@ bedrock:
   # If Geyser runs on a proxy, copy porticlegun.mcpack and porticlegun_mappings.json there by hand.
   install-pack: true
 
+# Interdimensional gun: opens green rift pairs (in front of you and at the destination) to homes, random safe spots
+# in any world, world spawns, back or to your last death. Runs on portal fluid made from rift shards.
+interdimensional-gun:
+  # false removes the gun, its items and recipes (restart required)
+  enabled: true
+  # rifts a full tank holds, rifts one bottle of portal fluid adds, rifts a freshly crafted gun has
+  tank-capacity: 8
+  rifts-per-fluid: 4
+  starting-charges: 4
+  # seconds between two rifts
+  cooldown-seconds: 3
+  # a rift pair closes once its opener is farther than close-distance blocks from both portals for two seconds,
+  # and after portal-seconds at the latest
+  close-distance: 12
+  portal-seconds: 30
+  # home slots per player (0-7)
+  homes: 5
+  # random destinations: radius around the world spawn (overworld and other worlds), the nether and the end
+  random-radius: 3000
+  nether-radius: 1000
+  end-radius: 1500
+  # candidate spots checked (one per tick) before giving up
+  search-attempts: 40
+  # worlds that never show up as destinations
+  disabled-worlds: []
+  drops:
+    # chance per mined end stone, plus per fortune level
+    end-stone-chance: 0.03
+    end-stone-fortune-bonus: 0.01
+    # chance per killed enderman, plus per looting level
+    enderman-chance: 0.08
+    enderman-looting-bonus: 0.03
+
 # Gravity gun: press the drop key (Q) while holding the gun to pick up / let go of a block or mob.
 gravity-gun:
   # false disables the gravity gun completely

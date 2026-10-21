@@ -91,6 +91,8 @@ cd "$WORK"
     sleep 1
     echo "porticlegun reload"
     sleep 2
+    echo "porticlegun give rift_shard NobodyOnline"
+    sleep 1
     echo "stop"
 ) | java -Xms1G -Xmx2G -jar "$PAPER_JAR" --nogui >"$LOG" 2>&1 || true
 
@@ -117,6 +119,7 @@ for gun in abcdefghij klmnopqrst uvwxyzABCD; do
     grep -q "$gun:" "$WORK/plugins/PorticleGun/portals.yml" || fail "gun $gun was lost from portals.yml"
 done
 grep -q "PorticleGun data reloaded from disk" "$LOG" || fail "/porticlegun reload did not succeed"
+grep -q "Player 'NobodyOnline' is not online" "$LOG" || fail "/porticlegun give did not answer"
 if grep -n -E "Error occurred while (enabling|disabling) PorticleGun|Could not load 'plugins/PorticleGun" "$LOG"; then
     fail "PorticleGun failed to load, enable or disable"
 fi

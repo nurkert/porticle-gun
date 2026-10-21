@@ -14,6 +14,7 @@ import eu.nurkert.porticlegun.portals.PortalOpenHandler;
 import eu.nurkert.porticlegun.portals.SettingsHandler;
 import eu.nurkert.porticlegun.portals.TeleportationHandler;
 import eu.nurkert.porticlegun.resourcepack.ResourcePackHandler;
+import eu.nurkert.porticlegun.rift.RiftModule;
 import eu.nurkert.porticlegun.visualization.GunColorHandler;
 import eu.nurkert.porticlegun.visualization.PortalColor;
 import eu.nurkert.porticlegun.visualization.PortalHud;
@@ -47,6 +48,7 @@ public class LoadingHandler implements Listener {
     private GravityGun gravityGun;
     private final ResourcePackHandler resourcePackHandler = new ResourcePackHandler();
     private PortalHud portalHud;
+    private RiftModule riftModule;
     private final List<PendingPortal> pendingPortals = new ArrayList<>();
 
     public LoadingHandler(PorticleGun plugin) {
@@ -74,6 +76,9 @@ public class LoadingHandler implements Listener {
         register(new TitleHandler());
         portalHud = new PortalHud(plugin, resourcePackHandler);
         register(portalHud);
+        if (plugin.getConfig().getBoolean("interdimensional-gun.enabled", true)) {
+            riftModule = new RiftModule(plugin, this::register);
+        }
         updateGravityGunRegistration();
     }
 
@@ -223,6 +228,9 @@ public class LoadingHandler implements Listener {
         if (portalHud != null) {
             portalHud.shutdown();
         }
+        if (riftModule != null) {
+            riftModule.shutdown();
+        }
         if (gravityGun != null) {
             gravityGun.shutdown();
             HandlerList.unregisterAll(gravityGun);
@@ -234,10 +242,20 @@ public class LoadingHandler implements Listener {
         return portalHud;
     }
 
+    /**
+     * @return the interdimensional gun, or {@code null} if it is disabled in config.yml
+     */
+    public RiftModule getRiftModule() {
+        return riftModule;
+    }
+
     public void reload() {
         MessageManager.reload(plugin);
         config.reload();
         resourcePackHandler.reload();
+        if (riftModule != null) {
+            riftModule.reload();
+        }
         updateGravityGunRegistration();
         persistence.reload();
         activePortals.clear();

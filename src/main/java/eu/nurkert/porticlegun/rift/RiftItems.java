@@ -85,7 +85,8 @@ public final class RiftItems {
         if (item == null || !item.hasItemMeta()) {
             return null;
         }
-        Type type = Type.byId(item.getItemMeta().getPersistentDataContainer().get(typeKey(), PersistentDataType.STRING));
+        Type type =
+                Type.byId(item.getItemMeta().getPersistentDataContainer().get(typeKey(), PersistentDataType.STRING));
         return type != null && type.base() == item.getType() ? type : null;
     }
 
@@ -160,12 +161,20 @@ public final class RiftItems {
         List<String> lore = new ArrayList<>(lines(MessageManager.getMessage("items.interdimensional-gun.lore")));
         lore.add(MessageManager.getMessage(
                 "items.interdimensional-gun.tank",
-                Map.of("bar", tankBar(charges, settings.tankCapacity()), "charges", String.valueOf(charges), "capacity",
+                Map.of(
+                        "bar",
+                        tankBar(charges, settings.tankCapacity()),
+                        "charges",
+                        String.valueOf(charges),
+                        "capacity",
                         String.valueOf(settings.tankCapacity()))));
         lore.add(MessageManager.getMessage(
                 "items.interdimensional-gun.destination",
-                Map.of("destination", destination == null ? MessageManager.getMessage("rift.destination.none")
-                        : RiftNames.describe(destination, null))));
+                Map.of(
+                        "destination",
+                        destination == null
+                                ? MessageManager.getMessage("rift.destination.none")
+                                : RiftNames.describe(destination, null))));
         changed |= !lore.equals(meta.getLore());
         meta.setLore(lore);
         gun.setItemMeta(meta);

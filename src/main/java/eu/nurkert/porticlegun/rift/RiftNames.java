@@ -35,9 +35,12 @@ public final class RiftNames {
 
     public static String describe(RiftDestination destination, CommandSender viewer) {
         return switch (destination.type()) {
-            case WORLD -> message(viewer, "rift.destination.random", Map.of("world", world(destination.world(), viewer)));
-            case SPAWN -> message(viewer, "rift.destination.spawn", Map.of("world", world(destination.world(), viewer)));
-            case HOME -> message(viewer, "rift.destination.home", Map.of("home", String.valueOf(destination.home() + 1)));
+            case WORLD -> message(
+                    viewer, "rift.destination.random", Map.of("world", world(destination.world(), viewer)));
+            case SPAWN -> message(
+                    viewer, "rift.destination.spawn", Map.of("world", world(destination.world(), viewer)));
+            case HOME -> message(
+                    viewer, "rift.destination.home", Map.of("home", String.valueOf(destination.home() + 1)));
             case BACK -> message(viewer, "rift.destination.back", Map.of());
             case DEATH -> message(viewer, "rift.destination.death", Map.of());
         };

@@ -18,8 +18,8 @@ import org.bukkit.Particle;
 import org.bukkit.Sound;
 import org.bukkit.World;
 import org.bukkit.entity.Display;
-import org.bukkit.entity.Entity;
 import org.bukkit.entity.EnderDragon;
+import org.bukkit.entity.Entity;
 import org.bukkit.entity.Hanging;
 import org.bukkit.entity.ItemDisplay;
 import org.bukkit.entity.Player;
@@ -52,12 +52,16 @@ public class RiftPortalManager implements Listener {
     private static final int OPEN_TICKS = 8;
     private static final int WOBBLE_TICKS = 10;
     private static final double LEAVE_DISTANCE = 2.5;
+    private static final int WALK_AWAY_TICKS = 40;
 
     private final PorticleGun plugin;
     private final RiftStorage storage;
     private final Map<UUID, RiftPortal[]> pairs = new HashMap<>();
     // entity -> portal it just came out of; it cannot go back through until it stepped away
     private final Map<UUID, RiftPortal> exitLocks = new HashMap<>();
+    // owner -> how far they may walk away, and the last tick they were that close to one of their portals
+    private final Map<UUID, Double> closeDistances = new HashMap<>();
+    private final Map<UUID, Long> lastNear = new HashMap<>();
     private final BukkitTask task;
     private long tick;
 
@@ -70,10 +74,17 @@ public class RiftPortalManager implements Listener {
     /**
      * Opens a rift pair for the player. An older pair of the same player closes first.
      *
-     * @param lifetimeTicks how long both portals stay open
+     * @param lifetimeTicks how long both portals stay open at most
+     * @param closeDistance the pair closes once the player is farther than this from both portals for a moment
      */
-    public void open(Player owner, Location entranceFeet, Vector entranceNormal, Location exitFeet, Vector exitNormal,
-            int lifetimeTicks) {
+    public void open(
+            Player owner,
+            Location entranceFeet,
+            Vector entranceNormal,
+            Location exitFeet,
+            Vector exitNormal,
+            int lifetimeTicks,
+            double closeDistance) {
         close(owner.getUniqueId());
         RiftPortal entrance = new RiftPortal(owner.getUniqueId(), entranceFeet, entranceNormal);
         RiftPortal exit = new RiftPortal(owner.getUniqueId(), exitFeet, exitNormal);
@@ -87,16 +98,24 @@ public class RiftPortalManager implements Listener {
         }
         pairs.put(owner.getUniqueId(), new RiftPortal[] {entrance, exit});
         UUID id = owner.getUniqueId();
+        closeDistances.put(id, closeDistance);
+        lastNear.put(id, tick + WALK_AWAY_TICKS); // a moment of grace after opening
         RiftPortal[] opened = pairs.get(id);
-        Bukkit.getScheduler().runTaskLater(plugin, () -> {
-            if (pairs.get(id) == opened) {
-                close(id);
-            }
-        }, lifetimeTicks);
+        Bukkit.getScheduler()
+                .runTaskLater(
+                        plugin,
+                        () -> {
+                            if (pairs.get(id) == opened) {
+                                close(id);
+                            }
+                        },
+                        lifetimeTicks);
     }
 
     public void close(UUID owner) {
         RiftPortal[] pair = pairs.remove(owner);
+        closeDistances.remove(owner);
+        lastNear.remove(owner);
         if (pair == null) {
             return;
         }
@@ -170,6 +189,7 @@ public class RiftPortalManager implements Listener {
 
     private void tick() {
         tick++;
+        closeAbandonedPairs();
         exitLocks.entrySet().removeIf(entry -> {
             Entity entity = Bukkit.getEntity(entry.getKey());
             return entity == null
@@ -188,12 +208,41 @@ public class RiftPortalManager implements Listener {
                 if (tick % WOBBLE_TICKS == 0 && tick > OPEN_TICKS && portal.display != null) {
                     // wobble: alternate between a wider and a taller oval with a slight tilt
                     boolean phase = (tick / WOBBLE_TICKS) % 2 == 0;
-                    animate(portal.display, phase ? WIDTH * 1.06f : WIDTH * 0.96f,
-                            phase ? HEIGHT * 0.95f : HEIGHT * 1.04f, phase ? 4f : -4f, WOBBLE_TICKS);
+                    animate(
+                            portal.display,
+                            phase ? WIDTH * 1.06f : WIDTH * 0.96f,
+                            phase ? HEIGHT * 0.95f : HEIGHT * 1.04f,
+                            phase ? 4f : -4f,
+                            WOBBLE_TICKS);
                 }
                 travel(portal);
             }
         }
+    }
+
+    /**
+     * Closes the pairs whose opener walked away from both portals (or left) for {@link #WALK_AWAY_TICKS}.
+     */
+    private void closeAbandonedPairs() {
+        List<UUID> abandoned = new ArrayList<>();
+        for (Map.Entry<UUID, RiftPortal[]> entry : pairs.entrySet()) {
+            UUID owner = entry.getKey();
+            Player player = Bukkit.getPlayer(owner);
+            double distance = closeDistances.getOrDefault(owner, 12.0);
+            boolean near = false;
+            if (player != null) {
+                for (RiftPortal portal : entry.getValue()) {
+                    near |= player.getWorld().equals(portal.feet.getWorld())
+                            && player.getLocation().distanceSquared(portal.feet) <= distance * distance;
+                }
+            }
+            if (near) {
+                lastNear.put(owner, Math.max(tick, lastNear.getOrDefault(owner, tick)));
+            } else if (tick - lastNear.getOrDefault(owner, tick) > WALK_AWAY_TICKS) {
+                abandoned.add(owner);
+            }
+        }
+        abandoned.forEach(this::close);
     }
 
     private void particles(RiftPortal portal) {
