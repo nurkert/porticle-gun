@@ -11,6 +11,7 @@ import eu.nurkert.porticlegun.util.WorldGuardIntegration;
 import eu.nurkert.porticlegun.visualization.GunColorHandler;
 import eu.nurkert.porticlegun.visualization.PortalHud;
 import org.bukkit.Bukkit;
+import org.bukkit.World;
 import org.bukkit.plugin.java.JavaPlugin;
 
 /**
@@ -46,6 +47,7 @@ public final class PorticleGun extends JavaPlugin {
         activePortals = new ActivePortalsHandler(persistence);
         loadingHandler = new LoadingHandler(this);
         BedrockSupport.init(this);
+        keepMenuChunkLoaded();
         BedrockPackInstaller.checkGeyserSetup(this);
         worldGuardEnabled = false;
         try {
@@ -57,6 +59,17 @@ public final class PorticleGun extends JavaPlugin {
             }
         } catch (ClassNotFoundException | NoClassDefFoundError exception) {
             getLogger().info("WorldGuard classes not found - integration disabled.");
+        }
+    }
+
+    /**
+     * The gun menus are dropper inventories. Newer servers check the block at 0 0 0 of a world when such a menu opens
+     * and generate that chunk on the spot if it does not exist yet, which froze the server for many seconds. A plugin
+     * ticket loads it once in the background and keeps it ready.
+     */
+    private void keepMenuChunkLoaded() {
+        for (World world : Bukkit.getWorlds()) {
+            world.addPluginChunkTicket(0, 0, this);
         }
     }
 
