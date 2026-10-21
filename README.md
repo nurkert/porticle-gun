@@ -27,8 +27,11 @@
 </p>
 
 <p align="center">
-  <img src="images/portal_gun_3d.png" alt="The PorticleGun 3D model" width="460">
+  <img src="images/portal_gun_3d.png" alt="The PorticleGun" width="400">
+  <img src="images/interdimensional_gun_3d.png" alt="The interdimensional gun" width="400">
 </p>
+
+<p align="center"><sub><b>PorticleGun</b> · two portals on any wall &nbsp;&nbsp;|&nbsp;&nbsp; <b>Interdimensional gun</b> · green rifts to anywhere</sub></p>
 
 <p align="center"><img src="images/divider.png" alt="" width="100%"></p>
 
@@ -73,10 +76,6 @@ Players without it simply see a brewing stand. More in [docs/resourcepack.md](do
 <p align="center"><img src="images/divider.png" alt="" width="100%"></p>
 
 ## The interdimensional gun
-
-<p align="center">
-  <img src="images/interdimensional_gun_3d.png" alt="The interdimensional gun" width="460">
-</p>
 
 The big brother of the PorticleGun. Instead of two portals on walls it tears **green rifts** right into the air: one in
 front of you, one at the destination, both wobbling and walkable in both directions, so friends can follow you before
