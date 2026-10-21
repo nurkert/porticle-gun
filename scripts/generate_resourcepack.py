@@ -33,7 +33,7 @@ DEFAULT_TINTS = [0xFFA500, 0x0000AA]
 # Bedrock packs need stable UUIDs, never change them (bump the version instead)
 BEDROCK_HEADER_UUID = "6f2a1c3e-8b4d-4e7a-9c15-2d8f0b7e4a61"
 BEDROCK_MODULE_UUID = "a3d95b72-1e6c-4f08-b2a4-7c9e5d13f8b0"
-BEDROCK_VERSION = [1, 4, 0]
+BEDROCK_VERSION = [1, 5, 0]
 
 # --- texture atlas (32x32 px, one 8x8 tile per material) ------------------------------------------------------------
 TEXTURE_SIZE = 32
@@ -488,33 +488,58 @@ def geyser_mappings():
 # font on Private Use Area code points (far away from Bedrock's built-in E0xx/E1xx icons). Java merges font files from
 # all packs, so this only adds characters. The plugin sends them as a title, which Minecraft draws around the screen
 # centre, and colours each ring with the portal colour. Keep in sync with PortalHud.java.
+HUD_GLYPH_WIDTH, HUD_GLYPH_HEIGHT = 8, 16  # drawn at double resolution, shown 8 font pixels high
+
+
+def crescent(filled):
+    """The left ring: a thick arc band, either only its outline (portal closed) or filled (portal open)."""
+
+    def inside(x, y):
+        if not 1 <= y <= HUD_GLYPH_HEIGHT - 2:
+            return False  # cut off the thin tips
+        distance = math.hypot(x + 0.5 - 8.0, y + 0.5 - 8.0)
+        return 3.7 <= distance <= 8.0 and x < HUD_GLYPH_WIDTH
+
+    rows = []
+    for y in range(HUD_GLYPH_HEIGHT):
+        row = ""
+        for x in range(HUD_GLYPH_WIDTH):
+            neighbours = ((x + 1, y), (x - 1, y), (x, y + 1), (x, y - 1))
+            edge = any(not 0 <= nx < HUD_GLYPH_WIDTH or not inside(nx, ny) for nx, ny in neighbours)
+            row += "#" if inside(x, y) and (filled or edge) else "."
+        rows.append(row)
+    return rows
+
+
+def mirrored(rows):
+    return [row[::-1] for row in rows]
+
+
 HUD_GLYPHS = {
-    "\ue9a0": ["..##", ".#..", "#...", "#...", "#...", "#...", ".#..", "..##"],  # left ring, portal closed
-    "\ue9a1": ["..##", ".###", "##..", "##..", "##..", "##..", ".###", "..##"],  # left ring, portal open
-    "\ue9a2": ["##..", "..#.", "...#", "...#", "...#", "...#", "..#.", "##.."],  # right ring, portal closed
-    "\ue9a3": ["##..", "###.", "..##", "..##", "..##", "..##", "###.", "##.."],  # right ring, portal open
+    "\ue9a0": crescent(False),  # left ring, portal closed
+    "\ue9a1": crescent(True),  # left ring, portal open
+    "\ue9a2": mirrored(crescent(False)),  # right ring, portal closed
+    "\ue9a3": mirrored(crescent(True)),  # right ring, portal open
 }
 HUD_GAP = "\ue9a4"  # space between the rings, so they sit left and right of the crosshair
 HUD_GAP_ADVANCE = 7
 # Minecraft centres a line including the 1 pixel spacing after its last glyph; one leading pixel balances that, so
 # the rings sit symmetrically: left ring from -8 to -4, right ring from 4 to 8 title pixels around the crosshair
 HUD_LEAD = "\ue9a5"
-HUD_CELL = 8
+HUD_FONT_HEIGHT = 8
 # titles are drawn 4x scaled with the text line starting 10 units above the screen centre; an ascent of 1 centres an
-# 8 pixel glyph on the crosshair
+# 8 pixel high glyph on the crosshair
 HUD_ASCENT = 1
 
 
-def hud_glyph_strip(scale=1):
-    cell = HUD_CELL * scale
-    pixels = [[(0, 0, 0, 0)] * (cell * len(HUD_GLYPHS)) for _ in range(cell)]
+def hud_glyph_strip():
+    width = HUD_GLYPH_WIDTH
+    pixels = [[(0, 0, 0, 0)] * (width * len(HUD_GLYPHS)) for _ in range(HUD_GLYPH_HEIGHT)]
     for index, rows in enumerate(HUD_GLYPHS.values()):
         for y, row in enumerate(rows):
             for x, value in enumerate(row):
                 if value == "#":
-                    for dy in range(scale):
-                        for dx in range(scale):
-                            pixels[y * scale + dy][index * cell + x * scale + dx] = (255, 255, 255, 255)
+                    pixels[y][index * width + x] = (255, 255, 255, 255)
     return pixels
 
 
@@ -525,7 +550,7 @@ def java_font():
                 "type": "bitmap",
                 "file": f"{NAMESPACE}:font/portal_hud.png",
                 "ascent": HUD_ASCENT,
-                "height": HUD_CELL,
+                "height": HUD_FONT_HEIGHT,
                 "chars": ["".join(HUD_GLYPHS)],
             },
             {"type": "space", "advances": {HUD_GAP: HUD_GAP_ADVANCE, HUD_LEAD: 1}},
@@ -537,13 +562,13 @@ def bedrock_glyph_sheet():
     """Bedrock draws U+E9xx from font/glyph_E9.png, a 16x16 grid of 16 pixel cells."""
     size = 256
     pixels = [[(0, 0, 0, 0)] * size for _ in range(size)]
-    strip = hud_glyph_strip(scale=2)
+    strip = hud_glyph_strip()
     for index, char in enumerate(HUD_GLYPHS):
         low = ord(char) & 0xFF
         cx, cy = (low % 16) * 16, (low // 16) * 16
-        for y in range(16):
-            for x in range(16):
-                pixels[cy + y][cx + x] = strip[y][index * 16 + x]
+        for y in range(HUD_GLYPH_HEIGHT):
+            for x in range(HUD_GLYPH_WIDTH):
+                pixels[cy + y][cx + x] = strip[y][index * HUD_GLYPH_WIDTH + x]
     return pixels
 
 
@@ -750,7 +775,7 @@ def render_divider(width=1200, height=8):
     return rows
 
 
-def render_hud_preview(primary=0xFFA500, secondary=0x3F7BFF, unit=6, width=520, height=200):
+def render_hud_preview(primary=0xFFA500, secondary=0x3F7BFF, unit=8, width=560, height=220):
     """Mock-up of the overlay: the rings as Minecraft draws them in a title (4x scale, with drop shadow)."""
     cx, cy = width // 2, height // 2
     rows = []
@@ -771,6 +796,7 @@ def render_hud_preview(primary=0xFFA500, secondary=0x3F7BFF, unit=6, width=520, 
             plot(cx + w, cy + d, (240, 240, 240))
 
     glyphs = list(HUD_GLYPHS.values())
+    pixel = unit / 2  # glyphs are drawn at double resolution
     # left ring (open, primary) from -8 units, right ring (closed, secondary) from +4 units, 8 units high
     for rows_art, left_unit, color in ((glyphs[1], -8, hex_rgb(primary)), (glyphs[2], 4, hex_rgb(secondary))):
         for shadow in (True, False):
@@ -780,10 +806,10 @@ def render_hud_preview(primary=0xFFA500, secondary=0x3F7BFF, unit=6, width=520, 
                 for gx, value in enumerate(line):
                     if value != "#":
                         continue
-                    x0 = round(cx + (left_unit + gx) * unit) + offset
-                    y0 = round(cy + (gy - 4) * unit) + offset
-                    for yy in range(unit):
-                        for xx in range(unit):
+                    x0 = round(cx + left_unit * unit + gx * pixel) + offset
+                    y0 = round(cy - 4 * unit + gy * pixel) + offset
+                    for yy in range(math.ceil(pixel)):
+                        for xx in range(math.ceil(pixel)):
                             plot(x0 + xx, y0 + yy, tint)
     return rows
 
