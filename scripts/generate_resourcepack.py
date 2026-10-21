@@ -94,18 +94,23 @@ def paint_atlas():
     tile("glow", glow((255, 255, 255)))
     tile("glow_primary", glow(hex_rgb(BEDROCK_PRIMARY)))
     tile("glow_secondary", glow(hex_rgb(BEDROCK_SECONDARY)))
-    tile("grey", brick(hex_rgb(0xB9BEC4), hex_rgb(0xD6DADF), hex_rgb(0x8E949B)))
-    tile("steel", brick(hex_rgb(0x5A6068), hex_rgb(0x737A83), hex_rgb(0x3E4349)))
+    tile("grey", brick(hex_rgb(0xD3D6D8), hex_rgb(0xE9EBEC), hex_rgb(0xA9AEB2)))
+    def vent(x, y, last):
+        if x in (0, last) or y in (0, last):
+            return hex_rgb(0x9DA2A6)
+        return hex_rgb(0x6E7378) if x % 2 == 0 else hex_rgb(0x868B90)
+
+    tile("steel", vent)
     tile("liquid", glow(hex_rgb(RIFT_GREEN)))
-    tile("glass", brick(hex_rgb(0xBFEFF0), hex_rgb(0xE8FFFF), hex_rgb(0x8CCFD3)))
+    tile("glass", brick(hex_rgb(0xA8E8A0), hex_rgb(0xD2F7CC), hex_rgb(0x7CC474)))
 
     def screen(x, y, last):
         if x in (0, last) or y in (0, last):
-            return hex_rgb(0x2C3036)
-        return hex_rgb(0x39FF5A) if (x + y) % 3 == 0 and 1 < y < last - 1 else hex_rgb(0x0B1A10)
+            return hex_rgb(0x8E949B)
+        return hex_rgb(0xFF5A4A) if 2 <= y <= last - 2 and x % 3 != 0 else hex_rgb(0x9E1A14)
 
     tile("screen", screen)
-    tile("knob", brick(hex_rgb(0xF2C230), hex_rgb(0xFFE07A), hex_rgb(0xB8891A)))
+    tile("knob", brick(hex_rgb(0x2A2D31), hex_rgb(0x44484E), hex_rgb(0x17191B)))
     return pixels
 
 
@@ -114,8 +119,31 @@ def paint_atlas():
 # A model's offset moves it so its centre sits at the model centre (8, 8, 8) that display transforms rotate around.
 
 
-def box(name, material, start, end):
-    return {"name": name, "material": material, "from": list(start), "to": list(end)}
+def box(name, material, start, end, rotation=None):
+    """A box of the model. rotation: optional (axis, angle, origin); Java allows -45, -22.5, 0, 22.5 and 45 degrees."""
+    element = {"name": name, "material": material, "from": list(start), "to": list(end)}
+    if rotation:
+        axis, angle, origin = rotation
+        element["rotation"] = {"axis": axis, "angle": angle, "origin": list(origin)}
+    return element
+
+
+def rotated(point, rotation, offset):
+    """Rotates a placed point around a placed rotation origin like Minecraft does (counter-clockwise when looking
+    along the axis towards the origin, i.e. the right-hand rule)."""
+    if not rotation:
+        return point
+    origin = [rotation["origin"][i] + offset[i] for i in range(3)]
+    angle = math.radians(rotation["angle"])
+    c, s_ = math.cos(angle), math.sin(angle)
+    x, y, z = (point[i] - origin[i] for i in range(3))
+    if rotation["axis"] == "x":
+        y, z = y * c - z * s_, y * s_ + z * c
+    elif rotation["axis"] == "y":
+        x, z = x * c + z * s_, -x * s_ + z * c
+    else:
+        x, y = x * c - y * s_, x * s_ + y * c
+    return [x + origin[0], y + origin[1], z + origin[2]]
 
 
 # PorticleGun. Materials: white, dark, glow0 (primary portal colour), glow1 (secondary portal colour).
@@ -190,39 +218,57 @@ PORTAL_GUN_ELEMENTS = [
 def rift_gun_elements(level):
     """Interdimensional gun with its portal fluid tank filled to the given level (0 = empty, 4 = full).
 
-    Materials: grey, steel, glass, screen, knob and liquid (glowing portal fluid).
+    The shape of the classic sci-fi portal device in PorticleGun's voxel style: a long, flat body with stepped edges,
+    an open front holding three green lenses, a voxel glass dome holding the portal fluid, a red display and a dial at
+    the back, vents along both sides and a stepped grip with a round end, angled down and back.
+    Materials: grey, steel (vents), glass, screen (red display), knob, liquid (glowing portal fluid).
     """
     elements = [
-        # slim body with rounded top and bottom edges
-        box("body", "grey", (1, 3, 5), (14, 8, 11)),
-        box("body_top", "grey", (2, 8, 5.5), (13, 9, 10.5)),
-        box("body_bottom", "grey", (2, 2, 5.5), (13, 3, 10.5)),
-        box("band_left", "steel", (3, 4.5, 4.6), (12, 6.5, 5)),
-        box("band_right", "steel", (3, 4.5, 11), (12, 6.5, 11.4)),
-        box("rear_cap", "steel", (0, 3.5, 5.5), (1, 7.5, 10.5)),
-        # front: collar, nose, emitter ring and glowing tip
-        box("collar", "steel", (14, 3.5, 5.5), (15, 8.5, 10.5)),
-        box("nose", "grey", (15, 4.5, 6.5), (17, 7.5, 9.5)),
-        box("emitter_ring", "steel", (17, 4.5, 6.5), (18, 7.5, 9.5)),
-        box("emitter", "liquid", (18, 5, 7), (18.6, 7, 9)),
-        # control panel at the back: screen and dial
-        box("panel", "steel", (2, 9, 6), (7, 9.5, 10)),
-        box("screen", "screen", (2.5, 9.5, 6.5), (5.5, 9.8, 9.5)),
-        box("dial", "knob", (6, 9.5, 7.5), (7, 10.5, 8.5)),
-        # grip and trigger underneath
-        box("grip", "steel", (3, -0.5, 6.5), (6.5, 2, 9.5)),
-        box("trigger", "knob", (6.8, 0.5, 7.5), (7.6, 2, 8.5)),
-        # the portal fluid tank on the front top: socket, four glass posts, cap and a little bulb
-        box("tank_socket", "steel", (8.5, 9, 6), (13.5, 10, 10)),
-        box("tank_cap", "steel", (8.5, 15, 6), (13.5, 16, 10)),
-        box("tank_bulb", "glass", (10.5, 16, 7.5), (11.5, 16.8, 8.5)),
+        # body with stepped top and bottom edges
+        box("body", "grey", (2, 4.5, 4), (18.5, 7.5, 12)),
+        box("body_top", "grey", (2, 7.5, 4.5), (18.5, 8, 11.5)),
+        box("body_bottom", "grey", (2, 4, 4.5), (18.5, 4.5, 11.5)),
+        # frame around the open front and three lenses side by side
+        box("front_top", "grey", (18.5, 7.5, 4), (20.5, 8, 12)),
+        box("front_bottom", "grey", (18.5, 4, 4), (20.5, 4.5, 12)),
+        box("front_left", "grey", (18.5, 4.5, 4), (20.5, 7.5, 4.5)),
+        box("front_right", "grey", (18.5, 4.5, 11.5), (20.5, 7.5, 12)),
         *[
-            box(f"tank_post_{index}", "glass", (x0, 10, z0), (x0 + 1, 15, z0 + 1))
-            for index, (x0, z0) in enumerate(((9, 6.5), (12, 6.5), (9, 8.5), (12, 8.5)))
+            box(f"lens_{index}", "liquid", (18.5, 5, z0), (19.6, 7, z0 + 2))
+            for index, z0 in enumerate((4.9, 7, 9.1))
         ],
+        # vents along both sides, red display and dial at the back
+        box("vent_left", "steel", (6, 5, 3.6), (17, 7, 4)),
+        box("vent_right", "steel", (6, 5, 12), (17, 7, 12.4)),
+        box("display", "screen", (5, 8, 6), (9, 8.3, 10)),
+        box("dial", "knob", (2.4, 8, 9.4), (3.8, 9.4, 10.8)),
+        # stepped grip down and back, every step a little offset in width so no side faces share a plane
+        box("grip_1", "grey", (2, 2.5, 6.0), (5, 4, 10)),
+        box("grip_2", "grey", (0.8, 1, 6.2), (3.8, 2.5, 9.8)),
+        box("grip_3", "grey", (-0.4, -0.5, 6.4), (2.6, 1, 9.6)),
+        box("grip_4", "grey", (-1.6, -2, 6.3), (1.4, -0.5, 9.7)),
+        box("grip_5", "grey", (-2.8, -3.5, 6.5), (0.2, -2, 9.5)),
+        box("grip_end", "grey", (-4.6, -6, 6.0), (-0.6, -3.5, 10.0)),
+        box("grip_end_cap", "grey", (-4.2, -6.5, 6.5), (-1, -6, 9.5)),
+        # the dome sits on a ring
+        box("dome_ring", "grey", (12, 8, 5.5), (17, 9, 10.5)),
     ]
-    if level > 0:
-        elements.append(box("tank_fluid", "liquid", (10, 10, 7), (12, 10 + 1.25 * level, 9)))
+    # a voxel dome: a core with a bulge on each side, glowing portal fluid at the bottom and glass above it
+    height = [0, 1.5, 3, 4.5, 6][level]
+    for material, y0, y1 in (("liquid", 9, 9 + height), ("glass", 9 + height, 15)):
+        if y1 - y0 <= 0:
+            continue
+        elements += [
+            box(f"dome_{material}_core", material, (12.5, y0, 6), (16.5, y1, 10)),
+            box(f"dome_{material}_left", material, (13, y0, 5.5), (16, y1, 6)),
+            box(f"dome_{material}_right", material, (13, y0, 10), (16, y1, 10.5)),
+            box(f"dome_{material}_back", material, (12, y0, 6.5), (12.5, y1, 9.5)),
+            box(f"dome_{material}_front", material, (16.5, y0, 6.5), (17, y1, 9.5)),
+        ]
+    elements += [
+        box("dome_top", "liquid" if level == 4 else "glass", (13, 15, 6.5), (16, 15.8, 9.5)),
+        box("dome_tip", "glass", (13.5, 15.8, 7), (15.5, 16.4, 9)),
+    ]
     return elements
 
 
@@ -247,7 +293,8 @@ def check_model(model):
                 yield axis, direction, value, [(a[i], b[i]) for i in others]
 
     problems = []
-    for first, second in itertools.combinations(model["elements"], 2):
+    axis_aligned = [element for element in model["elements"] if "rotation" not in element]
+    for first, second in itertools.combinations(axis_aligned, 2):
         for f1 in faces(first):
             for f2 in faces(second):
                 if f1[:2] == f2[:2] and abs(f1[2] - f2[2]) < 1e-9:
@@ -258,7 +305,11 @@ def check_model(model):
         raise SystemExit(f"{model['item']}: coplanar overlapping faces: " + ", ".join(problems))
     for element in model["elements"]:
         start, end = placed(element, model["offset"])
-        if min(start) < -16 or max(end) > 32:
+        corners = [
+            rotated([x, y, z], element.get("rotation"), model["offset"])
+            for x in (start[0], end[0]) for y in (start[1], end[1]) for z in (start[2], end[2])
+        ]
+        if min(min(c) for c in corners) < -16 or max(max(c) for c in corners) > 32:
             raise SystemExit(f"{element['name']} is outside the -16..32 range Java models allow")
 
 
@@ -297,14 +348,14 @@ PORTAL_GUN_DISPLAY = {
 }
 
 RIFT_GUN_DISPLAY = {
-    "firstperson_righthand": {"rotation": [0, 90, 0], "translation": [1.5, 2.5, 1.5], "scale": [0.7] * 3},
-    "firstperson_lefthand": {"rotation": [0, -90, 0], "translation": [1.5, 2.5, 1.5], "scale": [0.7] * 3},
-    "thirdperson_righthand": {"rotation": [0, 90, 0], "translation": [0, 3, 1], "scale": [0.6] * 3},
-    "thirdperson_lefthand": {"rotation": [0, -90, 0], "translation": [0, 3, 1], "scale": [0.6] * 3},
-    "gui": {"rotation": [20, -35, 0], "translation": [0, 0, 0], "scale": [0.75] * 3},
-    "ground": {"rotation": [0, 0, 0], "translation": [0, 2, 0], "scale": [0.45] * 3},
-    "fixed": {"rotation": [0, 180, 0], "translation": [0, 0, 0], "scale": [0.8] * 3},
-    "head": {"rotation": [0, -90, 0], "translation": [0, 10, 0], "scale": [0.7] * 3},
+    "firstperson_righthand": {"rotation": [0, 90, 0], "translation": [1.5, 2.5, 1.5], "scale": [0.6] * 3},
+    "firstperson_lefthand": {"rotation": [0, -90, 0], "translation": [1.5, 2.5, 1.5], "scale": [0.6] * 3},
+    "thirdperson_righthand": {"rotation": [0, 90, 0], "translation": [0, 3, 1], "scale": [0.5] * 3},
+    "thirdperson_lefthand": {"rotation": [0, -90, 0], "translation": [0, 3, 1], "scale": [0.5] * 3},
+    "gui": {"rotation": [20, -35, 0], "translation": [0, 0, 0], "scale": [0.62] * 3},
+    "ground": {"rotation": [0, 0, 0], "translation": [0, 2, 0], "scale": [0.4] * 3},
+    "fixed": {"rotation": [0, 180, 0], "translation": [0, 0, 0], "scale": [0.65] * 3},
+    "head": {"rotation": [0, -90, 0], "translation": [0, 10, 0], "scale": [0.6] * 3},
 }
 
 # A model: Java item model plus, through Geyser, a Bedrock attachable. "variants" are extra Java models the item
@@ -324,7 +375,7 @@ RIFT_GUN = {
     "base": "minecraft:warped_fungus_on_a_stick",
     "elements": rift_gun_elements(RIFT_GUN_TANK_LEVELS),
     "variants": [rift_gun_elements(level) for level in range(RIFT_GUN_TANK_LEVELS + 1)],
-    "offset": (-1.3, -0.15, 0),
+    "offset": (0, 3.05, 0),
     "display": RIFT_GUN_DISPLAY,
     "tints": None,
 }
@@ -360,6 +411,13 @@ def java_model(model, elements=None):
             "to": end,
             "faces": {direction: dict(face) for direction in FACES},
         }
+        if "rotation" in element:
+            rotation = element["rotation"]
+            entry["rotation"] = {
+                "angle": rotation["angle"],
+                "axis": rotation["axis"],
+                "origin": [rotation["origin"][i] + model["offset"][i] for i in range(3)],
+            }
         if tint is not None or material == "liquid":
             entry["light_emission"] = 15
         entries.append(entry)
@@ -446,12 +504,20 @@ def bedrock_geometry(model):
     cubes = []
     for element in model["elements"]:
         start, end = placed(element, model["offset"])
-        cubes.append({
+        cube = {
             # Bedrock mirrors the x axis compared to Java models and centres x/z at 0
             "origin": [roundit(-end[0] + 8), roundit(start[1]), roundit(start[2] - 8)],
             "size": [roundit(end[i] - start[i]) for i in range(3)],
             "uv": {direction: bedrock_face_uv(element["material"], direction) for direction in FACES},
-        })
+        }
+        if "rotation" in element:
+            # same conversion as java2bedrock: x and y angles flip with the mirrored x axis
+            rotation = element["rotation"]
+            ox, oy, oz = (rotation["origin"][i] + model["offset"][i] for i in range(3))
+            cube["pivot"] = [roundit(-ox + 8), roundit(oy), roundit(oz - 8)]
+            angle = rotation["angle"]
+            cube["rotation"] = {"x": [-angle, 0, 0], "y": [0, -angle, 0], "z": [0, 0, angle]}[rotation["axis"]]
+        cubes.append(cube)
 
     bones = [
         {
@@ -706,59 +772,110 @@ def bedrock_glyph_sheet():
 
 
 # --- flat items and the rift portal ---------------------------------------------------------------------------------
+# 16x16 like every vanilla item, so they sit naturally next to vanilla and texture pack items: dark outline, light
+# from the top left, few shades per colour. The portal fluid uses the silhouette of a vanilla potion bottle. Java
+# animates them (frames stacked vertically); Bedrock cannot animate item icons and shows the first frame.
+FLAT_ITEM_FRAMES = 8
 FLAT_ITEM_PALETTES = {
-    "rift_shard": {"d": 0x2E1648, "p": 0x6E36B0, "l": 0xC7A3FF, "g": 0x5CFF7A, "w": 0xF4FFF6},
+    "rift_shard": {
+        "o": 0x1D0F2E, "l": 0xE3CCFF, "L": 0xB58CF0, "G": 0x7CFF8A, "P": 0x7B45C2, "D": 0x4A2580, "w": 0xFFFFFF,
+    },
     "portal_fluid": {
-        "c": 0x8B5A2B, "C": 0x5E3A1A, "G": 0xBFE3E3, "h": 0xFFFFFF, "L": 0x5CFF7A, "M": 0x22C944, "D": 0x0E8A2A,
+        "o": 0x26363B, "g": 0xA9C7CF, "w": 0xFFFFFF, "h": 0xC8FFB0, "l": 0x8CFF82, "L": 0x58E85F, "M": 0x2DB84A,
+        "D": 0x13803A, "c": 0x9C6A3C, "C": 0x6B4423, "b": 0xE4FFD8,
     },
 }
 FLAT_ITEM_ART = {
-    # a crystal splinter from the space between dimensions: purple shell, green glowing core
+    # a splinter of the space between dimensions: lavender shell, glowing green core
     "rift_shard": [
         "................",
-        "..........dd....",
-        ".........dpld...",
-        "........dpllgd..",
-        ".......dpllggd..",
-        "......dplgggd...",
-        ".....dplgggpd...",
-        "....dplggwpd....",
-        "...dplggwpd.....",
-        "...dpggwpd......",
-        "..dpgggpd.......",
-        "..dpggpd........",
-        ".dppgpd.........",
-        ".dpppd..........",
-        "..ddd...........",
+        "...........oo...",
+        "..........olwo..",
+        ".........olLLo..",
+        "........olLGLo..",
+        ".......olLGGo...",
+        "......olLGGPo...",
+        ".....olLGGPo....",
+        "....olLGGPo.....",
+        "...olLGGPo......",
+        "...oLGGPo.......",
+        "..oLGPPo........",
+        "..oPPPo.........",
+        ".oPPDo..........",
+        ".oooo...........",
         "................",
     ],
-    # a corked bottle of glowing green portal fluid
+    # glowing green portal fluid in a corked vanilla-style potion bottle
     "portal_fluid": [
         "................",
         "......cccc......",
-        "......cCCc......",
-        ".......GG.......",
-        ".......GG.......",
-        "......GhLG......",
-        ".....GhLLMG.....",
-        "....GhLLLMMG....",
-        "...GhLLLLMMDG...",
-        "...GLLLLLMMDG...",
-        "...GLLLLMMDDG...",
-        "...GMLLMMMDDG...",
-        "....GMMMMDDG....",
-        ".....GDDDDG.....",
-        "......GGGG......",
+        ".....oCccCo.....",
+        "......oggo......",
+        "......ogwo......",
+        ".....oglLgo.....",
+        "....oglLLLgo....",
+        "...oghLLLLLMo...",
+        "...ohLLLLLLMo...",
+        "..oghLLLLLMMDo..",
+        "..ogLLLLLMMMDo..",
+        "..ogLLLLMMMDDo..",
+        "...oMLLMMMDDo...",
+        "...ooMMMDDDoo...",
+        ".....oooooo.....",
         "................",
     ],
 }
+FLUID = set("hlLMD")
+
+
+def flat_item_frames(item):
+    art = FLAT_ITEM_ART[item]
+    palette = {key: hex_rgb(value) for key, value in FLAT_ITEM_PALETTES[item].items()}
+    frames = []
+    for frame in range(FLAT_ITEM_FRAMES):
+        phase = frame / FLAT_ITEM_FRAMES
+        grid = [list(row) for row in art]
+        colors = {}
+        if item == "rift_shard":
+            # a shimmer runs up the green core, a glint travels along the lit edge
+            edge = sorted(((x, y) for y, row in enumerate(art) for x, c in enumerate(row) if c == "l"),
+                          key=lambda p: p[0] - p[1])
+            gx, gy = edge[int(phase * len(edge)) % len(edge)]
+            grid[gy][gx] = "w"
+            for y, row in enumerate(art):
+                for x, c in enumerate(row):
+                    if c == "G":
+                        wave = math.cos(2 * math.pi * ((x - y) / 18 - phase))
+                        colors[(x, y)] = shade(palette["G"], 0.8 + 0.3 * max(0.0, wave))
+        else:
+            # bubbles rise through the fluid, which pulses gently
+            pulse = 1 + 0.06 * math.sin(2 * math.pi * phase)
+            for y, row in enumerate(art):
+                for x, c in enumerate(row):
+                    if c in FLUID:
+                        colors[(x, y)] = shade(palette[c], pulse)
+            for bubble_x, offset in ((6, 0.0), (9, 0.5)):
+                bubble_y = 12 - int(((phase + offset) % 1) * 7)
+                if art[bubble_y][bubble_x] in FLUID:
+                    grid[bubble_y][bubble_x] = "b"
+        pixels = []
+        for y, row in enumerate(grid):
+            line = []
+            for x, c in enumerate(row):
+                if c == ".":
+                    line.append((0, 0, 0, 0))
+                    continue
+                # animated colours only apply where the base art is unchanged (not on glints and bubbles)
+                color = colors.get((x, y), palette[c]) if c == art[y][x] else palette[c]
+                line.append((*color, 255))
+            pixels.append(line)
+        frames.append(pixels)
+    return frames
 
 
 def flat_item_texture(item):
-    palette = FLAT_ITEM_PALETTES[item]
-    return [
-        [(*hex_rgb(palette[c]), 255) if c != "." else (0, 0, 0, 0) for c in row] for row in FLAT_ITEM_ART[item]
-    ]
+    """The first frame, used for Bedrock icons and renders."""
+    return flat_item_frames(item)[0]
 
 
 def java_flat_item_model(item):
@@ -776,12 +893,17 @@ def rift_portal_frames():
             for x in range(size):
                 dx, dy = (x + 0.5 - size / 2) / (size / 2), (y + 0.5 - size / 2) / (size / 2)
                 r = math.hypot(dx, dy)
-                if r > 1:
+                angle = math.atan2(dy, dx)
+                # the rim wobbles and flickers like a living rift
+                edge = 0.9 + 0.05 * math.sin(5 * angle + phase) + 0.03 * math.sin(11 * angle - 2 * phase)
+                if r > edge:
                     row.append((0, 0, 0, 0))
                     continue
-                if r > 0.86:
-                    row.append((*hex_rgb(0xB6FF7A), 255))  # rim
+                if r > edge - 0.12:
+                    flicker = 0.85 + 0.15 * math.sin(7 * angle + 3 * phase)
+                    row.append((*shade(hex_rgb(0xB6FF7A), flicker), 255))
                     continue
+                r = r / edge
                 spiral = math.sin(3 * math.atan2(dy, dx) + 9 * r - phase)
                 light = 0.35 + 0.35 * spiral + 0.45 * (1 - r) ** 2
                 green = tuple(max(0, min(255, round(c * light))) for c in hex_rgb(RIFT_GREEN))
@@ -822,6 +944,14 @@ def face_quads(start, end):
         "up": ([(x0, y1, z1), (x1, y1, z1), (x1, y1, z0), (x0, y1, z0)], (0, 1, 0)),
         "down": ([(x0, y0, z0), (x1, y0, z0), (x1, y0, z1), (x0, y0, z1)], (0, -1, 0)),
     }
+
+
+def rotate_face(quad, normal, rotation, offset):
+    if not rotation:
+        return quad, normal
+    origin = [rotation["origin"][i] + offset[i] for i in range(3)]
+    tip = rotated([origin[i] + normal[i] for i in range(3)], rotation, offset)
+    return [rotated(p, rotation, offset) for p in quad], tuple(tip[i] - origin[i] for i in range(3))
 
 
 def make_view(yaw, pitch):
@@ -866,6 +996,7 @@ def render(yaw, pitch, size, margin=1, outline=True, model=PORTAL_GUN):
     for index, element in enumerate(elements):
         start, end = placed(element, model["offset"])
         for direction, (quad, normal) in face_quads(start, end).items():
+            quad, normal = rotate_face(quad, normal, element.get("rotation"), model["offset"])
             n = transform((normal[0] + 8, normal[1] + 8, normal[2] + 8))
             if n[2] <= 1e-6:
                 continue  # facing away
@@ -923,6 +1054,7 @@ def render_showcase(yaw, pitch, size, supersample=3, margin=0.06, tints=None, mo
     for element in model["elements"]:
         start, end = placed(element, model["offset"])
         for direction, (quad, normal) in face_quads(start, end).items():
+            quad, normal = rotate_face(quad, normal, element.get("rotation"), model["offset"])
             n = transform((normal[0] + 8, normal[1] + 8, normal[2] + 8))
             if n[2] <= 1e-6:
                 continue
@@ -1136,7 +1268,9 @@ def main():
         write_json(os.path.join(java_assets, "items", f"{item}.json"),
                    {"model": {"type": "minecraft:model", "model": f"{NAMESPACE}:item/{item}"}})
         write_json(os.path.join(java_assets, "models", "item", f"{item}.json"), java_flat_item_model(item))
-        write_png(os.path.join(java_assets, "textures", "item", f"{item}.png"), flat_item_texture(item))
+        write_png(os.path.join(java_assets, "textures", "item", f"{item}.png"),
+                  [row for frame in flat_item_frames(item) for row in frame])
+        write_json(os.path.join(java_assets, "textures", "item", f"{item}.png.mcmeta"), {"animation": {"frametime": 3}})
     write_json(os.path.join(java_assets, "items", "rift_portal.json"),
                {"model": {"type": "minecraft:model", "model": f"{NAMESPACE}:item/rift_portal"}})
     write_json(os.path.join(java_assets, "models", "item", "rift_portal.json"), java_rift_portal_model())

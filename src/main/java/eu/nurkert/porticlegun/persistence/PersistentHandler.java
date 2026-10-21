@@ -17,7 +17,7 @@ import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.scheduler.BukkitTask;
 
 /**
- * Stores portals and gun settings in portals.yml.
+ * Stores plugin data in a YAML file: portals and gun settings in portals.yml, rift homes in rift.yml.
  *
  * <p>Changes are collected and written shortly after the last change: the file content is created on the main thread
  * and written to disk asynchronously, so placing a portal never blocks the server on disk I/O. {@link #saveAll()}
@@ -25,7 +25,7 @@ import org.bukkit.scheduler.BukkitTask;
  */
 public class PersistentHandler {
 
-    private static final String FILENAME = "portals.yml";
+    private static final String DEFAULT_FILENAME = "portals.yml";
     private static final long SAVE_DELAY_TICKS = 20L;
 
     private File file;
@@ -40,13 +40,23 @@ public class PersistentHandler {
 
     private final JavaPlugin plugin;
 
+    private final String filename;
+
     public PersistentHandler(JavaPlugin plugin) {
+        this(plugin, DEFAULT_FILENAME);
+    }
+
+    /**
+     * @param filename the YAML file in the plugin's data folder, e.g. {@code rift.yml}
+     */
+    public PersistentHandler(JavaPlugin plugin, String filename) {
         this.plugin = plugin;
+        this.filename = filename;
         File dataFolder = plugin.getDataFolder();
         if (!dataFolder.exists()) {
             dataFolder.mkdirs();
         }
-        file = new File(dataFolder, FILENAME);
+        file = new File(dataFolder, filename);
         config = YamlConfiguration.loadConfiguration(file);
     }
 
@@ -115,7 +125,7 @@ public class PersistentHandler {
                 return;
             }
             Path target = file.toPath();
-            Path temp = target.resolveSibling(FILENAME + ".tmp");
+            Path temp = target.resolveSibling(filename + ".tmp");
             try {
                 Files.writeString(temp, content, StandardCharsets.UTF_8);
                 try {
@@ -125,7 +135,7 @@ public class PersistentHandler {
                 }
                 lastWrittenSnapshot = snapshot;
             } catch (IOException exception) {
-                plugin.getLogger().log(Level.SEVERE, "Could not save " + FILENAME, exception);
+                plugin.getLogger().log(Level.SEVERE, "Could not save " + filename, exception);
             }
         }
     }
