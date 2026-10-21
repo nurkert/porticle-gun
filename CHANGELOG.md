@@ -3,7 +3,9 @@
 All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project uses [semantic versioning](https://semver.org).
 
-## [Unreleased] - 1.3.0
+## [Unreleased]
+
+## [1.3.0] - 2026-10-21
 
 ### Added
 - New voxel portal gun model (rear pod, glowing barrel windows, curved claws).
