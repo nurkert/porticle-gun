@@ -14,8 +14,10 @@ All notable changes to this project are documented here. The format follows
   it (inside caves for underground structures). Recipe: three rift shards, a compass and an eye of ender.
 - `/porticlegun` (alias `/pg`) opens a chest with every PorticleGun item; one click puts it into the inventory.
   Admins also get the interdimensional gun, rift shards, portal fluid and the rift compass there.
+- Bedrock players find all PorticleGun items in their creative inventory; taken from there they work right away.
+- A website on GitHub Pages (English and German) with the latest download, guides and recipes.
 - Graphical crafting recipes for portal fluid, the interdimensional gun and the rift compass in the README and docs.
-- Animated README images: turning items at a fixed scale, the filling tank, the inventory icons and the rift, all
+- Animated README images: turning items at a fixed scale, the filling tank and the inventory icons, all
   with a transparent background (`scripts/render_gifs.py`).
 
 ### Changed

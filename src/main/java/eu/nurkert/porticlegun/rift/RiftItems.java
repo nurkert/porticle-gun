@@ -47,7 +47,7 @@ public final class RiftItems {
             return base;
         }
 
-        static Type byId(String id) {
+        public static Type byId(String id) {
             for (Type type : values()) {
                 if (type.id.equals(id)) {
                     return type;

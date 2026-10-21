@@ -823,7 +823,9 @@ def geyser_mappings():
             "bedrock_identifier": identifier(entry["item"]),
             "display_name": entry["name"],
             # without an explicit icon Geyser looks for "porticlegun.<item>" in item_texture.json
-            "bedrock_options": {"icon": icon(entry["item"]), "display_handheld": entry in GUNS},
+            # in the Bedrock creative inventory: the guns with the equipment, the rest with the items
+            "bedrock_options": {"icon": icon(entry["item"]), "display_handheld": entry in GUNS,
+                                "creative_category": "equipment" if entry in GUNS else "items"},
         })
     return {"format_version": 2, "items": items}
 

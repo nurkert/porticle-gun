@@ -9,6 +9,7 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.EntityPickupItemEvent;
 import org.bukkit.event.inventory.InventoryCloseEvent;
+import org.bukkit.event.inventory.InventoryCreativeEvent;
 import org.bukkit.event.inventory.InventoryOpenEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerItemHeldEvent;
@@ -18,7 +19,8 @@ import org.bukkit.inventory.ItemStack;
 
 /**
  * Keeps gun items up to date whenever they show up in an inventory: converts guns created before 1.3 (id hidden in the
- * lore) and refreshes the 3D model and its portal colours, e.g. after the colours were changed in the settings menu.
+ * lore), turns bare creative copies into working items and refreshes the 3D model and its portal colours, e.g. after
+ * the colours were changed in the settings menu.
  * Runs on join, slot changes, picking up, using the gun and opening or closing inventories.
  */
 public class GunItemUpdater implements Listener {
@@ -80,8 +82,18 @@ public class GunItemUpdater implements Listener {
         }
     }
 
+    @EventHandler
+    public void on(InventoryCreativeEvent event) {
+        // an item taken from the (Bedrock) creative inventory works right away
+        ItemStack item = event.getCursor();
+        if (ItemRestorer.restore(item)) {
+            event.setCursor(item);
+        }
+    }
+
     private boolean update(ItemStack item) {
-        boolean changed = ItemHandler.migrateLegacyGun(item);
+        boolean changed = ItemRestorer.restore(item);
+        changed |= ItemHandler.migrateLegacyGun(item);
         String gunID = ItemHandler.isValidGun(item);
         if (gunID != null) {
             changed |= GunAppearance.apply(item, gunID);
