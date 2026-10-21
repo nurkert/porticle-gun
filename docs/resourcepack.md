@@ -1,5 +1,7 @@
 # Resource pack and 3D model
 
+![The PorticleGun 3D model](../images/portal_gun_3d.png)
+
 Guns use the item model `porticlegun:portal_gun`. Players with the PorticleGun resource pack see a 3D voxel portal gun
 (white rear pod, black barrel, two curved claws) whose lights glow in the gun's portal colours: the claw tips in the
 primary colour, the windows and the emitter in the secondary colour. Players without it see a
@@ -37,8 +39,9 @@ The Java model, the Bedrock geometry, textures, icon and the Geyser mapping are 
 python3 scripts/generate_resourcepack.py --preview /tmp/preview
 ```
 
-writes the files to `src/main/resourcepack/` and renders side, top and front views to `/tmp/preview` to check the shape
-without starting the game. Commit the generated files; the Maven build zips them.
+writes the files to `src/main/resourcepack/` and renders the model from several angles to `/tmp/preview` to check the
+shape without starting the game. `--showcase` re-renders `images/portal_gun_3d.png`. The generator refuses models with
+overlapping coplanar faces (they flicker in game). Commit the generated files; the Maven build zips them.
 
 - Java hand/GUI positions: the `display` block in `java_model()`
 - Bedrock hand positions: derived from the Java `DISPLAY` values in `bedrock_animations()`
