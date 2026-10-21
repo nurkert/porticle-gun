@@ -229,8 +229,9 @@ def rift_gun_elements(level):
         box("body_top", "grey", (2, 7.5, 4.5), (18.5, 8, 11.5)),
         box("body_bottom", "grey", (2, 4, 4.5), (18.5, 4.5, 11.5)),
         # frame around the open front and three lenses side by side
-        box("front_top", "grey", (18.5, 7.5, 4), (20.5, 8, 12)),
-        box("front_bottom", "grey", (18.5, 4, 4), (20.5, 4.5, 12)),
+        # the frame follows the stepped edges of the body, so no open corners are left at the front
+        box("front_top", "grey", (18.5, 7.5, 4.5), (20.5, 8, 11.5)),
+        box("front_bottom", "grey", (18.5, 4, 4.5), (20.5, 4.5, 11.5)),
         box("front_left", "grey", (18.5, 4.5, 4), (20.5, 7.5, 4.5)),
         box("front_right", "grey", (18.5, 4.5, 11.5), (20.5, 7.5, 12)),
         *[
@@ -242,14 +243,20 @@ def rift_gun_elements(level):
         box("vent_right", "steel", (6, 5, 12), (17, 7, 12.4)),
         box("display", "screen", (5, 8, 6), (9, 8.3, 10)),
         box("dial", "knob", (2.4, 8, 9.4), (3.8, 9.4, 10.8)),
-        # stepped grip down and back, every step a little offset in width so no side faces share a plane
-        box("grip_1", "grey", (2, 2.5, 6.0), (5, 4, 10)),
-        box("grip_2", "grey", (0.8, 1, 6.2), (3.8, 2.5, 9.8)),
-        box("grip_3", "grey", (-0.4, -0.5, 6.4), (2.6, 1, 9.6)),
-        box("grip_4", "grey", (-1.6, -2, 6.3), (1.4, -0.5, 9.7)),
-        box("grip_5", "grey", (-2.8, -3.5, 6.5), (0.2, -2, 9.5)),
-        box("grip_end", "grey", (-4.6, -6, 6.0), (-0.6, -3.5, 10.0)),
-        box("grip_end_cap", "grey", (-4.2, -6.5, 6.5), (-1, -6, 9.5)),
+        # one slanted grip, 45 degrees down and back, with its details aligned to it: a collar where it meets the
+        # body, inlaid lines along both sides and a thicker rounded end with a cap. Its upper end reaches into the
+        # body, so the slanted end face is hidden inside.
+        *[
+            box(name, material, start, end, ("z", 45, (4.5, 4, 8)))
+            for name, material, start, end in (
+                ("grip", "grey", (-3, 2.5, 6.3), (7, 5.5, 9.7)),
+                ("grip_collar", "steel", (2.2, 2.3, 6.15), (3.4, 5.7, 9.85)),
+                ("grip_line_left", "steel", (-2, 3.5, 6.2), (1.6, 4.5, 6.3)),
+                ("grip_line_right", "steel", (-2, 3.5, 9.7), (1.6, 4.5, 9.8)),
+                ("grip_end", "grey", (-5, 2.1, 6.0), (-2.5, 5.9, 10.0)),
+                ("grip_end_cap", "steel", (-5.5, 2.7, 6.6), (-5, 5.3, 9.4)),
+            )
+        ],
         # the dome sits on a ring
         box("dome_ring", "grey", (12, 8, 5.5), (17, 9, 10.5)),
     ]
@@ -375,7 +382,7 @@ RIFT_GUN = {
     "base": "minecraft:warped_fungus_on_a_stick",
     "elements": rift_gun_elements(RIFT_GUN_TANK_LEVELS),
     "variants": [rift_gun_elements(level) for level in range(RIFT_GUN_TANK_LEVELS + 1)],
-    "offset": (0, 3.05, 0),
+    "offset": (-1, 2, 0),
     "display": RIFT_GUN_DISPLAY,
     "tints": None,
 }
