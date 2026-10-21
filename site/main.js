@@ -410,6 +410,55 @@ function burst(button) {
 
 document.querySelectorAll(".download-jar").forEach(button => button.addEventListener("click", () => burst(button)));
 
+/* recipes: every slot of the crafting images names its item on hover or tap, like the game's tooltips */
+const ITEM_NAMES = {
+  obsidian: ["Obsidian", "Obsidian"], beacon: ["Beacon", "Leuchtfeuer"], quartz: ["Block of Quartz", "Quarzblock"],
+  pearl: ["Ender Pearl", "Enderperle"], crossbow: ["Crossbow", "Armbrust"], bottle: ["Glass Bottle", "Glasflasche"],
+  glowstone: ["Glowstone Dust", "Glowstonestaub"], star: ["Nether Star", "Netherstern"], echo: ["Echo Shard", "Echoscherbe"],
+  iron: ["Block of Iron", "Eisenblock"], compass: ["Compass", "Kompass"], eye: ["Eye of Ender", "Enderauge"],
+  shard: ["Rift Shard", "Riss-Splitter", "purple"], fluid: ["Portal Fluid", "Portalflüssigkeit", "green"],
+  gun: ["PorticleGun", "PorticleGun", "purple"], rgun: ["Interdimensional Gun", "Interdimensional Gun", "green"],
+  rcompass: ["Rift Compass", "Riss-Kompass", "aqua"],
+};
+const RECIPES = {
+  "recipe-gun": [["obsidian", "beacon", "obsidian", "quartz", "pearl", "quartz", "quartz", "crossbow", "quartz"], "gun"],
+  "recipe-fluid": [["shard", "shard", "shard", "bottle", "glowstone", null, null, null, null], "fluid"],
+  "recipe-rift": [["shard", "star", "shard", "echo", "gun", "echo", "iron", "fluid", "iron"], "rgun"],
+  "recipe-compass": [[null, "shard", null, "shard", "compass", "shard", null, "eye", null], "rcompass"],
+};
+// slot boxes measured in the 1330 x 785 recipe images
+const GRID_X = [95, 275, 455], GRID_Y = [170, 350, 530], SLOT = 160, RESULT_BOX = [995, 310, 240];
+
+function renderRecipeSlots() {
+  for (const [id, [grid, result]] of Object.entries(RECIPES)) {
+    const panel = document.getElementById(id);
+    if (!panel) continue;
+    let art = panel.querySelector(".recipe-art");
+    if (!art) {
+      art = document.createElement("div");
+      art.className = "recipe-art";
+      const img = panel.querySelector("img");
+      img.replaceWith(art);
+      art.append(img);
+    }
+    art.querySelectorAll(".recipe-slot").forEach(slot => slot.remove());
+    const place = (key, x, y, size) => {
+      if (!key) return;
+      const [en, de, colour] = ITEM_NAMES[key];
+      const slot = document.createElement("span");
+      slot.className = "recipe-slot";
+      slot.style.cssText = `left:${(x / 1330) * 100}%;top:${(y / 785) * 100}%;width:${(size / 1330) * 100}%;height:${(size / 785) * 100}%`;
+      slot.dataset.tip = `${lang === "de" ? de : en}|${colour || ""}`;
+      slot.setAttribute("aria-label", lang === "de" ? de : en);
+      slot.setAttribute("role", "img");
+      art.append(slot);
+      bindTooltip(slot);
+    };
+    grid.forEach((key, i) => place(key, GRID_X[i % 3], GRID_Y[Math.floor(i / 3)], SLOT));
+    place(result, RESULT_BOX[0], RESULT_BOX[1], RESULT_BOX[2]);
+  }
+}
+
 /* latest release: version on the buttons, direct jar download, release files in the chest */
 const ASSET_KINDS = [
   { test: /^PorticleGun-[\d.]+\.jar$/, kind: "jar", icon: "img", colour: "gold" },
@@ -507,6 +556,7 @@ function applyLanguage(next) {
   showColours(colourIndex, false);
   showKeys(false);
   renderChest();
+  renderRecipeSlots();
   hideTooltip();
 }
 

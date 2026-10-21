@@ -425,6 +425,15 @@ code {
 
 .recipe img { width: 100%; max-width: 760px; margin: 0 auto; }
 
+.recipe-art { position: relative; max-width: 760px; margin: 0 auto; }
+
+.recipe-art img { max-width: none; }
+
+/* hovering a slot lights it up white, like in the game */
+.recipe-slot { position: absolute; cursor: help; }
+
+.recipe-slot:hover, .recipe-slot:focus-visible { background: rgba(255, 255, 255, 0.45); outline: none; }
+
 .recipe.show img { animation: recipe-in 0.55s var(--ease-out); }
 
 @keyframes recipe-in { from { opacity: 0; transform: translateY(10px) scale(0.98); filter: blur(4px); } }
