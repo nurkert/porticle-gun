@@ -5,6 +5,14 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+## [1.3.2] - 2026-10-21
+
+### Fixed
+- The 3D gun pointed at the player in first and third person (Java and Bedrock); it now points forward.
+
+### Changed
+- The crafting recipe image shows the 3D portal gun as the result.
+
 ## [1.3.1] - 2026-10-21
 
 ### Fixed
