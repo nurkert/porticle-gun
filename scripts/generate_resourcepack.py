@@ -582,8 +582,11 @@ def render(yaw, pitch, size, margin=1, outline=True):
     return image
 
 
-def render_showcase(yaw, pitch, size, supersample=3, margin=0.06):
-    """High quality render for the README: textured faces, smooth edges, transparent background."""
+def render_showcase(yaw, pitch, size, supersample=3, margin=0.06, tints=None):
+    """High quality render for the README: textured faces, smooth edges, transparent background.
+
+    tints: optional (primary, secondary) RGB ints; the lights are then coloured like Java tints them in game.
+    """
     transform = make_view(yaw, pitch)
     full = size * supersample
     faces = []
@@ -611,7 +614,12 @@ def render_showcase(yaw, pitch, size, supersample=3, margin=0.06):
         det = ux * vy - uy * vx
         if abs(det) < 1e-9:
             continue
-        tx0, ty0, tile = REGIONS[bedrock_material(material)]
+        tint = None
+        if tints and material in ("glow0", "glow1"):
+            tint = hex_rgb(tints[0 if material == "glow0" else 1])
+            tx0, ty0, tile = REGIONS["glow"]
+        else:
+            tx0, ty0, tile = REGIONS[bedrock_material(material)]
         glowing = material.startswith("glow")
         factor = 1.0 if glowing else FACE_SHADE[direction]
         min_x = max(0, int(min(p[0] for p in polygon)))
@@ -625,7 +633,10 @@ def render_showcase(yaw, pitch, size, supersample=3, margin=0.06):
                 v = (ux * dy - uy * dx) / det
                 if 0 <= u <= 1 and 0 <= v <= 1:
                     texel = ATLAS[ty0 + min(tile - 1, int((1 - v) * tile))][tx0 + min(tile - 1, int(u * tile))]
-                    canvas[py][px] = shade(texel[:3], factor)
+                    color = texel[:3]
+                    if tint:
+                        color = tuple(c * t // 255 for c, t in zip(color, tint))
+                    canvas[py][px] = shade(color, factor)
 
     image = []
     area = supersample * supersample
@@ -645,6 +656,34 @@ def render_showcase(yaw, pitch, size, supersample=3, margin=0.06):
             row.append((*color, round(255 * len(samples) / area)))
         image.append(row)
     return image
+
+
+# portal colour pairs (particle colours from config.yml): the default gold/dark_blue, then red/green,
+# light_purple/aqua and yellow/white
+COLOUR_VARIANTS = [(0xFFA500, 0x0000AA), (0xFF0000, 0x00FF00), (0xFF00FF, 0x00FFFF), (0xFFFF00, 0xFFFFFF)]
+
+
+def render_colour_variants(size=360):
+    """One row of guns in different portal colours, as each player's gun is tinted in game."""
+    renders = [render_showcase(-35, 22, size, tints=pair) for pair in COLOUR_VARIANTS]
+    return [sum((render[y] for render in renders), []) for y in range(size)]
+
+
+def render_divider(width=1200, height=8):
+    """Section divider for the README: the default primary colour fading into the secondary one."""
+    left, right = hex_rgb(BEDROCK_PRIMARY), hex_rgb(BEDROCK_SECONDARY)
+    rows = []
+    for y in range(height):
+        row = []
+        for x in range(width):
+            t = x / (width - 1)
+            color = tuple(round(a + (b - a) * t) for a, b in zip(left, right))
+            # fade out towards both ends and the top/bottom edge
+            edge = min(1.0, min(x, width - 1 - x) / (width * 0.12))
+            vertical = 1.0 - abs(y - (height - 1) / 2) / (height / 2)
+            row.append((*color, round(255 * edge * max(0.0, vertical) ** 0.6)))
+        rows.append(row)
+    return rows
 
 
 def write_png(path, pixels):
@@ -700,6 +739,8 @@ def main():
 
     if args.showcase:
         write_png(os.path.join(ROOT, "images", "portal_gun_3d.png"), render_showcase(-35, 22, 720))
+        write_png(os.path.join(ROOT, "images", "portal_gun_colors.png"), render_colour_variants())
+        write_png(os.path.join(ROOT, "images", "divider.png"), render_divider())
 
     if args.preview:
         views = {"iso": (-35, 25), "iso_back": (145, 25), "side": (0, 0), "top": (0, 90), "rear": (90, 0)}
