@@ -63,6 +63,11 @@ interdimensional-gun:
   search-attempts: 40
   # worlds that never show up as destinations
   disabled-worlds: []
+  # minutes a rift compass attunes the gun, whether rifts are free while attuned, and how far (in chunks) to look
+  # for structures
+  compass-minutes: 10
+  attuned-free-rifts: true
+  structure-search-radius: 100
   drops:
     # chance per mined end stone, plus per fortune level
     end-stone-chance: 0.03

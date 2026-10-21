@@ -26,7 +26,10 @@ public record RiftSettings(
         double endStoneChance,
         double endStoneFortuneBonus,
         double endermanChance,
-        double endermanLootingBonus) {
+        double endermanLootingBonus,
+        long compassMillis,
+        boolean attunedFreeRifts,
+        int structureSearchRadius) {
 
     public static RiftSettings load(FileConfiguration config) {
         ConfigurationSection section = config.getConfigurationSection("interdimensional-gun");
@@ -52,7 +55,10 @@ public record RiftSettings(
                 clampChance(section.getDouble("drops.end-stone-chance", 0.03)),
                 clampChance(section.getDouble("drops.end-stone-fortune-bonus", 0.01)),
                 clampChance(section.getDouble("drops.enderman-chance", 0.08)),
-                clampChance(section.getDouble("drops.enderman-looting-bonus", 0.03)));
+                clampChance(section.getDouble("drops.enderman-looting-bonus", 0.03)),
+                Math.max(1000, Math.round(section.getDouble("compass-minutes", 10) * 60_000)),
+                section.getBoolean("attuned-free-rifts", true),
+                Math.max(8, Math.min(200, section.getInt("structure-search-radius", 100))));
     }
 
     private static double clampChance(double value) {

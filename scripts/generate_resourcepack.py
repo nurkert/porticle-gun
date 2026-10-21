@@ -30,10 +30,10 @@ DEFAULT_TINTS = [0xFFA500, 0x0000AA]
 # Bedrock packs need stable UUIDs, never change them (bump the version instead)
 BEDROCK_HEADER_UUID = "6f2a1c3e-8b4d-4e7a-9c15-2d8f0b7e4a61"
 BEDROCK_MODULE_UUID = "a3d95b72-1e6c-4f08-b2a4-7c9e5d13f8b0"
-BEDROCK_VERSION = [1, 7, 0]
+BEDROCK_VERSION = [1, 8, 0]
 
 # --- texture atlas (32x32 px, one 8x8 tile per material) ------------------------------------------------------------
-TEXTURE_SIZE = 32
+TEXTURE_SIZE = 64
 REGIONS = {
     "white": (0, 0, 8),
     "dark": (8, 0, 8),
@@ -53,8 +53,13 @@ REGIONS = {
     "crystal_tip": (8, 24, 8),  # glows
     "cork": (16, 24, 8),
     "bottle": (24, 24, 8),
+    # rift portal rim
+    "rift_rim": (32, 0, 8),
+    # rift compass
+    "brass": (40, 0, 8),
+    "compass_face": (48, 0, 8),
 }
-EMISSIVE = {"liquid", "crystal_tip"}
+EMISSIVE = {"liquid", "crystal_tip", "rift_rim"}
 RIFT_GREEN = 0x39FF5A
 BEDROCK_PRIMARY = 0xFF9A1F
 BEDROCK_SECONDARY = 0x36C2FF
@@ -123,6 +128,9 @@ def paint_atlas():
     tile("crystal_tip", glow(hex_rgb(0x8CFFA0)))
     tile("cork", brick(hex_rgb(0x9C6A3C), hex_rgb(0xB98552), hex_rgb(0x6B4423)))
     tile("bottle", brick(hex_rgb(0xCFE9EE), hex_rgb(0xF2FDFF), hex_rgb(0x9CC4CC)))
+    tile("rift_rim", glow(hex_rgb(0xC4FF8A)))
+    tile("brass", brick(hex_rgb(0xC9A23F), hex_rgb(0xE8C764), hex_rgb(0x8E6E22)))
+    tile("compass_face", brick(hex_rgb(0x1F2A24), hex_rgb(0x2C3B33), hex_rgb(0x141B17)))
     return pixels
 
 
@@ -293,7 +301,8 @@ def rift_gun_elements(level):
 
 RIFT_GUN_TANK_LEVELS = 4
 
-# The rift portal: a flat, animated swirl shown by an item display entity (Java only, Bedrock players see particles).
+# The rift portal: a voxel ring around an animated swirl, shown by an item display entity (Java only, Bedrock players
+# see particles).
 RIFT_PORTAL_FRAMES = 8
 RIFT_PORTAL_SIZE = 32
 
@@ -418,7 +427,7 @@ def rift_shard_elements():
     """A cluster of three leaning crystals on a chunk of end rock; a green core shows through the main crystal."""
     lean_right = ("z", -22.5, (8, 1.5, 8))
     lean_left = ("z", 22.5, (5.75, 1.5, 7.25))
-    lean_back = ("x", -22.5, (9.25, 1.5, 9.75))
+    lean_back = ("x", 22.5, (9.25, 1.5, 10))  # backwards, away from the main crystal
     return [
         box("rock", "rock", (5, 0, 5.5), (11, 2, 10.5)),
         box("rock_front", "rock", (6, 0, 4.5), (10, 1.5, 5.5)),
@@ -427,8 +436,8 @@ def rift_shard_elements():
         box("crystal_main_tip", "crystal_tip", (7.5, 10, 7.5), (8.5, 11.5, 8.5), lean_right),
         box("crystal_left", "crystal", (5, 1.5, 6.5), (6.5, 7, 8), lean_left),
         box("crystal_left_tip", "crystal_tip", (5.3, 7, 6.8), (6.2, 8, 7.7), lean_left),
-        box("crystal_back", "crystal", (8.5, 1.5, 9), (10, 6, 10.5), lean_back),
-        box("crystal_back_tip", "crystal_tip", (8.8, 6, 9.3), (9.7, 7, 10.2), lean_back),
+        box("crystal_back", "crystal", (8.5, 1.5, 9.25), (10, 6, 10.75), lean_back),
+        box("crystal_back_tip", "crystal_tip", (8.8, 6, 9.55), (9.7, 7, 10.45), lean_back),
     ]
 
 
@@ -454,6 +463,44 @@ def portal_fluid_elements():
     ]
 
 
+def rift_compass_elements():
+    """A round brass compass: a voxel disc case, a dark face, a glowing green needle and a rift crystal on its rim."""
+    elements = []
+    for row in range(3, 13):
+        z = row + 0.5
+        cells = [math.hypot((col + 0.5 - 8) / 5, (z - 8) / 5) <= 1.0 for col in range(16)]
+        col = 0
+        while col < 16:
+            if not cells[col]:
+                col += 1
+                continue
+            start = col
+            while col < 16 and cells[col]:
+                col += 1
+            elements.append(box(f"case_{row}_{start}", "brass", (start, 2, row), (col, 4, row + 1)))
+    elements += [
+        box("face", "compass_face", (5, 4, 5), (11, 4.3, 11)),
+        box("needle_north", "liquid", (7.6, 4.3, 5.4), (8.4, 4.8, 8)),
+        box("needle_south", "crystal", (7.6, 4.3, 8), (8.4, 4.8, 10.6)),
+        box("pin", "brass", (7.4, 4.8, 7.4), (8.6, 5.2, 8.6)),
+        box("hinge", "brass", (7, 2.5, 2.2), (9, 4.5, 3)),
+        box("crystal", "crystal", (7.4, 4.5, 2.1), (8.6, 7, 3.1), ("x", -22.5, (8, 4.5, 2.6))),
+        box("crystal_tip", "crystal_tip", (7.6, 7, 2.3), (8.4, 8, 2.9), ("x", -22.5, (8, 4.5, 2.6))),
+    ]
+    return elements
+
+
+RIFT_COMPASS = {
+    "item": "rift_compass",
+    "name": "Rift Compass",
+    "base": "minecraft:paper",
+    "elements": rift_compass_elements(),
+    "offset": (0, 3, 0),
+    "display": SMALL_ITEM_DISPLAY,
+    "tints": None,
+    "flat_icon": True,
+}
+
 RIFT_SHARD = {
     "item": "rift_shard",
     "name": "Rift Shard",
@@ -475,12 +522,13 @@ PORTAL_FLUID = {
     "flat_icon": True,
 }
 # every 3D item; guns are held like guns, the small items show their pixel art icon in inventories
-MODELS = [PORTAL_GUN, RIFT_GUN, RIFT_SHARD, PORTAL_FLUID]
+MODELS = [PORTAL_GUN, RIFT_GUN, RIFT_SHARD, PORTAL_FLUID, RIFT_COMPASS]
 
 # flat items, drawn as pixel art (see FLAT_ITEM_ART)
 FLAT_ITEMS = [
     {"item": "rift_shard", "name": "Rift Shard", "base": "minecraft:paper"},
     {"item": "portal_fluid", "name": "Portal Fluid", "base": "minecraft:paper"},
+    {"item": "rift_compass", "name": "Rift Compass", "base": "minecraft:paper"},
 ]
 
 
@@ -497,7 +545,7 @@ def java_model(model, elements=None):
     entries = []
     for element in elements if elements is not None else model["elements"]:
         material, tint = java_material(element["material"])
-        face = {"uv": region_uv16(material), "texture": "#gun"}
+        face = {"uv": region_uv16(material) if material in REGIONS else [0, 0, 16, 16], "texture": "#gun"}
         if tint is not None:
             face["tintindex"] = tint
         start, end = placed(element, model["offset"])
@@ -932,6 +980,28 @@ FLAT_ITEM_ART = {
     ],
 }
 FLUID = set("hlLMD")
+FLAT_ITEM_PALETTES["rift_compass"] = {
+    "o": 0x2B1F0A, "b": 0xE8C764, "B": 0xC9A23F, "d": 0x8E6E22, "f": 0x1F2A24, "F": 0x2C3B33, "g": 0x7CFF8A,
+    "G": 0x39FF5A, "p": 0xB58CF0, "w": 0xFFFFFF, "c": 0xE3CCFF,
+}
+FLAT_ITEM_ART["rift_compass"] = [
+    "................",
+    ".......cc.......",
+    "......opco......",
+    ".....oooooo.....",
+    "...oobbbbBBoo...",
+    "..obbFFFFFFBdo..",
+    "..obFFfffffFdo..",
+    ".obFFffffffFFdo.",
+    ".obFfffffffffdo.",
+    ".obFffffffffFdo.",
+    ".obFFffffffFFdo.",
+    "..obFFfffffFdo..",
+    "..oBBFFFFFFddo..",
+    "...ooBBdddddo...",
+    ".....oooooo.....",
+    "................",
+]
 
 
 def flat_item_frames(item):
@@ -953,6 +1023,17 @@ def flat_item_frames(item):
                     if c == "G":
                         wave = math.cos(2 * math.pi * ((x - y) / 18 - phase))
                         colors[(x, y)] = shade(palette["G"], 0.8 + 0.3 * max(0.0, wave))
+        elif item == "rift_compass":
+            # the needle spins around the centre of the face, its tip glowing green
+            angle = 2 * math.pi * phase
+            cx, cy = 7.5, 9.0
+            for step in range(1, 4):
+                tip = (round(cx + math.sin(angle) * step), round(cy - math.cos(angle) * step))
+                tail = (round(cx - math.sin(angle) * step), round(cy + math.cos(angle) * step))
+                for (x, y), char in ((tip, "G" if step < 3 else "g"), (tail, "p")):
+                    if art[y][x] == "f":
+                        grid[y][x] = char
+            grid[9][7] = "w"
         else:
             # bubbles rise through the fluid, which pulses gently
             pulse = 1 + 0.06 * math.sin(2 * math.pi * phase)
@@ -989,8 +1070,11 @@ def java_flat_item_model(item):
 
 
 def rift_portal_frames():
-    """Animated swirl, frames stacked vertically: dark green spiral arms around a bright core, a glowing rim."""
+    """Animated swirl, frames stacked vertically: light and dark green bands spiralling into a bright core, a pale
+    rim with white speckles. Only greens and white, never black."""
     size = RIFT_PORTAL_SIZE
+    bands = [hex_rgb(c) for c in (0x2E9E2A, 0x4DB236, 0x7FCC3F, 0xA6DE52, 0xCDEE78)]  # dark to light
+    rim, speck = hex_rgb(0x9BD94C), hex_rgb(0xF4FFE6)
     frames = []
     for frame in range(RIFT_PORTAL_FRAMES):
         phase = 2 * math.pi * frame / RIFT_PORTAL_FRAMES
@@ -1000,40 +1084,77 @@ def rift_portal_frames():
                 dx, dy = (x + 0.5 - size / 2) / (size / 2), (y + 0.5 - size / 2) / (size / 2)
                 r = math.hypot(dx, dy)
                 angle = math.atan2(dy, dx)
-                # the rim wobbles and flickers like a living rift
-                edge = 0.9 + 0.05 * math.sin(5 * angle + phase) + 0.03 * math.sin(11 * angle - 2 * phase)
+                # the edge wobbles like a living rift
+                edge = 0.92 + 0.05 * math.sin(5 * angle + phase) + 0.03 * math.sin(11 * angle - 2 * phase)
                 if r > edge:
                     row.append((0, 0, 0, 0))
                     continue
-                if r > edge - 0.12:
-                    flicker = 0.85 + 0.15 * math.sin(7 * angle + 3 * phase)
-                    row.append((*shade(hex_rgb(0xB6FF7A), flicker), 255))
+                if r > edge - 0.2:
+                    # white speckles drift around the rim
+                    spin = angle - phase / 4
+                    sparkle = math.sin(13 * spin + 7 * r) * math.sin(29 * r - 5 * spin + 1.3)
+                    row.append((*(speck if sparkle > 0.55 else rim), 255))
                     continue
                 r = r / edge
-                spiral = math.sin(3 * math.atan2(dy, dx) + 9 * r - phase)
-                light = 0.35 + 0.35 * spiral + 0.45 * (1 - r) ** 2
-                green = tuple(max(0, min(255, round(c * light))) for c in hex_rgb(RIFT_GREEN))
-                core = max(0.0, 1 - r / 0.25)
-                color = tuple(round(g + (255 - g) * core * 0.85) for g in green)
-                row.append((*color, 255))
+                swirl = (math.sin(3 * angle + 10 * r - phase)
+                         + 0.35 * math.sin(7 * angle - 6 * r - 2 * phase)
+                         + 0.6 * (1 - r) ** 2)
+                level = max(0, min(len(bands) - 1, int((swirl + 1.2) / 2.9 * len(bands))))
+                if r < 0.18:
+                    level = len(bands) - 1  # the bright core
+                row.append((*bands[level], 255))
             frames.append(row)
     return frames
 
 
+def rift_portal_elements():
+    """The rift: an oval voxel ring with depth (a bright rim outside, a glowing green band inside) around the animated
+    swirl. Cells between the inner and outer ellipse become boxes, merged per row."""
+    elements = []
+    cx, cy = 8, 8
+    for row in range(16):
+        y = row + 0.5
+        for band, material, outer, inner, depth in (
+            ("rim", "rift_rim", 1.0, 0.86, (7, 9)),
+            ("glow", "liquid", 0.86, 0.74, (7.4, 8.6)),
+        ):
+            cells = []
+            for col in range(16):
+                dx, dy = (col + 0.5 - cx) / 7.4, (y - cy) / 8
+                r = math.hypot(dx, dy)
+                cells.append(inner <= r < outer)
+            col = 0
+            while col < 16:
+                if not cells[col]:
+                    col += 1
+                    continue
+                start = col
+                while col < 16 and cells[col]:
+                    col += 1
+                elements.append(box(f"{band}_{row}_{start}", material, (start, row, depth[0]), (col, row + 1, depth[1])))
+    elements.append(box("swirl", "swirl", (0.5, 0.5, 7.95), (15.5, 15.5, 8.05)))
+    return elements
+
+
+RIFT_PORTAL = {
+    "item": "rift_portal",
+    "elements": rift_portal_elements(),
+    "offset": (0, 0, 0),
+    "display": {"fixed": {"rotation": [0, 0, 0], "translation": [0, 0, 0], "scale": [1, 1, 1]}},
+    "tints": None,
+}
+
+
 def java_rift_portal_model():
-    face = {"uv": [0, 0, 16, 16], "texture": "#portal"}
-    return {
-        "textures": {"portal": f"{NAMESPACE}:item/rift_portal", "particle": f"{NAMESPACE}:item/rift_portal"},
-        "elements": [
-            {
-                "from": [0, 0, 7.75],
-                "to": [16, 16, 8.25],
-                "light_emission": 15,
-                "faces": {"north": dict(face), "south": dict(face)},
-            }
-        ],
-        "display": {"fixed": {"rotation": [0, 0, 0], "translation": [0, 0, 0], "scale": [1, 1, 1]}},
-    }
+    model = java_model(RIFT_PORTAL)
+    model["textures"]["portal"] = f"{NAMESPACE}:item/rift_portal"
+    for element in model["elements"]:
+        if element["name"] == "swirl":
+            face = {"uv": [0, 0, 16, 16], "texture": "#portal"}
+            element["faces"] = {"north": dict(face), "south": dict(face)}
+            element["light_emission"] = 15
+    model.pop("gui_light", None)
+    return model
 
 
 # --- rendering (icons and previews) ---------------------------------------------------------------------------------
@@ -1058,6 +1179,27 @@ def rotate_face(quad, normal, rotation, offset):
     origin = [rotation["origin"][i] + offset[i] for i in range(3)]
     tip = rotated([origin[i] + normal[i] for i in range(3)], rotation, offset)
     return [rotated(p, rotation, offset) for p in quad], tuple(tip[i] - origin[i] for i in range(3))
+
+
+def face_pixels(polygon, points, size):
+    """Pixels covered by a projected face (a parallelogram), with their depth and texture coordinates."""
+    (ox, oy), (ax, ay), _, (bx, by) = polygon
+    ux, uy, vx, vy = ax - ox, ay - oy, bx - ox, by - oy
+    det = ux * vy - uy * vx
+    if abs(det) < 1e-9:
+        return
+    z0, za, zb = points[0][2], points[1][2], points[3][2]
+    min_x = max(0, int(min(p[0] for p in polygon)))
+    max_x = min(size - 1, int(max(p[0] for p in polygon)) + 1)
+    min_y = max(0, int(min(p[1] for p in polygon)))
+    max_y = min(size - 1, int(max(p[1] for p in polygon)) + 1)
+    for py in range(min_y, max_y + 1):
+        for px in range(min_x, max_x + 1):
+            dx, dy = px + 0.5 - ox, py + 0.5 - oy
+            u = (dx * vy - dy * vx) / det
+            v = (ux * dy - uy * dx) / det
+            if 0 <= u <= 1 and 0 <= v <= 1:
+                yield px, py, z0 + u * (za - z0) + v * (zb - z0), u, v
 
 
 def make_view(yaw, pitch):
@@ -1086,10 +1228,12 @@ def inside(polygon, x, y):
 
 
 def glowing(material):
-    return material.startswith("glow") or material in EMISSIVE
+    return material.startswith("glow") or material in EMISSIVE or material == "swirl"
 
 
 def material_color(material):
+    if material == "swirl":
+        return hex_rgb(RIFT_GREEN)
     x, y, size = REGIONS[bedrock_material(material)]
     return ATLAS[y + size // 2][x + size // 2][:3]
 
@@ -1102,6 +1246,8 @@ def render(yaw, pitch, size, margin=1, outline=True, model=PORTAL_GUN):
     for index, element in enumerate(elements):
         start, end = placed(element, model["offset"])
         for direction, (quad, normal) in face_quads(start, end).items():
+            if element["material"] == "swirl" and direction not in ("north", "south"):
+                continue  # the swirl is a flat plane in game, only its two sides exist
             quad, normal = rotate_face(quad, normal, element.get("rotation"), model["offset"])
             n = transform((normal[0] + 8, normal[1] + 8, normal[2] + 8))
             if n[2] <= 1e-6:
@@ -1117,20 +1263,17 @@ def render(yaw, pitch, size, margin=1, outline=True, model=PORTAL_GUN):
 
     image = [[(0, 0, 0, 0)] * size for _ in range(size)]
     owner = [[None] * size for _ in range(size)]
-    for depth, index, direction, points, material in sorted(faces, key=lambda f: f[0]):
+    depths = [[-math.inf] * size for _ in range(size)]
+    for depth, index, direction, points, material in faces:
         polygon = [((p[0] - cx) * scale + size / 2, (cy - p[1]) * scale + size / 2) for p in points]
         color = material_color(material)
         if not glowing(material):
             color = shade(color, FACE_SHADE[direction])
-        min_x = max(0, int(min(p[0] for p in polygon)))
-        max_x = min(size - 1, int(max(p[0] for p in polygon)) + 1)
-        min_y = max(0, int(min(p[1] for p in polygon)))
-        max_y = min(size - 1, int(max(p[1] for p in polygon)) + 1)
-        for py in range(min_y, max_y + 1):
-            for px in range(min_x, max_x + 1):
-                if inside(polygon, px + 0.5, py + 0.5):
-                    image[py][px] = (*color, 255)
-                    owner[py][px] = index
+        for px, py, z, u, v in face_pixels(polygon, points, size):
+            if z > depths[py][px]:
+                depths[py][px] = z
+                image[py][px] = (*color, 255)
+                owner[py][px] = index
 
     if outline:
         result = [row[:] for row in image]
@@ -1149,61 +1292,74 @@ def render(yaw, pitch, size, margin=1, outline=True, model=PORTAL_GUN):
     return image
 
 
-def render_showcase(yaw, pitch, size, supersample=3, margin=0.06, tints=None, model=PORTAL_GUN):
-    """High quality render for the README: textured faces, smooth edges, transparent background.
-
-    tints: optional (primary, secondary) RGB ints; the lights are then coloured like Java tints them in game.
-    """
+def showcase_faces(yaw, pitch, model):
+    """The visible faces of a model seen from yaw/pitch: (depth, direction, projected points, material)."""
     transform = make_view(yaw, pitch)
-    full = size * supersample
     faces = []
     for element in model["elements"]:
         start, end = placed(element, model["offset"])
         for direction, (quad, normal) in face_quads(start, end).items():
+            if element["material"] == "swirl" and direction not in ("north", "south"):
+                continue  # the swirl is a flat plane in game, only its two sides exist
             quad, normal = rotate_face(quad, normal, element.get("rotation"), model["offset"])
             n = transform((normal[0] + 8, normal[1] + 8, normal[2] + 8))
             if n[2] <= 1e-6:
                 continue
             points = [transform(p) for p in quad]
             faces.append((sum(p[2] for p in points) / 4, direction, points, element["material"]))
+    return faces
 
-    xs = [p[0] for f in faces for p in f[2]]
-    ys = [p[1] for f in faces for p in f[2]]
-    span = max(max(xs) - min(xs), max(ys) - min(ys))
+
+def showcase_fit(views, model):
+    """Framing (centre x, centre y, span) that holds the model in every (yaw, pitch) view, so a turntable keeps
+    one scale instead of zooming in and out while it turns."""
+    points = [p for yaw, pitch in views for face in showcase_faces(yaw, pitch, model) for p in face[2]]
+    xs, ys = [p[0] for p in points], [p[1] for p in points]
+    return (max(xs) + min(xs)) / 2, (max(ys) + min(ys)) / 2, max(max(xs) - min(xs), max(ys) - min(ys))
+
+
+def render_showcase(yaw, pitch, size, supersample=3, margin=0.06, tints=None, model=PORTAL_GUN, swirl_frame=0,
+                    fit=None):
+    """High quality render for the README: textured faces, smooth edges, transparent background.
+
+    tints: optional (primary, secondary) RGB ints; the lights are then coloured like Java tints them in game.
+    swirl_frame: which frame of the animated rift swirl to show (rift portal only).
+    fit: fixed framing from showcase_fit; by default the model fills the image in this one view.
+    """
+    full = size * supersample
+    faces = showcase_faces(yaw, pitch, model)
+    cx, cy, span = fit or showcase_fit([(yaw, pitch)], model)
     scale = full * (1 - 2 * margin) / span
-    cx, cy = (max(xs) + min(xs)) / 2, (max(ys) + min(ys)) / 2
 
     canvas = [[None] * full for _ in range(full)]
-    for depth, direction, points, material in sorted(faces, key=lambda f: f[0]):
+    depths = [[-math.inf] * full for _ in range(full)]
+    first_row = (swirl_frame % RIFT_PORTAL_FRAMES) * RIFT_PORTAL_SIZE
+    swirl = rift_portal_frames()[first_row:first_row + RIFT_PORTAL_SIZE]
+    for depth, direction, points, material in faces:
         polygon = [((p[0] - cx) * scale + full / 2, (cy - p[1]) * scale + full / 2) for p in points]
-        # faces are parallelograms after the orthographic projection: map pixels back to texture coordinates
-        (ox, oy), (ax, ay), _, (bx, by) = polygon
-        ux, uy, vx, vy = ax - ox, ay - oy, bx - ox, by - oy
-        det = ux * vy - uy * vx
-        if abs(det) < 1e-9:
-            continue
         tint = None
         if tints and material in ("glow0", "glow1"):
             tint = hex_rgb(tints[0 if material == "glow0" else 1])
             tx0, ty0, tile = REGIONS["glow"]
-        else:
+        elif material != "swirl":
             tx0, ty0, tile = REGIONS[bedrock_material(material)]
         factor = 1.0 if glowing(material) else FACE_SHADE[direction]
-        min_x = max(0, int(min(p[0] for p in polygon)))
-        max_x = min(full - 1, int(max(p[0] for p in polygon)) + 1)
-        min_y = max(0, int(min(p[1] for p in polygon)))
-        max_y = min(full - 1, int(max(p[1] for p in polygon)) + 1)
-        for py in range(min_y, max_y + 1):
-            for px in range(min_x, max_x + 1):
-                dx, dy = px + 0.5 - ox, py + 0.5 - oy
-                u = (dx * vy - dy * vx) / det
-                v = (ux * dy - uy * dx) / det
-                if 0 <= u <= 1 and 0 <= v <= 1:
-                    texel = ATLAS[ty0 + min(tile - 1, int((1 - v) * tile))][tx0 + min(tile - 1, int(u * tile))]
-                    color = texel[:3]
-                    if tint:
-                        color = tuple(c * t // 255 for c, t in zip(color, tint))
-                    canvas[py][px] = shade(color, factor)
+        for px, py, z, u, v in face_pixels(polygon, points, full):
+            if z <= depths[py][px]:
+                continue
+            if material == "swirl":
+                texel = swirl[min(RIFT_PORTAL_SIZE - 1, int((1 - v) * RIFT_PORTAL_SIZE))][
+                    min(RIFT_PORTAL_SIZE - 1, int(u * RIFT_PORTAL_SIZE))]
+                if not texel[3]:
+                    continue  # the swirl is round, its corners are see-through
+                color = texel[:3]
+            else:
+                texel = ATLAS[ty0 + min(tile - 1, int((1 - v) * tile))][tx0 + min(tile - 1, int(u * tile))]
+                color = shade(texel[:3], factor)
+                if tint:
+                    color = shade(tuple(c * t // 255 for c, t in zip(texel[:3], tint)), factor)
+            depths[py][px] = z
+            canvas[py][px] = color
 
     image = []
     area = supersample * supersample
@@ -1329,18 +1485,22 @@ def render_rift_showcase(size=360):
     return [sum((render[y] for render in renders), []) for y in range(size)]
 
 
-def render_items_showcase(size=300, gap=60):
-    """The new items side by side: rift shard and portal fluid in 3D, and a still frame of the rift portal."""
-    shard = render_showcase(-35, 22, size, model=RIFT_SHARD)
-    fluid = render_showcase(-35, 22, size, model=PORTAL_FLUID)
-    swirl = enlarge(rift_portal_frames()[:RIFT_PORTAL_SIZE], size // RIFT_PORTAL_SIZE)
-    pad = (size - len(swirl)) // 2
-    portal = [[(0, 0, 0, 0)] * size for _ in range(size)]
-    for y, line in enumerate(swirl):
-        portal[pad + y][pad:pad + len(line)] = line
+def render_items_showcase(size=300, gap=50):
+    """The new items side by side, all in 3D: rift shard, portal fluid, rift compass and the rift portal."""
+    images = [
+        render_showcase(-35, 22, size, model=RIFT_SHARD),
+        render_showcase(-35, 22, size, model=PORTAL_FLUID),
+        render_showcase(-35, 35, size, model=RIFT_COMPASS),
+        render_showcase(-30, 10, size, model=RIFT_PORTAL),
+    ]
     rows = []
     for y in range(size):
-        rows.append(shard[y] + [(0, 0, 0, 0)] * gap + fluid[y] + [(0, 0, 0, 0)] * gap + portal[y])
+        row = []
+        for index, image in enumerate(images):
+            if index:
+                row += [(0, 0, 0, 0)] * gap
+            row += image[y]
+        rows.append(row)
     return rows
 
 
@@ -1349,7 +1509,7 @@ def main():
     parser.add_argument("--preview", help="directory for preview renders")
     parser.add_argument("--showcase", action="store_true", help="also render the README images in images/")
     args = parser.parse_args()
-    for model in MODELS:
+    for model in MODELS + [RIFT_PORTAL]:
         for elements in model.get("variants", [model["elements"]]):
             check_model({**model, "elements": elements})
 

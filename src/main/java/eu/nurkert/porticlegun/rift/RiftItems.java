@@ -26,7 +26,8 @@ public final class RiftItems {
     public enum Type {
         INTERDIMENSIONAL_GUN("interdimensional_gun", Material.WARPED_FUNGUS_ON_A_STICK, "interdimensional-gun"),
         RIFT_SHARD("rift_shard", Material.PAPER, "rift-shard"),
-        PORTAL_FLUID("portal_fluid", Material.PAPER, "portal-fluid");
+        PORTAL_FLUID("portal_fluid", Material.PAPER, "portal-fluid"),
+        RIFT_COMPASS("rift_compass", Material.PAPER, "rift-compass");
 
         private final String id;
         private final Material base;
@@ -72,6 +73,10 @@ public final class RiftItems {
 
     private static NamespacedKey destinationKey() {
         return key("rift_destination");
+    }
+
+    private static NamespacedKey attunedKey() {
+        return key("rift_attuned_until");
     }
 
     private static NamespacedKey gunIdKey() {
@@ -128,6 +133,33 @@ public final class RiftItems {
                 gun.getItemMeta().getPersistentDataContainer().get(destinationKey(), PersistentDataType.STRING));
     }
 
+    /**
+     * @return until when (epoch milliseconds) a rift compass attunes the gun, 0 if it never was
+     */
+    public static long attunedUntil(ItemStack gun) {
+        Long until = gun.getItemMeta().getPersistentDataContainer().get(attunedKey(), PersistentDataType.LONG);
+        return until == null ? 0 : until;
+    }
+
+    public static boolean isAttuned(ItemStack gun) {
+        return attunedUntil(gun) > System.currentTimeMillis();
+    }
+
+    public static void attune(ItemStack gun, long until, RiftSettings settings) {
+        ItemMeta meta = gun.getItemMeta();
+        meta.getPersistentDataContainer().set(attunedKey(), PersistentDataType.LONG, until);
+        gun.setItemMeta(meta);
+        refresh(gun, settings);
+    }
+
+    /**
+     * @return the remaining attunement as m:ss
+     */
+    static String remaining(ItemStack gun) {
+        long seconds = Math.max(0, (attunedUntil(gun) - System.currentTimeMillis()) / 1000);
+        return String.format("%d:%02d", seconds / 60, seconds % 60);
+    }
+
     public static void setCharges(ItemStack gun, int charges, RiftSettings settings) {
         ItemMeta meta = gun.getItemMeta();
         meta.getPersistentDataContainer()
@@ -175,6 +207,9 @@ public final class RiftItems {
                         destination == null
                                 ? MessageManager.getMessage("rift.destination.none")
                                 : RiftNames.describe(destination, null))));
+        if (isAttuned(gun)) {
+            lore.add(MessageManager.getMessage("items.interdimensional-gun.attuned", Map.of("time", remaining(gun))));
+        }
         changed |= !lore.equals(meta.getLore());
         meta.setLore(lore);
         gun.setItemMeta(meta);

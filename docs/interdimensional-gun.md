@@ -1,6 +1,6 @@
 # Interdimensional gun
 
-![The interdimensional gun](../images/interdimensional_gun_3d.png)
+![The interdimensional gun](../images/animations/interdimensional_gun.gif)
 
 The interdimensional gun opens green rifts: one directly in front of the player and one at the chosen destination.
 Both wobble, can be walked through in both directions and close again on their own.
@@ -50,13 +50,42 @@ opened where `porticlegun-portal-create` is denied.
 - **Rift shards** drop when mining end stone (`end-stone-chance`, plus `end-stone-fortune-bonus` per fortune level)
   and from endermen killed by a player (`enderman-chance`, plus `enderman-looting-bonus` per looting level).
 - **Portal fluid**: three rift shards, a glass bottle and glowstone dust (shapeless).
+
+  ![Portal fluid recipe](../images/crafting_portal_fluid.png)
+
 - **Tank**: "Fill tank" in the menu takes one portal fluid from the inventory, gives the bottle back and adds
   `rifts-per-fluid` rifts, up to `tank-capacity`. Every rift uses one. The dome on the gun shows the level in five
   steps on Java.
 - Rift shards and portal fluid are paper underneath (with their own model); they never work as paper in vanilla
   recipes.
 
+## Rift compass and rift atlas
+
+![Rift compass recipe](../images/crafting_rift_compass.png)
+
+A rift compass (three rift shards around a compass, an eye of ender below) attunes the gun. Insert it with "Insert rift
+compass" in the gun's menu: for `compass-minutes` (10) the gun is attuned, shown in its lore, the menu and the action
+bar. Another compass adds the time on top. While attuned:
+
+- rifts cost no portal fluid (`attuned-free-rifts`),
+- the **rift atlas** is unlocked: a menu page with every structure kind. Selecting one makes the next rift open next
+  to the nearest structure of that kind.
+
+| Dimension | Structures |
+|---|---|
+| Overworld | Village, pillager outpost, desert pyramid, jungle temple, witch hut, igloo, woodland mansion, trail ruins, ruined portal, ancient city, trial chambers, stronghold |
+| Nether | Nether fortress, bastion remnant |
+| End | End city |
+
+The search starts at the player's position (divided or multiplied by eight between the overworld and the nether, at
+the centre of the end) and looks `structure-search-radius` chunks far, one structure variant per tick. Around the
+structure, a safe landing spot is searched in a spiral of up to 32 blocks; for ancient cities, trial chambers and
+strongholds caves deep inside or next to the structure come first, the surface above is the fallback. Ocean monuments
+are not offered, there is no dry land around them. If the compass fades before the rift opens, the player is told.
+
 ## Crafting the gun
+
+![Interdimensional gun recipe](../images/crafting_interdimensional_gun.png)
 
 | | | |
 |---|---|---|

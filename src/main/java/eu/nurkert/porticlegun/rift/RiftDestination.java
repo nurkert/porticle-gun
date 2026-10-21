@@ -2,8 +2,9 @@ package eu.nurkert.porticlegun.rift;
 
 /**
  * Where the interdimensional gun opens its rifts: a random safe spot in a world, a world's spawn, one of the player's
- * homes, back to where the player last stepped through a rift, or where the player last died. Stored on the gun item
- * as {@code world:<name>}, {@code spawn:<name>}, {@code home:<n>}, {@code back} or {@code death}.
+ * homes, back to where the player last stepped through a rift, where the player last died, or (while the gun is
+ * attuned with a rift compass) the nearest structure of a kind. Stored on the gun item as {@code world:<name>},
+ * {@code spawn:<name>}, {@code home:<n>}, {@code back}, {@code death} or {@code structure:<id>}.
  */
 public record RiftDestination(Type type, String world, int home) {
 
@@ -12,7 +13,8 @@ public record RiftDestination(Type type, String world, int home) {
         SPAWN,
         HOME,
         BACK,
-        DEATH
+        DEATH,
+        STRUCTURE
     }
 
     public static RiftDestination world(String name) {
@@ -21,6 +23,10 @@ public record RiftDestination(Type type, String world, int home) {
 
     public static RiftDestination spawn(String name) {
         return new RiftDestination(Type.SPAWN, name, -1);
+    }
+
+    public static RiftDestination structure(RiftStructure structure) {
+        return new RiftDestination(Type.STRUCTURE, structure.id(), -1);
     }
 
     public static RiftDestination death() {
@@ -48,6 +54,10 @@ public record RiftDestination(Type type, String world, int home) {
         if (text.equals("death")) {
             return death();
         }
+        if (text.startsWith("structure:")) {
+            RiftStructure structure = RiftStructure.byId(text.substring("structure:".length()));
+            return structure == null ? null : structure(structure);
+        }
         if (text.startsWith("spawn:") && text.length() > "spawn:".length()) {
             return spawn(text.substring("spawn:".length()));
         }
@@ -72,6 +82,7 @@ public record RiftDestination(Type type, String world, int home) {
             case HOME -> "home:" + home;
             case BACK -> "back";
             case DEATH -> "death";
+            case STRUCTURE -> "structure:" + world;
         };
     }
 }

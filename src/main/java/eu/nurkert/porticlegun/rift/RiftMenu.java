@@ -34,7 +34,8 @@ public class RiftMenu implements Listener {
     enum Page {
         MAIN,
         HOME,
-        DELETE_HOME
+        DELETE_HOME,
+        ATLAS
     }
 
     /** Identifies an open rift menu and remembers which gun (by hotbar slot and id) it belongs to. */
@@ -125,6 +126,38 @@ public class RiftMenu implements Listener {
                                 "capacity",
                                 String.valueOf(settings.tankCapacity()))));
         inventory.setItem(8, fluidIcon);
+
+        // the rift compass: insert one to attune the gun, which unlocks the rift atlas
+        boolean attuned = RiftItems.isAttuned(gun);
+        ItemStack compassIcon = RiftItems.create(RiftItems.Type.RIFT_COMPASS, 1, settings);
+        Map<String, String> compassPlaceholders =
+                Map.of("minutes", String.valueOf(settings.compassMillis() / 60_000), "time", RiftItems.remaining(gun));
+        decorate(
+                compassIcon,
+                text(player, attuned ? "rift.menu.compass-active" : "rift.menu.compass.name", compassPlaceholders),
+                lines(
+                        player,
+                        attuned ? "rift.menu.compass-active-lore" : "rift.menu.compass.lore",
+                        compassPlaceholders));
+        if (attuned) {
+            glow(compassIcon);
+        }
+        button(holder, inventory, 0, compassIcon, () -> insertCompass(player, holder));
+        ItemStack atlasIcon = item(
+                attuned ? Material.FILLED_MAP : Material.MAP,
+                text(player, attuned ? "rift.menu.atlas.name" : "rift.menu.atlas-locked"),
+                lines(player, attuned ? "rift.menu.atlas.lore" : "rift.menu.atlas-locked-lore", Map.of()));
+        if (selected != null && selected.type() == RiftDestination.Type.STRUCTURE) {
+            glow(atlasIcon);
+        }
+        button(holder, inventory, 1, atlasIcon, () -> {
+            if (RiftItems.isAttuned(player.getInventory().getItem(holder.slot))) {
+                openAtlas(player, holder.slot);
+            } else {
+                player.playSound(player, Sound.BLOCK_NOTE_BLOCK_BASS, 1f, 0.7f);
+                player.sendMessage(text(player, "rift.not-attuned"));
+            }
+        });
 
         // worlds: a random spot or the spawn of every world that is not disabled
         inventory.setItem(WORLD_ROW, item(Material.FILLED_MAP, text(player, "rift.menu.worlds"), List.of()));
@@ -226,6 +259,97 @@ public class RiftMenu implements Listener {
                 45,
                 item(Material.BOOK, text(player, "rift.menu.help"), lines(player, "rift.menu.help-lore", Map.of())));
         player.openInventory(inventory);
+    }
+
+    /**
+     * The rift atlas: every structure kind as a destination, unlocked while the gun is attuned.
+     */
+    private void openAtlas(Player player, int slot) {
+        ItemStack gun = player.getInventory().getItem(slot);
+        if (!RiftItems.isGun(gun) || !RiftItems.isAttuned(gun)) {
+            open(player, slot);
+            return;
+        }
+        Holder holder = new Holder(Page.ATLAS, -1, slot, RiftItems.gunId(gun));
+        Inventory inventory = create(holder, 54, text(player, "rift.menu.atlas-title"));
+        ItemStack border = item(Material.LIME_STAINED_GLASS_PANE, " ", List.of());
+        for (int i = 0; i < 54; i++) {
+            if (i < 9 || i >= 45 || i % 9 == 0 || i % 9 == 8) {
+                inventory.setItem(i, border);
+            }
+        }
+        inventory.setItem(
+                4,
+                item(
+                        Material.RECOVERY_COMPASS,
+                        text(player, "rift.menu.compass-active", Map.of("time", RiftItems.remaining(gun))),
+                        lines(player, "rift.menu.atlas-info", Map.of())));
+        RiftDestination selected = RiftItems.destination(gun);
+        int index = 0;
+        for (RiftStructure structure : RiftStructure.values()) {
+            int row = index / 7;
+            int structureSlot = 10 + row * 9 + index % 7;
+            index++;
+            Map<String, String> placeholders = Map.of(
+                    "structure", RiftNames.structure(structure.id(), player),
+                    "dimension",
+                            text(
+                                    player,
+                                    "rift.dimension."
+                                            + structure.environment().name().toLowerCase()));
+            RiftDestination destination = RiftDestination.structure(structure);
+            ItemStack icon = item(
+                    structure.icon(),
+                    text(player, "rift.menu.structure", placeholders),
+                    lines(player, "rift.menu.structure-lore", placeholders));
+            if (destination.equals(selected)) {
+                glow(icon);
+                ItemMeta meta = icon.getItemMeta();
+                List<String> lore = new ArrayList<>(meta.getLore());
+                lore.add(text(player, "rift.menu.selected"));
+                meta.setLore(lore);
+                icon.setItemMeta(meta);
+            }
+            button(holder, inventory, structureSlot, icon, () -> {
+                select(player, holder, destination);
+                openAtlas(player, holder.slot);
+            });
+        }
+        button(
+                holder,
+                inventory,
+                49,
+                item(Material.ARROW, text(player, "rift.menu.back"), List.of()),
+                () -> open(player, holder.slot));
+        player.openInventory(inventory);
+    }
+
+    private void insertCompass(Player player, Holder holder) {
+        RiftSettings settings = module.settings();
+        ItemStack gun = player.getInventory().getItem(holder.slot);
+        int compassSlot = -1;
+        for (int i = 0; i < player.getInventory().getSize(); i++) {
+            if (RiftItems.type(player.getInventory().getItem(i)) == RiftItems.Type.RIFT_COMPASS) {
+                compassSlot = i;
+                break;
+            }
+        }
+        if (compassSlot < 0) {
+            player.playSound(player, Sound.BLOCK_NOTE_BLOCK_BASS, 1f, 0.7f);
+            player.sendMessage(text(player, "rift.no-compass"));
+            return;
+        }
+        ItemStack compass = player.getInventory().getItem(compassSlot);
+        compass.setAmount(compass.getAmount() - 1);
+        player.getInventory().setItem(compassSlot, compass.getAmount() > 0 ? compass : null);
+        // a second compass adds to the remaining time
+        long start = Math.max(System.currentTimeMillis(), RiftItems.attunedUntil(gun));
+        RiftItems.attune(gun, start + settings.compassMillis(), settings);
+        player.getInventory().setItem(holder.slot, gun);
+        player.playSound(player, Sound.ITEM_LODESTONE_COMPASS_LOCK, 1f, 1f);
+        player.playSound(player, Sound.BLOCK_BEACON_POWER_SELECT, 0.6f, 1.6f);
+        player.sendMessage(text(player, "rift.attuned", Map.of("time", RiftItems.remaining(gun))));
+        openAtlas(player, holder.slot);
     }
 
     private void openHome(Player player, int slot, int home) {

@@ -1,6 +1,6 @@
 # Resource pack and 3D model
 
-![The PorticleGun 3D model](../images/portal_gun_3d.png)
+![The PorticleGun 3D model](../images/animations/portal_gun.gif)
 
 Guns use the item model `porticlegun:portal_gun`. Players with the PorticleGun resource pack see a 3D voxel portal gun
 (white rear pod, black barrel, two curved claws) whose lights glow in the gun's portal colours: the claw tips in the
@@ -33,6 +33,9 @@ first custom model data float), the rift shard and the portal fluid, and the ani
 the bottle are 3D in hand, on the ground and in item frames and show an animated vanilla-style pixel art icon in
 inventories, like vanilla's trident and spyglass. All of it is generated from `scripts/generate_resourcepack.py`.
 
+![Rift shard](../images/animations/rift_shard_icon.gif) ![Portal fluid](../images/animations/portal_fluid_icon.gif)
+![Rift compass](../images/animations/rift_compass_icon.gif) ![A rift](../images/animations/rift_portal.gif)
+
 ## Portal status overlay
 
 The pack also contains the glyphs of the overlay: two half rings that the plugin sends as a title, which Minecraft
@@ -56,7 +59,8 @@ python3 scripts/generate_resourcepack.py --preview /tmp/preview
 ```
 
 writes the files to `src/main/resourcepack/` and renders the model from several angles to `/tmp/preview` to check the
-shape without starting the game. `--showcase` re-renders `images/portal_gun_3d.png`. The generator refuses models with
+shape without starting the game. `--showcase` re-renders `images/portal_gun_3d.png` and the other still images,
+`scripts/render_gifs.py` (needs Pillow) the animated ones in `images/animations/`. The generator refuses models with
 overlapping coplanar faces (they flicker in game). Commit the generated files; the Maven build zips them.
 
 - Java hand/GUI positions: the `display` block in `java_model()`

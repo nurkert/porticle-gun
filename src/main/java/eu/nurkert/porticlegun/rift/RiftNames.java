@@ -43,7 +43,13 @@ public final class RiftNames {
                     viewer, "rift.destination.home", Map.of("home", String.valueOf(destination.home() + 1)));
             case BACK -> message(viewer, "rift.destination.back", Map.of());
             case DEATH -> message(viewer, "rift.destination.death", Map.of());
+            case STRUCTURE -> message(
+                    viewer, "rift.destination.structure", Map.of("structure", structure(destination.world(), viewer)));
         };
+    }
+
+    public static String structure(String id, CommandSender viewer) {
+        return message(viewer, "rift.structure." + id, Map.of());
     }
 
     private static String message(CommandSender viewer, String key, Map<String, String> placeholders) {

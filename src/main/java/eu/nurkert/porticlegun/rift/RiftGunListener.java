@@ -97,7 +97,9 @@ public class RiftGunListener implements Listener {
             deny(player, "rift.cooldown");
             return;
         }
-        if (RiftItems.charges(gun) <= 0) {
+        // while a rift compass attunes the gun, rifts cost no portal fluid (if enabled)
+        boolean free = settings.attunedFreeRifts() && RiftItems.isAttuned(gun);
+        if (!free && RiftItems.charges(gun) <= 0) {
             player.playSound(player, Sound.BLOCK_BUBBLE_COLUMN_BUBBLE_POP, 1f, 0.6f);
             deny(player, "rift.tank-empty");
             return;
@@ -127,7 +129,7 @@ public class RiftGunListener implements Listener {
                 return;
             }
             ItemStack current = player.getInventory().getItem(slot);
-            if (!RiftItems.isGun(current) || RiftItems.charges(current) <= 0) {
+            if (!RiftItems.isGun(current) || (!free && RiftItems.charges(current) <= 0)) {
                 return;
             }
             if (target == null) {
@@ -144,7 +146,9 @@ public class RiftGunListener implements Listener {
                             exit.normal(),
                             settings.portalTicks(),
                             settings.closeDistance());
-            RiftItems.setCharges(current, RiftItems.charges(current) - 1, settings);
+            if (!free) {
+                RiftItems.setCharges(current, RiftItems.charges(current) - 1, settings);
+            }
             player.getInventory().setItem(slot, current);
             lastRift.put(id, System.currentTimeMillis());
         };
@@ -172,6 +176,41 @@ public class RiftGunListener implements Listener {
             case HOME -> openStored(player, module.storage().home(id, destination.home()), "rift.home-missing", openAt);
             case BACK -> openStored(player, module.storage().back(id), "rift.back-missing", openAt);
             case DEATH -> openStored(player, module.storage().death(id), "rift.death-missing", openAt);
+            case STRUCTURE -> {
+                RiftStructure structure = RiftStructure.byId(destination.world());
+                if (!RiftItems.isAttuned(gun)) {
+                    deny(player, "rift.compass-faded");
+                    return;
+                }
+                World world =
+                        structure == null ? null : StructureLocator.worldFor(structure, player.getLocation(), settings);
+                if (world == null) {
+                    deny(player, "rift.world-unavailable");
+                    return;
+                }
+                searching.add(id);
+                player.playSound(player, Sound.ITEM_LODESTONE_COMPASS_LOCK, 1f, 1.4f);
+                actionBar(
+                        player,
+                        MessageManager.getMessage(
+                                player,
+                                "rift.searching-structure",
+                                Map.of("structure", RiftNames.structure(structure.id(), player))));
+                module.structures()
+                        .locate(
+                                structure,
+                                world,
+                                StructureLocator.origin(world, player.getLocation()),
+                                settings.structureSearchRadius(),
+                                found -> {
+                                    if (found == null) {
+                                        searching.remove(id);
+                                        deny(player, "rift.structure-not-found");
+                                        return;
+                                    }
+                                    module.finder().findNear(world, found, structure.landing(), openAt);
+                                });
+            }
         }
     }
 

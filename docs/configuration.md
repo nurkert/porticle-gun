@@ -45,6 +45,9 @@ with a colour that no longer exists, it falls back to the default colour and a w
 | `interdimensional-gun.end-radius` | `1500` | The same for the end (around 0, 0); the main island is the fallback. |
 | `interdimensional-gun.search-attempts` | `40` | Candidate spots checked, one per tick, before giving up. |
 | `interdimensional-gun.disabled-worlds` | `[]` | Worlds that never show up as destinations. |
+| `interdimensional-gun.compass-minutes` | `10` | Minutes a rift compass attunes the gun. |
+| `interdimensional-gun.attuned-free-rifts` | `true` | Rifts cost no portal fluid while the gun is attuned. |
+| `interdimensional-gun.structure-search-radius` | `100` | How far (chunks) the rift atlas looks for structures. |
 | `interdimensional-gun.drops.end-stone-chance` | `0.03` | Chance for a rift shard per mined end stone. |
 | `interdimensional-gun.drops.end-stone-fortune-bonus` | `0.01` | Added per fortune level. |
 | `interdimensional-gun.drops.enderman-chance` | `0.08` | Chance for a rift shard per enderman killed by a player. |

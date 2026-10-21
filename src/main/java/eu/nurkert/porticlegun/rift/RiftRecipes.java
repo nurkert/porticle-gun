@@ -23,6 +23,7 @@ import org.bukkit.inventory.ShapelessRecipe;
  *
  * <ul>
  *   <li>Portal fluid: three rift shards, a glass bottle and glowstone dust.
+ *   <li>Rift compass: three rift shards around a compass, an eye of ender below.
  *   <li>Interdimensional gun: an upgrade of the PorticleGun with a nether star, echo shards, iron blocks, rift shards
  *       and a first tank of portal fluid.
  * </ul>
@@ -35,11 +36,13 @@ public class RiftRecipes implements Listener {
     private final RiftModule module;
     private final NamespacedKey fluidKey;
     private final NamespacedKey gunKey;
+    private final NamespacedKey compassKey;
 
     RiftRecipes(RiftModule module) {
         this.module = module;
         this.fluidKey = new NamespacedKey(module.plugin(), "portal_fluid");
         this.gunKey = new NamespacedKey(module.plugin(), "interdimensional_gun");
+        this.compassKey = new NamespacedKey(module.plugin(), "rift_compass");
     }
 
     void register() {
@@ -60,16 +63,24 @@ public class RiftRecipes implements Listener {
         gun.setIngredient('G', ItemHandler.PORTICLE_GUN_TYPE);
         gun.setIngredient('I', Material.IRON_BLOCK);
         Bukkit.addRecipe(gun);
+
+        ShapedRecipe compass = new ShapedRecipe(compassKey, RiftItems.create(RiftItems.Type.RIFT_COMPASS, 1, settings));
+        compass.shape(" S ", "SCS", " E ");
+        compass.setIngredient('S', Material.PAPER);
+        compass.setIngredient('C', Material.COMPASS);
+        compass.setIngredient('E', Material.ENDER_EYE);
+        Bukkit.addRecipe(compass);
     }
 
     void unregister() {
         Bukkit.removeRecipe(fluidKey);
         Bukkit.removeRecipe(gunKey);
+        Bukkit.removeRecipe(compassKey);
     }
 
     @EventHandler
     public void on(PlayerJoinEvent event) {
-        event.getPlayer().discoverRecipes(List.of(fluidKey, gunKey));
+        event.getPlayer().discoverRecipes(List.of(fluidKey, gunKey, compassKey));
     }
 
     @EventHandler
@@ -86,6 +97,9 @@ public class RiftRecipes implements Listener {
         } else if (gunKey.equals(key)) {
             boolean valid = isGunRecipe(matrix) && crafter.hasPermission(RiftGunListener.PERMISSION);
             inventory.setResult(valid ? RiftItems.create(RiftItems.Type.INTERDIMENSIONAL_GUN, 1, settings) : null);
+        } else if (compassKey.equals(key)) {
+            boolean valid = isCompassRecipe(matrix) && crafter.hasPermission(RiftGunListener.PERMISSION);
+            inventory.setResult(valid ? RiftItems.create(RiftItems.Type.RIFT_COMPASS, 1, settings) : null);
         } else if (containsRiftItem(matrix)) {
             inventory.setResult(null); // shards and fluid are no paper for vanilla recipes
         }
@@ -123,6 +137,13 @@ public class RiftRecipes implements Listener {
                 && RiftItems.type(matrix[2]) == RiftItems.Type.RIFT_SHARD
                 && RiftItems.type(matrix[7]) == RiftItems.Type.PORTAL_FLUID
                 && ItemHandler.isValidGun(matrix[4]) != null;
+    }
+
+    static boolean isCompassRecipe(ItemStack[] matrix) {
+        return matrix.length == 9
+                && RiftItems.type(matrix[1]) == RiftItems.Type.RIFT_SHARD
+                && RiftItems.type(matrix[3]) == RiftItems.Type.RIFT_SHARD
+                && RiftItems.type(matrix[5]) == RiftItems.Type.RIFT_SHARD;
     }
 
     private static boolean containsRiftItem(ItemStack[] matrix) {

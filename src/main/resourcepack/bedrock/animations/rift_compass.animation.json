@@ -1,0 +1,251 @@
+{
+  "format_version": "1.8.0",
+  "animations": {
+    "animation.porticlegun.rift_compass.thirdperson_main_hand": {
+      "loop": true,
+      "bones": {
+        "porticlegun": {
+          "rotation": [
+            90,
+            0,
+            0
+          ],
+          "position": [
+            0,
+            13,
+            -3
+          ]
+        },
+        "porticlegun_x": {
+          "rotation": [
+            0,
+            0,
+            0
+          ],
+          "position": [
+            0,
+            3,
+            1
+          ],
+          "scale": [
+            0.55,
+            0.55,
+            0.55
+          ]
+        },
+        "porticlegun_y": {
+          "rotation": [
+            0,
+            0,
+            0
+          ]
+        },
+        "porticlegun_z": {
+          "rotation": [
+            0,
+            0,
+            0
+          ]
+        }
+      }
+    },
+    "animation.porticlegun.rift_compass.thirdperson_off_hand": {
+      "loop": true,
+      "bones": {
+        "porticlegun": {
+          "rotation": [
+            90,
+            0,
+            0
+          ],
+          "position": [
+            0,
+            13,
+            -3
+          ]
+        },
+        "porticlegun_x": {
+          "rotation": [
+            0,
+            0,
+            0
+          ],
+          "position": [
+            0,
+            3,
+            1
+          ],
+          "scale": [
+            0.55,
+            0.55,
+            0.55
+          ]
+        },
+        "porticlegun_y": {
+          "rotation": [
+            0,
+            0,
+            0
+          ]
+        },
+        "porticlegun_z": {
+          "rotation": [
+            0,
+            0,
+            0
+          ]
+        }
+      }
+    },
+    "animation.porticlegun.rift_compass.head": {
+      "loop": true,
+      "bones": {
+        "porticlegun": {
+          "position": [
+            0,
+            19.9,
+            0
+          ]
+        },
+        "porticlegun_x": {
+          "rotation": [
+            0,
+            0,
+            0
+          ],
+          "position": [
+            0.0,
+            8.125,
+            0.0
+          ],
+          "scale": [
+            0.5,
+            0.5,
+            0.5
+          ]
+        },
+        "porticlegun_y": {
+          "rotation": [
+            0,
+            0,
+            0
+          ]
+        },
+        "porticlegun_z": {
+          "rotation": [
+            0,
+            0,
+            0
+          ]
+        }
+      }
+    },
+    "animation.porticlegun.rift_compass.firstperson_main_hand": {
+      "loop": true,
+      "bones": {
+        "porticlegun": {
+          "rotation": [
+            90,
+            60,
+            -40
+          ],
+          "position": [
+            4,
+            10,
+            4
+          ],
+          "scale": 1.5
+        },
+        "porticlegun_x": {
+          "rotation": [
+            0,
+            0,
+            0
+          ],
+          "position": [
+            -1,
+            3,
+            -1
+          ],
+          "scale": [
+            0.6,
+            0.6,
+            0.6
+          ]
+        },
+        "porticlegun_y": {
+          "rotation": [
+            0,
+            25,
+            0
+          ]
+        },
+        "porticlegun_z": {
+          "rotation": [
+            0,
+            0,
+            0
+          ]
+        }
+      }
+    },
+    "animation.porticlegun.rift_compass.firstperson_off_hand": {
+      "loop": true,
+      "bones": {
+        "porticlegun": {
+          "rotation": [
+            90,
+            60,
+            -40
+          ],
+          "position": [
+            4,
+            10,
+            4
+          ],
+          "scale": 1.5
+        },
+        "porticlegun_x": {
+          "rotation": [
+            0,
+            0,
+            0
+          ],
+          "position": [
+            1,
+            3,
+            -1
+          ],
+          "scale": [
+            0.6,
+            0.6,
+            0.6
+          ]
+        },
+        "porticlegun_y": {
+          "rotation": [
+            0,
+            -25,
+            0
+          ]
+        },
+        "porticlegun_z": {
+          "rotation": [
+            0,
+            0,
+            0
+          ]
+        }
+      }
+    },
+    "animation.porticlegun.rift_compass.disable": {
+      "loop": true,
+      "override_previous_animation": true,
+      "bones": {
+        "porticlegun": {
+          "scale": 0
+        }
+      }
+    }
+  }
+}
