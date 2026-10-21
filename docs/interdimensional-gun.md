@@ -28,7 +28,8 @@ works the same with a mouse, a controller or a touch screen; shift and right cli
 - **Back**: where the player last stepped into a rift.
 - **Last death**.
 
-Worlds listed in `disabled-worlds` never show up. Every other world, also ones added later, appears automatically.
+Worlds listed in `disabled-worlds` never show up. The other worlds, also ones added later, appear automatically; the
+menu has room for eight, so on servers with more worlds list the ones nobody should travel to in `disabled-worlds`.
 
 ## Where rifts appear
 

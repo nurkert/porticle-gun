@@ -84,7 +84,7 @@ they close. Choose where to go in its menu (sneak + use):
 
 | Destination | |
 |---|---|
-| **Any world** | A random, safe landing spot: solid ground, room to stand, no lava, water, cactus or nether roof. Every world on the server shows up, including ones added later. |
+| **Any world** | A random, safe landing spot: solid ground, room to stand, no lava, water, cactus or nether roof. The worlds of the server show up automatically (up to eight), including ones added later. |
 | **World spawn** | The spawn point of any world. |
 | **Homes** | Up to seven home points per player, set with one click. |
 | **Back** | Where you last stepped into a rift. |

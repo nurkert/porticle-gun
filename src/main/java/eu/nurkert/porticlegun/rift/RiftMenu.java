@@ -59,7 +59,10 @@ public class RiftMenu implements Listener {
         }
     }
 
-    private static final int WORLD_ROW = 18;
+    // two rows of worlds (each with a random spot and its spawn), so up to eight worlds fit
+    private static final int WORLD_ROW = 9;
+    private static final int WORLDS_PER_ROW = 4;
+    private static final int MAX_WORLDS = 8;
     private static final int SPECIAL_ROW = 27;
     private static final int HOME_ROW = 36;
 
@@ -127,10 +130,10 @@ public class RiftMenu implements Listener {
         inventory.setItem(WORLD_ROW, item(Material.FILLED_MAP, text(player, "rift.menu.worlds"), List.of()));
         int index = 0;
         for (World world : Bukkit.getWorlds()) {
-            if (settings.disabledWorlds().contains(world.getName()) || index >= 4) {
+            if (settings.disabledWorlds().contains(world.getName()) || index >= MAX_WORLDS) {
                 continue;
             }
-            int randomSlot = WORLD_ROW + 1 + index * 2;
+            int randomSlot = WORLD_ROW + (index / WORLDS_PER_ROW) * 9 + 1 + (index % WORLDS_PER_ROW) * 2;
             String name = RiftNames.world(world.getName(), player);
             destinationButton(
                     player,
