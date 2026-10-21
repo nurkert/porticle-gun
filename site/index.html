@@ -1,0 +1,311 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>PorticleGun</title>
+  <meta name="description" content="A portal gun, an interdimensional gun and a gravity gun for Minecraft servers, with their own 3D models for Java and Bedrock players.">
+  <meta property="og:title" content="PorticleGun">
+  <meta property="og:description" content="Two portals. One gun. Every wall is a door. Portal, interdimensional and gravity gun for Spigot and Paper, Java and Bedrock.">
+  <meta property="og:image" content="https://nurkert.github.io/porticle-gun/images/portal_gun_3d.png">
+  <meta name="theme-color" content="#1a1416">
+  <link rel="icon" href="images/porticlegun_logo.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;500;600&family=Pixelify+Sans:wght@400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+  <script>document.documentElement.classList.add("js")</script>
+</head>
+<body>
+  <a class="skip" href="#portals">Skip to content</a>
+
+  <header class="top">
+    <a class="brand" href="#top"><img src="images/porticlegun_logo.png" alt="" width="30" height="30">PorticleGun</a>
+    <a class="mc-button small" href="https://github.com/nurkert/porticle-gun">GitHub</a>
+  </header>
+
+  <main id="top">
+    <!-- hero -->
+    <section class="hero" data-slot="0">
+      <div class="window hero-window">
+        <p class="window-label">PorticleGun</p>
+        <div class="hero-grid">
+          <figure class="preview orange" data-tip="PorticleGun|gold" data-lore="Left click: primary portal|Right click: secondary portal|Drop key: gravity gun">
+            <img src="images/animations/portal_gun.gif" alt="The PorticleGun turning" width="360" height="360">
+          </figure>
+          <div class="hero-copy">
+            <h1>Two portals. One gun. Every wall is a door.</h1>
+            <p>A Minecraft server plugin that adds a <b>portal gun</b>, an <b>interdimensional gun</b> and a
+              <b>gravity gun</b>, each with its own 3D model for Java and Bedrock players.</p>
+            <div class="hero-actions">
+              <a class="mc-button big download-jar" href="https://github.com/nurkert/porticle-gun/releases/latest">
+                <span>Download</span><span class="version" data-version></span></a>
+              <a class="mc-button" href="#portals">See it in action</a>
+            </div>
+            <p class="requirements">Spigot or Paper 1.21.4+ · Java 21 · Bedrock through Geyser · free and open source</p>
+          </div>
+          <figure class="preview green" data-tip="Interdimensional Gun|green" data-lore="Use: open a rift pair|Sneak + use: choose a destination|Runs on portal fluid">
+            <img src="images/animations/interdimensional_gun.gif" alt="The interdimensional gun turning" width="360" height="360">
+          </figure>
+        </div>
+      </div>
+    </section>
+
+    <!-- portals -->
+    <section id="portals" class="chapter" data-slot="1">
+      <div class="window wide">
+        <p class="window-label">Portals</p>
+        <div class="split">
+          <div class="slot frame"><img src="images/basic_preview.gif" alt="Placing an orange and a blue portal" width="273" height="276" loading="lazy"></div>
+          <div class="copy">
+            <h2>Point, click, step through</h2>
+            <p>Left-click places your first portal, right-click the second, on any wall, floor or ceiling. Walk, fall or
+              fly through: speed and view direction carry over, so you can fling yourself across the map. Mobs, items and
+              arrows travel too.</p>
+            <p>Every gun owns its pair of portals. Two rings around the crosshair show which ones are open.</p>
+            <img class="hud" src="images/portal_hud.png" alt="Portal status rings around the crosshair" width="560" height="220" loading="lazy">
+          </div>
+        </div>
+      </div>
+
+      <div class="window colours">
+        <p class="window-label">Pick your colours</p>
+        <div class="colour-stage">
+          <div class="colour-gun" role="img" aria-label="The PorticleGun with gold and dark blue lights" data-colour-gun></div>
+          <div class="copy">
+            <h3>A gun in your colours</h3>
+            <p>The model is built block by block, and its lights follow your portals: claw tips in the primary colour,
+              windows and emitter in the secondary one, the moment you change them in the gun's menu.</p>
+            <div class="swatches" role="radiogroup" aria-label="Portal colours">
+              <button class="slot swatch" role="radio" aria-checked="true" data-index="0" data-label="gold and dark blue" data-tip="Gold + Dark Blue|gold" data-lore="The default pair"><i style="--a:#ffa500;--b:#0000aa"></i></button>
+              <button class="slot swatch" role="radio" aria-checked="false" data-index="1" data-label="red and green" data-tip="Red + Green|red"><i style="--a:#ff0000;--b:#00ff00"></i></button>
+              <button class="slot swatch" role="radio" aria-checked="false" data-index="2" data-label="light purple and aqua" data-tip="Light Purple + Aqua|purple"><i style="--a:#ff00ff;--b:#00ffff"></i></button>
+              <button class="slot swatch" role="radio" aria-checked="false" data-index="3" data-label="yellow and white" data-tip="Yellow + White|yellow"><i style="--a:#ffff00;--b:#ffffff"></i></button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- gravity -->
+    <section id="gravity" class="chapter" data-slot="2">
+      <div class="window wide flip">
+        <p class="window-label">Gravity gun</p>
+        <div class="split">
+          <div class="copy">
+            <h2>Pick it up. Carry it anywhere.</h2>
+            <p>Press the drop key with the gun in hand and lift animals, monsters or whole blocks. Chests keep their
+              contents and spawners their mob, even across restarts. Drop the gun itself with a quick double tap.</p>
+          </div>
+          <div class="pair">
+            <div class="slot frame"><img src="images/gravity_preview.gif" alt="Carrying a spawner with the gravity gun" width="273" height="276" loading="lazy"></div>
+            <div class="slot frame"><img src="images/gravity_preview_mobs.gif" alt="Carrying a pig with the gravity gun" width="274" height="276" loading="lazy"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- rifts -->
+    <section id="rifts" class="chapter" data-slot="3">
+      <div class="window wide rift-window">
+        <p class="window-label">Interdimensional gun</p>
+        <div class="split">
+          <figure class="slot frame rift-frame" data-tip="Rift|green" data-lore="Walkable from both sides|Closes when you walk away">
+            <img src="images/animations/rift_portal.gif" alt="A green rift swirling" width="320" height="320" loading="lazy">
+          </figure>
+          <div class="copy">
+            <h2>Tear a rift into the air</h2>
+            <p>The big brother of the PorticleGun opens wobbling green rifts: one in front of you, one at the destination.
+              Friends can follow before they close. Sneak and use the gun to choose where to go.</p>
+            <ul class="destinations">
+              <li><b>Any world</b> a random, safe landing spot</li>
+              <li><b>World spawn</b> the spawn point of any world</li>
+              <li><b>Homes</b> up to seven, set with one click</li>
+              <li><b>Back</b> where you last stepped in</li>
+              <li><b>Last death</b> straight back to your things</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- fuel -->
+    <section id="fuel" class="chapter" data-slot="4">
+      <div class="window brew">
+        <p class="window-label">Portal fluid</p>
+        <h2 class="center">Fuelled by the End</h2>
+        <div class="brew-line">
+          <figure class="slot item" data-tip="Rift Shard|purple" data-lore="Mine end stone or hunt endermen|Fortune and looting help">
+            <img src="images/animations/rift_shard.gif" alt="Rift shard" width="280" height="280" loading="lazy">
+            <figcaption>Rift shard</figcaption>
+          </figure>
+          <span class="progress" aria-hidden="true"><i></i></span>
+          <figure class="slot item" data-tip="Portal Fluid|green" data-lore="3 rift shards, a glass bottle|and glowstone dust|One bottle opens four rifts">
+            <img src="images/animations/portal_fluid.gif" alt="Portal fluid" width="280" height="280" loading="lazy">
+            <figcaption>Portal fluid</figcaption>
+          </figure>
+          <span class="progress" aria-hidden="true"><i></i></span>
+          <figure class="slot item tank" data-tip="Tank|aqua" data-lore="The glass dome shows how full it is">
+            <img src="images/animations/interdimensional_gun_tank.gif" alt="The gun's tank filling up and draining" width="360" height="360" loading="lazy">
+            <figcaption>The tank</figcaption>
+          </figure>
+        </div>
+        <p class="center narrow">Distil three rift shards into portal fluid and pour it into the tank from the gun's menu.
+          The glass dome on top shows how much is left. In the inventory every item shows an animated pixel icon:
+          <img class="icon" src="images/animations/rift_shard_icon.gif" alt="rift shard icon" width="32" height="32">
+          <img class="icon" src="images/animations/portal_fluid_icon.gif" alt="portal fluid icon" width="32" height="32">
+          <img class="icon" src="images/animations/rift_compass_icon.gif" alt="rift compass icon" width="32" height="32"></p>
+      </div>
+    </section>
+
+    <!-- atlas -->
+    <section id="atlas" class="chapter" data-slot="5">
+      <div class="window wide flip">
+        <p class="window-label">Rift atlas</p>
+        <div class="split">
+          <div class="copy">
+            <h2>Rift straight to a stronghold</h2>
+            <p>Insert a rift compass and the gun is attuned for ten minutes: rifts cost nothing, and the next one opens
+              right next to the nearest structure you pick. Underground ones are entered through a safe cave.</p>
+            <div class="atlas">
+              <div><h3>Overworld</h3>
+                <ul><li>Village</li><li>Pillager outpost</li><li>Desert temple</li><li>Jungle temple</li><li>Witch hut</li><li>Igloo</li><li>Woodland mansion</li><li>Trail ruins</li><li>Ruined portal</li><li>Ancient city</li><li>Trial chambers</li><li>Stronghold</li></ul></div>
+              <div><h3>Nether</h3><ul><li>Fortress</li><li>Bastion</li></ul>
+                <h3>The End</h3><ul><li>End city</li></ul></div>
+            </div>
+          </div>
+          <figure class="slot frame compass" data-tip="Rift Compass|aqua" data-lore="Attunes the gun for 10 minutes|Free rifts, rift atlas unlocked">
+            <img src="images/animations/rift_compass.gif" alt="Rift compass" width="280" height="280" loading="lazy">
+          </figure>
+        </div>
+      </div>
+    </section>
+
+    <!-- crafting -->
+    <section id="crafting" class="chapter" data-slot="6">
+      <div class="window wide">
+        <p class="window-label">Crafting</p>
+        <h2>Craft everything in survival</h2>
+        <div class="tabs" role="tablist" aria-label="Recipes">
+          <button role="tab" aria-selected="true" aria-controls="recipe-gun" id="tab-gun">PorticleGun</button>
+          <button role="tab" aria-selected="false" aria-controls="recipe-fluid" id="tab-fluid" tabindex="-1">Portal fluid</button>
+          <button role="tab" aria-selected="false" aria-controls="recipe-rift" id="tab-rift" tabindex="-1">Interdimensional gun</button>
+          <button role="tab" aria-selected="false" aria-controls="recipe-compass" id="tab-compass" tabindex="-1">Rift compass</button>
+        </div>
+        <div class="recipe" role="tabpanel" id="recipe-gun" aria-labelledby="tab-gun">
+          <img src="images/crafting_recipe.png" alt="PorticleGun recipe" width="2770" height="785" loading="lazy">
+          <p>Obsidian, beacon, obsidian · quartz block, ender pearl, quartz block · quartz block, crossbow, quartz block</p>
+        </div>
+        <div class="recipe" role="tabpanel" id="recipe-fluid" aria-labelledby="tab-fluid" hidden>
+          <img src="images/crafting_portal_fluid.png" alt="Portal fluid recipe" width="1330" height="785" loading="lazy">
+          <p>Shapeless: three rift shards, a glass bottle and glowstone dust</p>
+        </div>
+        <div class="recipe" role="tabpanel" id="recipe-rift" aria-labelledby="tab-rift" hidden>
+          <img src="images/crafting_interdimensional_gun.png" alt="Interdimensional gun recipe" width="1330" height="785" loading="lazy">
+          <p>Rift shards, a nether star, echo shards, a PorticleGun, iron blocks and portal fluid: the Overworld, the
+            Nether and the End in one gun</p>
+        </div>
+        <div class="recipe" role="tabpanel" id="recipe-compass" aria-labelledby="tab-compass" hidden>
+          <img src="images/crafting_rift_compass.png" alt="Rift compass recipe" width="1330" height="785" loading="lazy">
+          <p>Three rift shards, a compass and an eye of ender</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- controls -->
+    <section id="controls" class="chapter" data-slot="7">
+      <div class="window wide flip">
+        <p class="window-label">Controls</p>
+        <div class="split">
+          <div class="copy">
+            <h2>Java and Bedrock, side by side</h2>
+            <p>Bedrock players join through Geyser and Floodgate and get the same guns, the same 3D models and controls
+              made for controllers and touch screens. Menus only ever need a single click or tap.</p>
+            <div class="tabs" role="tablist" aria-label="Platform">
+              <button role="tab" aria-selected="true" aria-controls="keys" id="tab-java" data-platform="java">Java</button>
+              <button role="tab" aria-selected="false" aria-controls="keys" id="tab-bedrock" data-platform="bedrock" tabindex="-1">Bedrock</button>
+            </div>
+            <dl class="keys" id="keys" role="tabpanel" aria-labelledby="tab-java">
+              <div><dt>Primary portal</dt><dd data-java="Left click" data-bedrock="Right trigger">Left click</dd></div>
+              <div><dt>Secondary portal</dt><dd data-java="Right click" data-bedrock="Left trigger">Right click</dd></div>
+              <div><dt>Gun settings</dt><dd data-java="Sneak + right click" data-bedrock="Sneak + left trigger">Sneak + right click</dd></div>
+              <div><dt>Gravity gun</dt><dd data-java="Drop key (Q)" data-bedrock="Drop">Drop key (Q)</dd></div>
+              <div><dt>Open a rift</dt><dd data-java="Right click" data-bedrock="Left trigger">Right click</dd></div>
+              <div><dt>Rift menu</dt><dd data-java="Sneak + right click" data-bedrock="Sneak + left trigger">Sneak + right click</dd></div>
+            </dl>
+          </div>
+          <div class="slot frame"><img src="images/change_settings.gif" alt="Changing the gun's settings in its menu" width="450" height="265" loading="lazy"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- download -->
+    <section id="download" class="chapter" data-slot="8">
+      <div class="window chest">
+        <p class="window-label">Download</p>
+        <h2>Up and running in a minute</h2>
+        <ol class="steps">
+          <li><b>Download</b> the plugin jar below.</li>
+          <li><b>Drop it</b> into your server's <code>plugins</code> folder and restart.</li>
+          <li><b>Run</b> <code>/porticlegun</code> and take your gun, or craft one.</li>
+        </ol>
+        <a class="mc-button big download-jar" href="https://github.com/nurkert/porticle-gun/releases/latest">
+          <span>Download PorticleGun</span><span class="version" data-version></span></a>
+        <p class="release-note" data-release-note>Always the latest release from GitHub.</p>
+        <p class="window-label sub">Release files</p>
+        <div class="chest-grid" data-assets>
+          <a class="slot asset" href="https://github.com/nurkert/porticle-gun/releases/latest" data-tip="All release files|aqua" data-lore="Opens the release on GitHub">
+            <svg viewBox="0 0 16 16" aria-hidden="true" data-icon="chest"></svg></a>
+        </div>
+        <p class="small-print">Java players get the resource pack on join. With Geyser on the same server the Bedrock pack
+          is installed automatically, so the extra files are only needed for self-hosting.</p>
+      </div>
+    </section>
+
+    <!-- docs -->
+    <section id="docs" class="chapter" data-slot="9">
+      <div class="window docs">
+        <p class="window-label">Guides</p>
+        <h2>Everything else, written down</h2>
+        <nav class="doc-buttons" aria-label="Documentation">
+          <a class="mc-button" href="https://github.com/nurkert/porticle-gun/blob/main/docs/interdimensional-gun.md">Interdimensional gun</a>
+          <a class="mc-button" href="https://github.com/nurkert/porticle-gun/blob/main/docs/configuration.md">Configuration</a>
+          <a class="mc-button" href="https://github.com/nurkert/porticle-gun/blob/main/docs/resourcepack.md">Resource pack</a>
+          <a class="mc-button" href="https://github.com/nurkert/porticle-gun/blob/main/docs/bedrock.md">Bedrock and Geyser</a>
+          <a class="mc-button" href="https://github.com/nurkert/porticle-gun/blob/main/docs/worldguard.md">WorldGuard</a>
+          <a class="mc-button" href="https://github.com/nurkert/porticle-gun/blob/main/docs/localization.md">Languages</a>
+          <a class="mc-button" href="https://github.com/nurkert/porticle-gun#commands-and-permissions">Commands</a>
+          <a class="mc-button" href="https://github.com/nurkert/porticle-gun/blob/main/CHANGELOG.md">Changelog</a>
+        </nav>
+      </div>
+      <footer>
+        <img src="images/porticlegun_logo.png" alt="" width="36" height="36">
+        <p>PorticleGun is open source under the
+          <a href="https://github.com/nurkert/porticle-gun/blob/main/LICENSE">GNU GPL v3.0</a>.
+          Not an official Minecraft product, not affiliated with Mojang or Microsoft.</p>
+      </footer>
+    </section>
+  </main>
+
+  <!-- hotbar navigation -->
+  <div class="hud-bar">
+    <p class="held" aria-live="polite" data-held></p>
+    <div class="xp" aria-hidden="true"><i data-xp></i><span data-level>0</span></div>
+    <nav class="hotbar" aria-label="Sections">
+      <a class="hot" href="#portals" data-name="Portals"><img src="images/portal_gun_3d.png" alt=""><span class="sr">Portals</span></a>
+      <a class="hot" href="#gravity" data-name="Gravity gun"><svg viewBox="0 0 16 16" aria-hidden="true" data-icon="magnet"></svg><span class="sr">Gravity gun</span></a>
+      <a class="hot" href="#rifts" data-name="Interdimensional gun"><img src="images/interdimensional_gun_3d.png" alt=""><span class="sr">Interdimensional gun</span></a>
+      <a class="hot" href="#fuel" data-name="Portal fluid"><img class="icon" src="images/animations/portal_fluid_icon.gif" alt=""><span class="sr">Portal fluid</span></a>
+      <a class="hot" href="#atlas" data-name="Rift atlas"><img class="icon" src="images/animations/rift_compass_icon.gif" alt=""><span class="sr">Rift atlas</span></a>
+      <a class="hot" href="#crafting" data-name="Crafting"><svg viewBox="0 0 16 16" aria-hidden="true" data-icon="table"></svg><span class="sr">Crafting</span></a>
+      <a class="hot" href="#controls" data-name="Controls"><svg viewBox="0 0 16 16" aria-hidden="true" data-icon="pad"></svg><span class="sr">Controls</span></a>
+      <a class="hot" href="#download" data-name="Download"><svg viewBox="0 0 16 16" aria-hidden="true" data-icon="chest"></svg><span class="sr">Download</span></a>
+      <a class="hot" href="#docs" data-name="Guides"><svg viewBox="0 0 16 16" aria-hidden="true" data-icon="book"></svg><span class="sr">Guides</span></a>
+    </nav>
+  </div>
+
+  <div class="tooltip" role="tooltip" id="tooltip" hidden></div>
+
+  <script src="main.js" defer></script>
+</body>
+</html>

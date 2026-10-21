@@ -21,3 +21,4 @@ run/
 
 # Python
 __pycache__/
+.impeccable/review/
