@@ -2,7 +2,7 @@
   "resource_pack_name": "PorticleGun",
   "texture_name": "atlas.items",
   "texture_data": {
-    "porticlegun:portal_gun": {
+    "porticlegun_portal_gun": {
       "textures": [
         "textures/items/portal_gun"
       ]

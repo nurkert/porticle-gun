@@ -8,6 +8,7 @@
         "bedrock_identifier": "porticlegun:portal_gun",
         "display_name": "PorticleGun",
         "bedrock_options": {
+          "icon": "porticlegun_portal_gun",
           "display_handheld": true
         }
       }
