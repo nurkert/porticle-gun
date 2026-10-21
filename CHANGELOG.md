@@ -5,6 +5,24 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+## [1.5.0] - 2026-10-21
+
+### Added
+- **Interdimensional gun**: opens wobbling green rift pairs (in front of the player and at the destination), walkable
+  both ways, to a random safe spot or the spawn of any world, homes, back and the last death. Chest menu with
+  single-click actions that work on Bedrock too.
+- Smart rift placement: the entrance stands on the ground in front of the player (closer to walls, floating at edges),
+  the exit faces open space, built-over stored places move to the nearest safe spot. Rifts close when the opener walks
+  away or after `portal-seconds`.
+- Safe random destinations: searched one candidate per tick, generated chunks first, no lava, hazards, water, nether
+  roof or void; the end's main island as fallback.
+- **Rift shards** (end stone and enderman drops) and **portal fluid** (fuel, shown as the tank level in the gun's
+  dome). Recipes for portal fluid and for the gun as an upgrade of the PorticleGun.
+- 3D models for the interdimensional gun, rift shards and portal fluid (Java and Bedrock); animated vanilla-style
+  inventory icons on Java.
+- `/porticlegun give <item> [player] [amount]`, `porticlegun.interdimensional` permission, `interdimensional-gun`
+  config section, `rift.yml`.
+
 ## [1.4.1] - 2026-10-21
 
 ### Changed
