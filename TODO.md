@@ -3,6 +3,8 @@
 Befunde aus dem Code-Review. Status: `[ ]` offen · `[~]` in Arbeit · `[x]` erledigt · `[!]` gesperrt, nur nach Rücksprache.
 
 > **Regel:** Das Einstellungs-GUI (`SettingsHandler`, Dropper-Menü) bleibt genau so, wie es ist. Keine Änderung an Layout, Slots, Bedienung oder Optik ohne vorherige Diskussion mit dem User.
+> **Test-Release:** [`v1.3.0-beta.1`](https://github.com/nurkert/porticle-gun/releases/tag/v1.3.0-beta.1) (Pre-Release, 2026-10-21). Damit werden die offenen „Du:“-Punkte (PG-14, PG-15, PG-16, PG-20) auf dem Server getestet.
+
 Reihenfolge = Priorität. Unter jedem Punkt: Problem, Lösungsansatz, Notizen beim Abarbeiten.
 
 ## P1 – Datenverlust / funktionale Bugs
