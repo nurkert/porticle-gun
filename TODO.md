@@ -3,7 +3,7 @@
 Befunde aus dem Code-Review. Status: `[ ]` offen · `[~]` in Arbeit · `[x]` erledigt · `[!]` gesperrt, nur nach Rücksprache.
 
 > **Regel:** Das Einstellungs-GUI (`SettingsHandler`, Dropper-Menü) bleibt genau so, wie es ist. Keine Änderung an Layout, Slots, Bedienung oder Optik ohne vorherige Diskussion mit dem User.
-> **Release:** [`v1.6.0`](https://github.com/nurkert/porticle-gun/releases/tag/v1.6.0) (2026-10-21). Damit werden die offenen „Du:“-Punkte (PG-14, PG-15, PG-16, PG-22, PG-23, PG-24) auf dem Server getestet.
+> **Release:** [`v1.6.0`](https://github.com/nurkert/porticle-gun/releases/tag/v1.6.0) (2026-10-21). Damit werden die offenen „Du:“-Punkte (PG-14, PG-15, PG-16, PG-22, PG-23, PG-24, PG-25) auf dem Server getestet.
 
 Reihenfolge = Priorität. Unter jedem Punkt: Problem, Lösungsansatz, Notizen beim Abarbeiten.
 
@@ -141,6 +141,16 @@ Reihenfolge = Priorität. Unter jedem Punkt: Problem, Lösungsansatz, Notizen be
   - [ ] **Du:** Ingame testen: Riss-Atlas und Strukturen (besonders Antike Stätte, Festung, Trial Chambers), Kompass-Zeit
   - Notizen:
 
+- [~] **PG-25 Menü, Partikel-Risse, Webseite, Bedrock-Creative (Wünsche nach 1.5.0)**
+  - [x] `/porticlegun` bzw. `/pg`: Truhe mit allen Items, ein Klick nimmt (Admins auch Rift-Items); Jar-Umbenennen-Knopf entfernt
+  - [x] Risse nur aus Partikeln (wackelnder Rand, Sprenkel, Spiralarme), gleich auf Java und Bedrock; Riss-Modell aus den Packs entfernt
+  - [x] Menü-Hänger auf Servern ab 26.x behoben (Chunk 0 0 wird vorab im Hintergrund geladen)
+  - [x] Bedrock-Creative: Items mit Creative-Kategorie in der Geyser-Zuordnung, Creative-Kopien werden beim Nehmen zu echten Items
+  - [x] GitHub-Pages-Webseite (EN/DE, responsiv, Rezept-Tooltips), Workflow `pages.yml`
+  - [ ] **Du:** Auf Bedrock im Creative-Inventar die Items suchen, eins nehmen und benutzen (Gun schießt, Riss-Items funktionieren)
+  - [ ] **Du:** Partikel-Risse auf Java und Bedrock anschauen (Wackeln, Öffnen/Schließen, Performance)
+  - Notizen: Bedrock-Creative hängt davon ab, dass Geyser beim Nehmen das Item-Modell mitschickt; sonst bleibt das Menü `/pg`.
+
 ## P2 – Robustheit / Performance
 
 - [x] **PG-04 Eine unbekannte Farbe bricht das Laden aller Portale ab**
@@ -192,7 +202,7 @@ Reihenfolge = Priorität. Unter jedem Punkt: Problem, Lösungsansatz, Notizen be
     - [x] Klären, ob `PluginJarRenamer` (Jar-Datei zur Laufzeit umbenennen) wirklich gebraucht wird, sonst entfernen
     - [x] `PorticleGunCommand` (601 Zeilen) in Unterbefehle aufteilen
     - [x] Bilder in `images/` (2,9 MB GIFs) prüfen und ggf. verkleinern
-  - Notizen: Spotless (palantir-java-format) und `.editorconfig`, Formatierung wird in `mvn verify` und damit in der CI geprüft. `handlers/` aufgelöst in `audio`, `persistence`, `gravity`, `item`, `portals`, `visualization`, `LoadingHandler` liegt im Root-Package. Gelöscht: leerer `ConfigHandler`, `DebugHandler` (Godmode für den Spielernamen „nurkert“ hinter `developMode`), auskommentierter Code, ungenutzte Maven-Repos. `PluginJarRenamer` bleibt: Den nutzt der Admin-Button „Jar umbenennen“ im `/porticlegun`-Menü. `PorticleGunCommand` aufgeteilt in Dispatcher, `GunMenu`, `Permissions`, `GunData` und je eine Klasse pro Unterbefehl, Verhalten und Texte unverändert. Bilder geprüft: max. 750 KB pro GIF, für eine README okay, nichts geändert. **Singletons → Instanzen** habe ich bewusst als PG-21 ausgelagert (Begründung dort).
+  - Notizen: Spotless (palantir-java-format) und `.editorconfig`, Formatierung wird in `mvn verify` und damit in der CI geprüft. `handlers/` aufgelöst in `audio`, `persistence`, `gravity`, `item`, `portals`, `visualization`, `LoadingHandler` liegt im Root-Package. Gelöscht: leerer `ConfigHandler`, `DebugHandler` (Godmode für den Spielernamen „nurkert“ hinter `developMode`), auskommentierter Code, ungenutzte Maven-Repos. `PluginJarRenamer` blieb damals für den Admin-Button „Jar umbenennen“; beides ist mit PG-25 entfallen. `PorticleGunCommand` aufgeteilt in Dispatcher, `GunMenu`, `Permissions`, `GunData` und je eine Klasse pro Unterbefehl, Verhalten und Texte unverändert. Bilder geprüft: max. 750 KB pro GIF, für eine README okay, nichts geändert. **Singletons → Instanzen** habe ich bewusst als PG-21 ausgelagert (Begründung dort).
 
 - [x] **PG-18 Vernünftige README und Doku**
   - Problem: Die README besteht aus Bildern, einem Abschnitt „Recent Changes“ mit nur einem Eintrag und Config-Details. Es fehlen Installation, Befehle, Rechte und Steuerung. Die Bild-Links zeigen noch auf den alten Repo-Namen `nurkert/PorticleGun`. Es gibt keine Lizenz.

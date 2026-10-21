@@ -30,6 +30,9 @@ to every [release](https://github.com/nurkert/porticle-gun/releases).
   status title is mirrored for controller players so its left marker belongs to the left trigger.
 - Guns created before 1.3 hid their id in a lore line that Bedrock displayed as garbage; they are converted
   automatically when they show up in an inventory.
+- All PorticleGun items are listed in the Bedrock creative inventory (the guns under equipment, the rest under items).
+  Taken from there they arrive without the plugin's data, so the plugin turns them into working items right away.
+- `/porticlegun` (or `/pg`) opens a chest with every item, taken with a single tap.
 
 ## Interdimensional gun on Bedrock
 

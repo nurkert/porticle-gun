@@ -9,7 +9,8 @@
         "display_name": "PorticleGun",
         "bedrock_options": {
           "icon": "porticlegun_portal_gun",
-          "display_handheld": true
+          "display_handheld": true,
+          "creative_category": "equipment"
         }
       }
     ],
@@ -21,7 +22,8 @@
         "display_name": "Interdimensional Gun",
         "bedrock_options": {
           "icon": "porticlegun_interdimensional_gun",
-          "display_handheld": true
+          "display_handheld": true,
+          "creative_category": "equipment"
         }
       }
     ],
@@ -33,7 +35,8 @@
         "display_name": "Rift Shard",
         "bedrock_options": {
           "icon": "porticlegun_rift_shard",
-          "display_handheld": false
+          "display_handheld": false,
+          "creative_category": "items"
         }
       },
       {
@@ -43,7 +46,8 @@
         "display_name": "Portal Fluid",
         "bedrock_options": {
           "icon": "porticlegun_portal_fluid",
-          "display_handheld": false
+          "display_handheld": false,
+          "creative_category": "items"
         }
       },
       {
@@ -53,7 +57,8 @@
         "display_name": "Rift Compass",
         "bedrock_options": {
           "icon": "porticlegun_rift_compass",
-          "display_handheld": false
+          "display_handheld": false,
+          "creative_category": "items"
         }
       }
     ]
