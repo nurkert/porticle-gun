@@ -29,12 +29,13 @@ The pack also works as a normal client pack: put the zip into `.minecraft/resour
 ## Interdimensional gun and rift items
 
 The pack also contains the interdimensional gun (its glass dome shows the tank level in five steps, switched by the
-first custom model data float), the rift shard and the portal fluid, and the animated swirl of the rifts. The shard and
+first custom model data float), the rift shard, the portal fluid and the rift compass. The rifts themselves are made of
+particles, so they need no pack and look the same on Bedrock. The shard and
 the bottle are 3D in hand, on the ground and in item frames and show an animated vanilla-style pixel art icon in
 inventories, like vanilla's trident and spyglass. All of it is generated from `scripts/generate_resourcepack.py`.
 
 ![Rift shard](../images/animations/rift_shard_icon.gif) ![Portal fluid](../images/animations/portal_fluid_icon.gif)
-![Rift compass](../images/animations/rift_compass_icon.gif) ![A rift](../images/animations/rift_portal.gif)
+![Rift compass](../images/animations/rift_compass_icon.gif)
 
 ## Portal status overlay
 

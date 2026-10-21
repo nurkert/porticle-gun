@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Renders the animated README images (turntables, tank, inventory icons, rift) into images/animations/.
+"""Renders the animated README images (turntables, tank, inventory icons) into images/animations/.
 
     python3 scripts/render_gifs.py
 
@@ -7,7 +7,6 @@ Needs Pillow. Everything is rendered from the models in generate_resourcepack.py
 background (GIF only knows fully transparent or opaque, so soft edges are cut at half coverage).
 """
 
-import math
 import os
 import sys
 
@@ -62,12 +61,6 @@ def main():
 
     for item in ("rift_shard", "portal_fluid", "rift_compass"):
         save(f"{item}_icon.gif", [frame(pack.enlarge(icon, 12)) for icon in pack.flat_item_frames(item)], 150)
-
-    sway = [-30 + 12 * math.sin(i / 16 * 2 * math.pi) for i in range(16)]
-    fit = pack.showcase_fit([(yaw, 10) for yaw in sway], pack.RIFT_PORTAL)
-    save("rift_portal.gif", [
-        frame(pack.render_showcase(yaw, 10, 320, supersample=2, model=pack.RIFT_PORTAL, swirl_frame=i, fit=fit))
-        for i, yaw in enumerate(sway)], 90)
 
 
 if __name__ == "__main__":

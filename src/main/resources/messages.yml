@@ -55,6 +55,7 @@ en:
     porticlegun:
       title: "&8PorticleGun"
       filler-name: "&0|"
+      take: "&eClick to take"
     settings:
       title: "&8Settings"
       reset-name: "&c&lRemove portals"
@@ -243,6 +244,7 @@ de:
     porticlegun:
       title: "&8PorticleGun"
       filler-name: "&0|"
+      take: "&eKlicken zum Nehmen"
     settings:
       title: "&8Einstellungen"
       reset-name: "&c&lPortale entfernen"

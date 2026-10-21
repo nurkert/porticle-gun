@@ -45,4 +45,6 @@ echo "eula=true" >"$WORK/eula.txt"
 [ -f "$WORK/server.properties" ] || printf 'online-mode=false\nspawn-protection=0\n' >"$WORK/server.properties"
 
 cd "$WORK"
-exec java -Xms1G -Xmx2G -jar "$PAPER_JAR" --nogui
+# a moderate heap: a bigger one only gets swapped out on a desktop that also runs the game client
+exec java -Xms2G -Xmx3G -XX:+UseG1GC -XX:MaxGCPauseMillis=100 -XX:+ParallelRefProcEnabled -XX:+DisableExplicitGC \
+    -jar "$PAPER_JAR" --nogui

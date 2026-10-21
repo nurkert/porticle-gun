@@ -35,7 +35,7 @@ to every [release](https://github.com/nurkert/porticle-gun/releases).
 
 The interdimensional gun, the rift shard and the portal fluid are in the Bedrock pack as 3D attachables with inventory
 icons. The gun's menu is a normal chest menu with single-click actions, so it works with controllers and touch screens.
-Rifts show as green particles for Bedrock players; the wobbling display entity is hidden from them. The tank level is
+Rifts are made of particles, so Bedrock players see exactly the same wobbling rift as Java players. The tank level is
 shown in the item's lore and the action bar (the dome on the Bedrock model always looks full).
 
 ## Portal status overlay on Bedrock
