@@ -21,6 +21,11 @@
       "textures": [
         "textures/items/portal_fluid"
       ]
+    },
+    "porticlegun_rift_compass": {
+      "textures": [
+        "textures/items/rift_compass"
+      ]
     }
   }
 }

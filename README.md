@@ -96,7 +96,7 @@ been built over move to the nearest safe spot. A rift pair closes when you walk 
 ### Portal fluid and rift shards
 
 <p align="center">
-  <img src="images/rift_items.png" alt="Rift shard, portal fluid and a rift" width="760">
+  <img src="images/rift_items.png" alt="Rift shard, portal fluid, rift compass and a rift" width="860">
 </p>
 
 The gun runs on **portal fluid**. Where the End frays, **rift shards** are left behind: mine end stone or hunt endermen
@@ -108,12 +108,23 @@ gun's tank from its menu. One bottle opens four rifts, and the glass dome on top
 </p>
 
 <p align="center">
-  <img src="images/crafting_portal_fluid.png" alt="Portal fluid: three rift shards, a glass bottle and glowstone dust" width="420">
-  <img src="images/crafting_interdimensional_gun.png" alt="Interdimensional gun recipe" width="420">
+  <img src="images/crafting_portal_fluid.png" alt="Portal fluid: three rift shards, a glass bottle and glowstone dust" width="280">
+  <img src="images/crafting_interdimensional_gun.png" alt="Interdimensional gun recipe" width="280">
+  <img src="images/crafting_rift_compass.png" alt="Rift compass: three rift shards, a compass and an eye of ender" width="280">
 </p>
 
 <p align="center"><sub><b>Portal fluid</b> (shapeless): 3 rift shards · glass bottle · glowstone dust &nbsp;|&nbsp;
-<b>Interdimensional gun</b>: rift shards, nether star, echo shards, a PorticleGun, iron blocks and portal fluid</sub></p>
+<b>Interdimensional gun</b>: rift shards, nether star, echo shards, a PorticleGun, iron blocks and portal fluid
+&nbsp;|&nbsp; <b>Rift compass</b>: 3 rift shards · compass · eye of ender</sub></p>
+
+### The rift compass and the rift atlas
+
+Insert a **rift compass** from the gun's menu and the gun is **attuned** for ten minutes: rifts cost no portal fluid,
+and the **rift atlas** opens up. Pick a structure and your next rift opens right next to the nearest one: villages,
+pillager outposts, desert and jungle temples, witch huts, igloos, woodland mansions, trail ruins, ruined portals,
+ancient cities, trial chambers and strongholds in the Overworld, fortresses and bastions in the Nether, end cities in
+the End. Underground structures are entered through a safe cave inside or next to them. Another compass adds more
+time.
 
 The interdimensional gun is an upgrade: it needs the Overworld (echo shards from the Deep Dark), the Nether (a nether
 star) and the End (rift shards). Details in [docs/interdimensional-gun.md](docs/interdimensional-gun.md).
@@ -127,6 +138,7 @@ star) and the End (rift shards). Details in [docs/interdimensional-gun.md](docs/
 | **Portals** | Two linked portals per gun, oval or rectangular, in any of the configured colours |
 | **Physics** | Momentum and view direction are rotated into the exit portal, for players and other entities |
 | **Interdimensional gun** | Wobbling green rift pairs to homes, any world, spawns, back and your last death, fuelled by portal fluid |
+| **Rift atlas** | A rift compass attunes the gun: free rifts and rifts to the nearest village, temple, ancient city, fortress, end city and more |
 | **Gravity gun** | Carry blocks and mobs; contents and spawner types survive restarts and crashes |
 | **Portal overlay** | Rings around the crosshair in the portal colours show which portals are open |
 | **3D models** | Own Java and Bedrock models for both guns and the new items, installed into Geyser automatically |
@@ -197,7 +209,7 @@ classic title instead, and for Bedrock players the overlay can be switched on on
 |---|---|---|
 | `/porticlegun` | Opens the menu with a new gun | `porticlegun.command` |
 | `/porticlegun removeportal [linked]` | Closes the portal you look at (and its partner) | `porticlegun.command` |
-| `/porticlegun give <item> [player] [amount]` | Gives a PorticleGun, interdimensional gun, rift shards or portal fluid | `porticlegun.admin` |
+| `/porticlegun give <item> [player] [amount]` | Gives a PorticleGun, interdimensional gun, rift shards, portal fluid or rift compasses | `porticlegun.admin` |
 | `/porticlegun list` | Lists all stored guns and their portals | `porticlegun.admin` |
 | `/porticlegun remove <id>` | Closes a gun's portals and deletes its data | `porticlegun.admin` |
 | `/porticlegun clearplayer <player>` | Does the same for every gun an online player carries | `porticlegun.admin` |

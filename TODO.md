@@ -3,7 +3,7 @@
 Befunde aus dem Code-Review. Status: `[ ]` offen · `[~]` in Arbeit · `[x]` erledigt · `[!]` gesperrt, nur nach Rücksprache.
 
 > **Regel:** Das Einstellungs-GUI (`SettingsHandler`, Dropper-Menü) bleibt genau so, wie es ist. Keine Änderung an Layout, Slots, Bedienung oder Optik ohne vorherige Diskussion mit dem User.
-> **Release:** [`v1.5.0`](https://github.com/nurkert/porticle-gun/releases/tag/v1.5.0) (2026-10-21). Damit werden die offenen „Du:“-Punkte (PG-14, PG-15, PG-16, PG-22, PG-23) auf dem Server getestet.
+> **Release:** [`v1.6.0`](https://github.com/nurkert/porticle-gun/releases/tag/v1.6.0) (2026-10-21). Damit werden die offenen „Du:“-Punkte (PG-14, PG-15, PG-16, PG-22, PG-23, PG-24) auf dem Server getestet.
 
 Reihenfolge = Priorität. Unter jedem Punkt: Problem, Lösungsansatz, Notizen beim Abarbeiten.
 
@@ -130,6 +130,15 @@ Reihenfolge = Priorität. Unter jedem Punkt: Problem, Lösungsansatz, Notizen be
   - [x] Smarte Platzierung von Eingang und Ausgang, Nachbessern unsicherer gespeicherter Orte, automatisches Schließen beim Weggehen oder nach Zeit
   - [x] Drops, Rezepte mit echter Zutatenprüfung, `give`-Befehl, Recht, Config, Texte de/en, Unit-Tests, Smoke-Test, Doku
   - [ ] **Du:** Ingame testen: Platzierung der Risse (Wände, Kanten, Höhlen), Landeplätze in Nether und End, Wabern, Menü am Controller/Touch, 3D-Items in der Hand
+  - Notizen:
+
+- [~] **PG-24 Riss-Kompass und Riss-Atlas (Wunsch nach 1.5.0)**
+  - [x] Item mit 3D-Modell (Messinggehäuse, leuchtende Nadel, Kristall) und animiertem Icon (drehende Nadel), Rezept mit Bild
+  - [x] Einsetzen im Gun-Menü: Gun für `compass-minutes` eingestimmt, Risse gratis, Riss-Atlas mit 15 Strukturarten freigeschaltet
+  - [x] Struktursuche ab Spielerposition (Oberwelt/Nether umgerechnet), eine Variante pro Tick, Strukturnamen erst zur Laufzeit aus der Registry (unbekannte werden übersprungen und beim Start gemeldet, Smoke-Test prüft das)
+  - [x] Landeplatz-Spirale um die Struktur, bei unterirdischen Strukturen zuerst Höhlen, dann Oberfläche
+  - [x] Tests (Ziel-Format, Struktur-IDs, Namen in beiden Sprachen), Doku, README, CHANGELOG
+  - [ ] **Du:** Ingame testen: Riss-Atlas und Strukturen (besonders Antike Stätte, Festung, Trial Chambers), Kompass-Zeit
   - Notizen:
 
 ## P2 – Robustheit / Performance

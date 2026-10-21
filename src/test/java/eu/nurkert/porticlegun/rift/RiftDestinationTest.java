@@ -14,7 +14,8 @@ class RiftDestinationTest {
             RiftDestination.spawn("world"),
             RiftDestination.home(3),
             RiftDestination.back(),
-            RiftDestination.death()
+            RiftDestination.death(),
+            RiftDestination.structure(RiftStructure.ANCIENT_CITY)
         }) {
             assertEquals(destination, RiftDestination.parse(destination.serialize()));
         }
@@ -33,5 +34,6 @@ class RiftDestinationTest {
         assertNull(RiftDestination.parse("home:-1"));
         assertNull(RiftDestination.parse("home:abc"));
         assertNull(RiftDestination.parse("somewhere"));
+        assertNull(RiftDestination.parse("structure:atlantis"));
     }
 }

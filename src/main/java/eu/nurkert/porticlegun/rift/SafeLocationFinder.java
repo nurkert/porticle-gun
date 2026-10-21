@@ -24,6 +24,8 @@ public class SafeLocationFinder {
     private static final BlockFace[] SIDES = {BlockFace.NORTH, BlockFace.EAST, BlockFace.SOUTH, BlockFace.WEST};
     private static final int NETHER_MIN_Y = 32;
     private static final int END_ISLAND_RADIUS = 60;
+    private static final int NEAR_RADIUS = 32;
+    private static final int CAVE_MAX_Y = 40;
 
     private final JavaPlugin plugin;
     private final Random random = new Random();
@@ -69,6 +71,63 @@ public class SafeLocationFinder {
                 }
             }
         }.runTaskTimer(plugin, 1L, 1L);
+    }
+
+    /**
+     * Searches a safe spot around a structure, one candidate column per tick, spiralling outwards from its centre. For
+     * underground structures caves inside or next to the structure come first, then the surface above.
+     */
+    public void findNear(World world, Location centre, RiftStructure.Landing landing, Consumer<Location> callback) {
+        List<int[]> offsets = new ArrayList<>();
+        offsets.add(new int[] {0, 0});
+        for (int radius = 4; radius <= NEAR_RADIUS; radius += 4) {
+            for (int i = 0; i < radius * 2; i++) {
+                double angle = Math.PI * i / radius;
+                offsets.add(new int[] {
+                    (int) Math.round(Math.cos(angle) * radius), (int) Math.round(Math.sin(angle) * radius)
+                });
+            }
+        }
+        boolean underground = landing == RiftStructure.Landing.UNDERGROUND;
+        int passes = underground ? 2 : 1;
+        new BukkitRunnable() {
+            private int index;
+
+            @Override
+            public void run() {
+                if (index >= offsets.size() * passes) {
+                    cancel();
+                    callback.accept(null);
+                    return;
+                }
+                boolean caves = underground && index < offsets.size();
+                int[] offset = offsets.get(index % offsets.size());
+                index++;
+                int x = centre.getBlockX() + offset[0];
+                int z = centre.getBlockZ() + offset[1];
+                if (!insideBorder(world, x, z)) {
+                    return;
+                }
+                Location spot = caves ? deepestCave(world, x, z) : check(world, x, z);
+                if (spot != null) {
+                    cancel();
+                    callback.accept(spot);
+                }
+            }
+        }.runTaskTimer(plugin, 1L, 1L);
+    }
+
+    /**
+     * @return the deepest safe spot in a column below y 40, where ancient cities, trial chambers and strongholds lie
+     */
+    private Location deepestCave(World world, int x, int z) {
+        for (int y = world.getMinHeight() + 1; y < CAVE_MAX_Y; y++) {
+            Location spot = spotAbove(world.getBlockAt(x, y, z));
+            if (spot != null) {
+                return spot;
+            }
+        }
+        return null;
     }
 
     private Location check(World world, int x, int z) {

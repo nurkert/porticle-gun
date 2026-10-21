@@ -23,7 +23,7 @@ import org.bukkit.inventory.ItemStack;
 public class GiveCommand implements SubCommand {
 
     private static final List<String> ITEMS =
-            List.of("porticlegun", "interdimensional_gun", "rift_shard", "portal_fluid");
+            List.of("porticlegun", "interdimensional_gun", "rift_shard", "portal_fluid", "rift_compass");
 
     @Override
     public String getName() {

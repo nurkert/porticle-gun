@@ -124,6 +124,16 @@ def main():
     )
     fluid_recipe.save(os.path.join(IMAGES, "crafting_portal_fluid.png"), optimize=True)
 
+    compass = recipe(
+        [
+            [None, shard, None],
+            [shard, flat(vanilla(jar, "item/compass_16")), shard],
+            [None, flat(vanilla(jar, "item/ender_eye")), None],
+        ],
+        flat(from_pixels(pack.flat_item_texture("rift_compass"))),
+    )
+    compass.save(os.path.join(IMAGES, "crafting_rift_compass.png"), optimize=True)
+
 
 if __name__ == "__main__":
     main()

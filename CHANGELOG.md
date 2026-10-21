@@ -5,6 +5,20 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+## [1.6.0] - 2026-10-21
+
+### Added
+- **Rift compass**: attunes the interdimensional gun for ten minutes. Rifts cost no portal fluid and the **rift
+  atlas** unlocks: rifts to the nearest village, outpost, temple, witch hut, igloo, mansion, trail ruins, ruined
+  portal, ancient city, trial chambers, stronghold, nether fortress, bastion or end city, with safe landing next to
+  it (inside caves for underground structures). Recipe: three rift shards, a compass and an eye of ender.
+- The rift is a 3D voxel ring with depth around the animated swirl.
+- Graphical crafting recipes for portal fluid, the interdimensional gun and the rift compass in the README and docs.
+
+### Changed
+- Both guns are shown side by side at the top of the README.
+- README renders use a depth buffer, so overlapping parts are drawn correctly.
+
 ## [1.5.0] - 2026-10-21
 
 ### Added

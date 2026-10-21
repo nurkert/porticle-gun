@@ -45,6 +45,16 @@
           "icon": "porticlegun_portal_fluid",
           "display_handheld": false
         }
+      },
+      {
+        "type": "definition",
+        "model": "porticlegun:rift_compass",
+        "bedrock_identifier": "porticlegun:rift_compass",
+        "display_name": "Rift Compass",
+        "bedrock_options": {
+          "icon": "porticlegun_rift_compass",
+          "display_handheld": false
+        }
       }
     ]
   }

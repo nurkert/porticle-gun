@@ -120,6 +120,9 @@ for gun in abcdefghij klmnopqrst uvwxyzABCD; do
 done
 grep -q "PorticleGun data reloaded from disk" "$LOG" || fail "/porticlegun reload did not succeed"
 grep -q "Player 'NobodyOnline' is not online" "$LOG" || fail "/porticlegun give did not answer"
+if grep -q "are unknown to this server version" "$LOG"; then
+    fail "a rift atlas structure is unknown to the server"
+fi
 if grep -n -E "Error occurred while (enabling|disabling) PorticleGun|Could not load 'plugins/PorticleGun" "$LOG"; then
     fail "PorticleGun failed to load, enable or disable"
 fi

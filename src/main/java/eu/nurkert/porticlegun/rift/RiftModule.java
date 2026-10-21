@@ -13,6 +13,7 @@ public class RiftModule {
     private final PorticleGun plugin;
     private final RiftStorage storage;
     private final SafeLocationFinder finder;
+    private final StructureLocator structures;
     private final RiftPortalManager portals;
     private final RiftMenu menu;
     private final RiftGunListener gunListener;
@@ -24,11 +25,19 @@ public class RiftModule {
         this.settings = RiftSettings.load(plugin.getConfig());
         this.storage = new RiftStorage(new PersistentHandler(plugin, "rift.yml"));
         this.finder = new SafeLocationFinder(plugin);
+        this.structures = new StructureLocator(plugin);
         this.portals = new RiftPortalManager(plugin, storage);
         this.menu = new RiftMenu(this);
         this.gunListener = new RiftGunListener(this);
         this.recipes = new RiftRecipes(this);
         recipes.register();
+        for (RiftStructure structure : RiftStructure.values()) {
+            if (structure.structures().size() < structure.variants().size()) {
+                plugin.getLogger()
+                        .warning("Some structures of '" + structure.id() + "' are unknown to this server version: "
+                                + structure.variants());
+            }
+        }
         register.accept(portals);
         register.accept(menu);
         register.accept(gunListener);
@@ -50,6 +59,10 @@ public class RiftModule {
 
     SafeLocationFinder finder() {
         return finder;
+    }
+
+    StructureLocator structures() {
+        return structures;
     }
 
     RiftPortalManager portals() {
