@@ -4,9 +4,10 @@
 Writes the Java pack (src/main/resourcepack/java), the Bedrock pack (src/main/resourcepack/bedrock) and the Geyser
 item mapping (src/main/resourcepack/geyser). Re-run after changing the model:
 
-    python3 scripts/generate_resourcepack.py [--preview <dir>]
+    python3 scripts/generate_resourcepack.py [--preview <dir>] [--showcase]
 
---preview additionally renders the model from several angles as PNGs to check it without starting the game.
+--preview additionally renders the model from several angles as PNGs to check it without starting the game,
+--showcase renders images/portal_gun_3d.png for the README.
 """
 
 import argparse
@@ -95,7 +96,7 @@ def paint_atlas():
 # Designed in "gun space": barrel along +X from the rear pod (x=0) to the claw tips (x~31), top at +Y, centred at
 # z=8. OFFSET moves it so its centre sits at the model centre (8, 8, 8) that display transforms rotate around.
 # Materials: white, dark, glow0 (primary portal colour), glow1 (secondary portal colour).
-OFFSET = (-7.75, 0, 0)
+OFFSET = (-7.8, 0, 0)
 
 
 def box(name, material, start, end):
@@ -103,17 +104,34 @@ def box(name, material, start, end):
 
 
 ELEMENTS = [
-    # rear pod: a voxel ball, widest in the middle and stepping in towards both ends
-    box("pod_mid_y", "white", (2, 3, 4), (8, 13, 12)),
-    box("pod_mid_z", "white", (2, 4, 3), (8, 12, 13)),
-    box("pod_mid_top", "white", (2, 2, 5), (8, 14, 11)),
-    box("pod_mid_side", "white", (2, 5, 2), (8, 11, 14)),
-    box("pod_back_ring", "white", (1, 4, 4), (2, 12, 12)),
-    box("pod_back_ring_y", "white", (1, 3, 5), (2, 13, 11)),
-    box("pod_back_ring_z", "white", (1, 5, 3), (2, 11, 13)),
-    box("pod_front_ring", "white", (8, 4, 4), (9, 12, 12)),
-    box("pod_front_ring_y", "white", (8, 3, 5), (9, 13, 11)),
-    box("pod_front_ring_z", "white", (8, 5, 3), (9, 11, 13)),
+    # rear pod: a voxel ball, widest in the middle and stepping in towards both ends. The boxes never overlap, so no
+    # two outer faces lie on top of each other (that would flicker in game).
+    *[
+        part
+        for x0, x1 in ((2, 8),)
+        for part in (
+            box("pod_mid_core", "white", (x0, 4, 4), (x1, 12, 12)),
+            box("pod_mid_up", "white", (x0, 12, 4), (x1, 13, 12)),
+            box("pod_mid_down", "white", (x0, 3, 4), (x1, 4, 12)),
+            box("pod_mid_left", "white", (x0, 4, 3), (x1, 12, 4)),
+            box("pod_mid_right", "white", (x0, 4, 12), (x1, 12, 13)),
+            box("pod_mid_top", "white", (x0, 13, 5), (x1, 14, 11)),
+            box("pod_mid_bottom", "white", (x0, 2, 5), (x1, 3, 11)),
+            box("pod_mid_far_left", "white", (x0, 5, 2), (x1, 11, 3)),
+            box("pod_mid_far_right", "white", (x0, 5, 13), (x1, 11, 14)),
+        )
+    ],
+    *[
+        part
+        for name, x0, x1 in (("back", 1, 2), ("front", 8, 9))
+        for part in (
+            box(f"pod_{name}_ring", "white", (x0, 4, 4), (x1, 12, 12)),
+            box(f"pod_{name}_ring_up", "white", (x0, 12, 5), (x1, 13, 11)),
+            box(f"pod_{name}_ring_down", "white", (x0, 3, 5), (x1, 4, 11)),
+            box(f"pod_{name}_ring_left", "white", (x0, 5, 3), (x1, 11, 4)),
+            box(f"pod_{name}_ring_right", "white", (x0, 5, 12), (x1, 11, 13)),
+        )
+    ],
     box("pod_back_end", "white", (0, 5, 5), (1, 11, 11)),
     box("pod_front_end", "white", (9, 5, 5), (10, 11, 11)),
     box("pod_window", "glow1", (3.5, 14, 6.5), (6.5, 14.4, 9.5)),
@@ -140,18 +158,45 @@ ELEMENTS = [
     box("claw_top_2", "dark", (18, 16.5, 7), (22, 18.5, 9)),
     box("claw_top_3", "white", (21.5, 17.5, 6.5), (24.5, 19.5, 9.5)),
     box("claw_top_4", "dark", (24, 16.5, 7), (27, 18.5, 9)),
-    box("claw_top_5", "dark", (26.5, 14, 7), (28.5, 17, 9)),
-    box("claw_top_tip", "glow0", (28.5, 13.5, 7), (30, 15.5, 9)),
+    box("claw_top_5", "dark", (27, 14, 7), (29, 17, 9)),
+    box("claw_top_tip", "glow0", (29, 13.5, 7), (30.5, 15.5, 9)),
     # lower claw, the mirror image hanging below the head
     box("claw_bottom_1", "dark", (19, -0.5, 7), (21, 4, 9)),
     box("claw_bottom_2", "dark", (19.5, -2.5, 7), (23.5, -0.5, 9)),
     box("claw_bottom_3", "white", (23, -3.5, 6.5), (26, -1.5, 9.5)),
     box("claw_bottom_4", "dark", (25.5, -2.5, 7), (28.5, -0.5, 9)),
-    box("claw_bottom_5", "dark", (28, -1, 7), (30, 2, 9)),
-    box("claw_bottom_tip", "glow0", (30, 0.5, 7), (31.5, 2.5, 9)),
+    box("claw_bottom_5", "dark", (28.5, -1, 7), (30.5, 2, 9)),
+    box("claw_bottom_tip", "glow0", (30.5, 0.5, 7), (32, 2.5, 9)),
 ]
 
 FACES = ["north", "east", "south", "west", "up", "down"]
+
+
+def check_model():
+    """Fails if two boxes have overlapping outer faces on the same plane, which flickers in game."""
+    import itertools
+
+    def faces(element):
+        a, b = element["from"], element["to"]
+        for axis in range(3):
+            others = [i for i in range(3) if i != axis]
+            for direction, value in ((-1, a[axis]), (1, b[axis])):
+                yield axis, direction, value, [(a[i], b[i]) for i in others]
+
+    problems = []
+    for first, second in itertools.combinations(ELEMENTS, 2):
+        for f1 in faces(first):
+            for f2 in faces(second):
+                if f1[:2] == f2[:2] and abs(f1[2] - f2[2]) < 1e-9:
+                    overlap = all(min(r1[1], r2[1]) - max(r1[0], r2[0]) > 1e-9 for r1, r2 in zip(f1[3], f2[3]))
+                    if overlap:
+                        problems.append(f"{first['name']} / {second['name']}")
+    if problems:
+        raise SystemExit("coplanar overlapping faces: " + ", ".join(problems))
+    for element in ELEMENTS:
+        start, end = placed(element)
+        if min(start) < -16 or max(end) > 32:
+            raise SystemExit(f"{element['name']} is outside the -16..32 range Java models allow")
 
 
 def placed(element):
@@ -496,6 +541,71 @@ def render(yaw, pitch, size, margin=1, outline=True):
     return image
 
 
+def render_showcase(yaw, pitch, size, supersample=3, margin=0.06):
+    """High quality render for the README: textured faces, smooth edges, transparent background."""
+    transform = make_view(yaw, pitch)
+    full = size * supersample
+    faces = []
+    for element in ELEMENTS:
+        start, end = placed(element)
+        for direction, (quad, normal) in face_quads(start, end).items():
+            n = transform((normal[0] + 8, normal[1] + 8, normal[2] + 8))
+            if n[2] <= 1e-6:
+                continue
+            points = [transform(p) for p in quad]
+            faces.append((sum(p[2] for p in points) / 4, direction, points, element["material"]))
+
+    xs = [p[0] for f in faces for p in f[2]]
+    ys = [p[1] for f in faces for p in f[2]]
+    span = max(max(xs) - min(xs), max(ys) - min(ys))
+    scale = full * (1 - 2 * margin) / span
+    cx, cy = (max(xs) + min(xs)) / 2, (max(ys) + min(ys)) / 2
+
+    canvas = [[None] * full for _ in range(full)]
+    for depth, direction, points, material in sorted(faces, key=lambda f: f[0]):
+        polygon = [((p[0] - cx) * scale + full / 2, (cy - p[1]) * scale + full / 2) for p in points]
+        # faces are parallelograms after the orthographic projection: map pixels back to texture coordinates
+        (ox, oy), (ax, ay), _, (bx, by) = polygon
+        ux, uy, vx, vy = ax - ox, ay - oy, bx - ox, by - oy
+        det = ux * vy - uy * vx
+        if abs(det) < 1e-9:
+            continue
+        tx0, ty0, tile = REGIONS[bedrock_material(material)]
+        glowing = material.startswith("glow")
+        factor = 1.0 if glowing else FACE_SHADE[direction]
+        min_x = max(0, int(min(p[0] for p in polygon)))
+        max_x = min(full - 1, int(max(p[0] for p in polygon)) + 1)
+        min_y = max(0, int(min(p[1] for p in polygon)))
+        max_y = min(full - 1, int(max(p[1] for p in polygon)) + 1)
+        for py in range(min_y, max_y + 1):
+            for px in range(min_x, max_x + 1):
+                dx, dy = px + 0.5 - ox, py + 0.5 - oy
+                u = (dx * vy - dy * vx) / det
+                v = (ux * dy - uy * dx) / det
+                if 0 <= u <= 1 and 0 <= v <= 1:
+                    texel = ATLAS[ty0 + min(tile - 1, int((1 - v) * tile))][tx0 + min(tile - 1, int(u * tile))]
+                    canvas[py][px] = shade(texel[:3], factor)
+
+    image = []
+    area = supersample * supersample
+    for y in range(size):
+        row = []
+        for x in range(size):
+            samples = [
+                canvas[y * supersample + j][x * supersample + i]
+                for j in range(supersample)
+                for i in range(supersample)
+                if canvas[y * supersample + j][x * supersample + i] is not None
+            ]
+            if not samples:
+                row.append((0, 0, 0, 0))
+                continue
+            color = tuple(round(sum(s[c] for s in samples) / len(samples)) for c in range(3))
+            row.append((*color, round(255 * len(samples) / area)))
+        image.append(row)
+    return image
+
+
 def write_png(path, pixels):
     height, width = len(pixels), len(pixels[0])
     raw = b"".join(b"\x00" + b"".join(struct.pack("BBBB", *p) for p in row) for row in pixels)
@@ -524,7 +634,9 @@ ICON_VIEW = (-20, 15)
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--preview", help="directory for preview renders")
+    parser.add_argument("--showcase", action="store_true", help="also render images/portal_gun_3d.png for the README")
     args = parser.parse_args()
+    check_model()
 
     java = os.path.join(OUT, "java")
     write_json(os.path.join(java, "pack.mcmeta"), java_pack_mcmeta())
@@ -544,6 +656,9 @@ def main():
     write_png(os.path.join(bedrock, "pack_icon.png"), render(*ICON_VIEW, 128, margin=6))
 
     write_json(os.path.join(OUT, "geyser", f"{NAMESPACE}_mappings.json"), geyser_mappings())
+
+    if args.showcase:
+        write_png(os.path.join(ROOT, "images", "portal_gun_3d.png"), render_showcase(-35, 22, 720))
 
     if args.preview:
         views = {"iso": (-35, 25), "iso_back": (145, 25), "side": (0, 0), "top": (0, 90), "rear": (90, 0)}

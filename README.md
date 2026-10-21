@@ -9,6 +9,13 @@ A Minecraft server plugin that adds a **portal gun**: shoot two linked portals o
 fall or fly through them. Momentum and view direction carry over, so you can fling yourself across the map. A
 **gravity gun** to pick up and throw blocks and mobs is included.
 
+<p align="center">
+  <img src="images/portal_gun_3d.png" alt="The PorticleGun 3D model" width="420">
+</p>
+
+<p align="center"><b>Its own 3D portal gun model</b>, built block by block, for Java <i>and</i> Bedrock players.<br>
+The claw tips glow in the gun's primary portal colour, windows and emitter in the secondary colour.</p>
+
 ![Portals in action](images/basic_preview.gif)
 
 ## Features
@@ -16,7 +23,8 @@ fall or fly through them. Momentum and view direction carry over, so you can fli
 - Two linked portals per gun, each in its own colour, oval or rectangular
 - Players, mobs, items and projectiles travel through portals and keep their speed and direction
 - Gravity gun: carry blocks (chests keep their contents, spawners their mob) and mobs
-- 3D gun model for Java **and** Bedrock players, works next to other resource packs
+- Custom 3D gun model for Java **and** Bedrock players, tinted in each gun's portal colours; sent automatically and
+  works next to other resource packs ([details](docs/resourcepack.md))
 - Bedrock players via [Geyser](https://geysermc.org) and Floodgate
 - WorldGuard flags to control where portals and the gravity gun may be used
 - English and German, picked per player from their game language
