@@ -6,6 +6,21 @@
       "textures": [
         "textures/items/portal_gun"
       ]
+    },
+    "porticlegun_interdimensional_gun": {
+      "textures": [
+        "textures/items/interdimensional_gun"
+      ]
+    },
+    "porticlegun_rift_shard": {
+      "textures": [
+        "textures/items/rift_shard"
+      ]
+    },
+    "porticlegun_portal_fluid": {
+      "textures": [
+        "textures/items/portal_fluid"
+      ]
     }
   }
 }

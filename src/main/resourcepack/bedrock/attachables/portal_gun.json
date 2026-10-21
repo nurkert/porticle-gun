@@ -8,7 +8,7 @@
         "enchanted": "entity_alphatest_one_sided"
       },
       "textures": {
-        "default": "textures/entity/porticlegun/portal_gun",
+        "default": "textures/entity/porticlegun/atlas",
         "enchanted": "textures/misc/enchanted_item_glint"
       },
       "geometry": {
@@ -47,7 +47,7 @@
         "thirdperson_head": "animation.porticlegun.portal_gun.head",
         "firstperson_main_hand": "animation.porticlegun.portal_gun.firstperson_main_hand",
         "firstperson_off_hand": "animation.porticlegun.portal_gun.firstperson_off_hand",
-        "firstperson_head": "animation.porticlegun.disable"
+        "firstperson_head": "animation.porticlegun.portal_gun.disable"
       },
       "render_controllers": [
         "controller.render.item_default"

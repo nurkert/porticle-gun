@@ -12,6 +12,40 @@
           "display_handheld": true
         }
       }
+    ],
+    "minecraft:warped_fungus_on_a_stick": [
+      {
+        "type": "definition",
+        "model": "porticlegun:interdimensional_gun",
+        "bedrock_identifier": "porticlegun:interdimensional_gun",
+        "display_name": "Interdimensional Gun",
+        "bedrock_options": {
+          "icon": "porticlegun_interdimensional_gun",
+          "display_handheld": true
+        }
+      }
+    ],
+    "minecraft:paper": [
+      {
+        "type": "definition",
+        "model": "porticlegun:rift_shard",
+        "bedrock_identifier": "porticlegun:rift_shard",
+        "display_name": "Rift Shard",
+        "bedrock_options": {
+          "icon": "porticlegun_rift_shard",
+          "display_handheld": false
+        }
+      },
+      {
+        "type": "definition",
+        "model": "porticlegun:portal_fluid",
+        "bedrock_identifier": "porticlegun:portal_fluid",
+        "display_name": "Portal Fluid",
+        "bedrock_options": {
+          "icon": "porticlegun_portal_fluid",
+          "display_handheld": false
+        }
+      }
     ]
   }
 }

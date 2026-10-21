@@ -122,7 +122,9 @@ def check_references():
 
         attachable = attachables.get(identifier)
         if attachable is None:
-            error(f"no attachable for {identifier}, it would be shown as a flat icon")
+            # flat items (shards, bottles) are meant to be icons; guns need their 3D attachable
+            if identifier.endswith("_gun"):
+                error(f"no attachable for {identifier}, it would be shown as a flat icon")
             continue
         check_attachable(identifier, attachable, geometries, animations)
 

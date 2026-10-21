@@ -1,7 +1,7 @@
 {
   "textures": {
-    "gun": "porticlegun:item/portal_gun",
-    "particle": "porticlegun:item/portal_gun"
+    "gun": "porticlegun:item/atlas",
+    "particle": "porticlegun:item/atlas"
   },
   "elements": [
     {

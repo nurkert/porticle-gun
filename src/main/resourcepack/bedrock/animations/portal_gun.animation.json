@@ -238,7 +238,7 @@
         }
       }
     },
-    "animation.porticlegun.disable": {
+    "animation.porticlegun.portal_gun.disable": {
       "loop": true,
       "override_previous_animation": true,
       "bones": {

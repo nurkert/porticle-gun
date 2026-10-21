@@ -6,8 +6,8 @@ item mapping (src/main/resourcepack/geyser). Re-run after changing the model:
 
     python3 scripts/generate_resourcepack.py [--preview <dir>] [--showcase]
 
---preview additionally renders the model from several angles as PNGs to check it without starting the game,
---showcase renders images/portal_gun_3d.png for the README.
+--preview additionally renders the models from several angles as PNGs to check them without starting the game,
+--showcase renders the README images in images/.
 """
 
 import argparse
@@ -21,11 +21,8 @@ ROOT = os.path.normpath(os.path.join(os.path.dirname(__file__), ".."))
 OUT = os.path.join(ROOT, "src", "main", "resourcepack")
 
 NAMESPACE = "porticlegun"
-ITEM = "portal_gun"
-IDENTIFIER = f"{NAMESPACE}:{ITEM}"
-# Bedrock icon shorthand in item_texture.json; set explicitly in the Geyser mapping
-ICON = f"{NAMESPACE}_{ITEM}"
-BASE_ITEM = "minecraft:brewing_stand"
+# one texture atlas shared by all 3D models
+ATLAS_NAME = "atlas"
 
 # default portal colours (gold / dark_blue in config.yml), shown when the item carries no colours
 DEFAULT_TINTS = [0xFFA500, 0x0000AA]
@@ -33,7 +30,7 @@ DEFAULT_TINTS = [0xFFA500, 0x0000AA]
 # Bedrock packs need stable UUIDs, never change them (bump the version instead)
 BEDROCK_HEADER_UUID = "6f2a1c3e-8b4d-4e7a-9c15-2d8f0b7e4a61"
 BEDROCK_MODULE_UUID = "a3d95b72-1e6c-4f08-b2a4-7c9e5d13f8b0"
-BEDROCK_VERSION = [1, 5, 0]
+BEDROCK_VERSION = [1, 6, 0]
 
 # --- texture atlas (32x32 px, one 8x8 tile per material) ------------------------------------------------------------
 TEXTURE_SIZE = 32
@@ -43,7 +40,15 @@ REGIONS = {
     "glow": (16, 0, 8),  # grey scale, tinted with the portal colours on Java
     "glow_primary": (24, 0, 8),  # pre-coloured for Bedrock, which has no item tints
     "glow_secondary": (0, 8, 8),
+    # interdimensional gun
+    "grey": (8, 8, 8),
+    "steel": (16, 8, 8),
+    "liquid": (24, 8, 8),  # portal fluid, always green
+    "glass": (0, 16, 8),
+    "screen": (8, 16, 8),
+    "knob": (16, 16, 8),
 }
+RIFT_GREEN = 0x39FF5A
 BEDROCK_PRIMARY = 0xFF9A1F
 BEDROCK_SECONDARY = 0x36C2FF
 
@@ -89,21 +94,32 @@ def paint_atlas():
     tile("glow", glow((255, 255, 255)))
     tile("glow_primary", glow(hex_rgb(BEDROCK_PRIMARY)))
     tile("glow_secondary", glow(hex_rgb(BEDROCK_SECONDARY)))
+    tile("grey", brick(hex_rgb(0xB9BEC4), hex_rgb(0xD6DADF), hex_rgb(0x8E949B)))
+    tile("steel", brick(hex_rgb(0x5A6068), hex_rgb(0x737A83), hex_rgb(0x3E4349)))
+    tile("liquid", glow(hex_rgb(RIFT_GREEN)))
+    tile("glass", brick(hex_rgb(0xBFEFF0), hex_rgb(0xE8FFFF), hex_rgb(0x8CCFD3)))
+
+    def screen(x, y, last):
+        if x in (0, last) or y in (0, last):
+            return hex_rgb(0x2C3036)
+        return hex_rgb(0x39FF5A) if (x + y) % 3 == 0 and 1 < y < last - 1 else hex_rgb(0x0B1A10)
+
+    tile("screen", screen)
+    tile("knob", brick(hex_rgb(0xF2C230), hex_rgb(0xFFE07A), hex_rgb(0xB8891A)))
     return pixels
 
 
-# --- model ----------------------------------------------------------------------------------------------------------
-# Designed in "gun space": barrel along +X from the rear pod (x=0) to the claw tips (x~31), top at +Y, centred at
-# z=8. OFFSET moves it so its centre sits at the model centre (8, 8, 8) that display transforms rotate around.
-# Materials: white, dark, glow0 (primary portal colour), glow1 (secondary portal colour).
-OFFSET = (-7.8, 0, 0)
+# --- models ---------------------------------------------------------------------------------------------------------
+# Every gun is designed in "gun space": barrel along +X from the rear (x=0) to the front, top at +Y, centred at z=8.
+# A model's offset moves it so its centre sits at the model centre (8, 8, 8) that display transforms rotate around.
 
 
 def box(name, material, start, end):
     return {"name": name, "material": material, "from": list(start), "to": list(end)}
 
 
-ELEMENTS = [
+# PorticleGun. Materials: white, dark, glow0 (primary portal colour), glow1 (secondary portal colour).
+PORTAL_GUN_ELEMENTS = [
     # rear pod: a voxel ball, widest in the middle and stepping in towards both ends. The boxes never overlap, so no
     # two outer faces lie on top of each other (that would flicker in game).
     *[
@@ -169,10 +185,57 @@ ELEMENTS = [
     box("claw_bottom_tip", "glow0", (30.5, 0.5, 7), (32, 2.5, 9)),
 ]
 
+
+
+def rift_gun_elements(level):
+    """Interdimensional gun with its portal fluid tank filled to the given level (0 = empty, 4 = full).
+
+    Materials: grey, steel, glass, screen, knob and liquid (glowing portal fluid).
+    """
+    elements = [
+        # slim body with rounded top and bottom edges
+        box("body", "grey", (1, 3, 5), (14, 8, 11)),
+        box("body_top", "grey", (2, 8, 5.5), (13, 9, 10.5)),
+        box("body_bottom", "grey", (2, 2, 5.5), (13, 3, 10.5)),
+        box("band_left", "steel", (3, 4.5, 4.6), (12, 6.5, 5)),
+        box("band_right", "steel", (3, 4.5, 11), (12, 6.5, 11.4)),
+        box("rear_cap", "steel", (0, 3.5, 5.5), (1, 7.5, 10.5)),
+        # front: collar, nose, emitter ring and glowing tip
+        box("collar", "steel", (14, 3.5, 5.5), (15, 8.5, 10.5)),
+        box("nose", "grey", (15, 4.5, 6.5), (17, 7.5, 9.5)),
+        box("emitter_ring", "steel", (17, 4.5, 6.5), (18, 7.5, 9.5)),
+        box("emitter", "liquid", (18, 5, 7), (18.6, 7, 9)),
+        # control panel at the back: screen and dial
+        box("panel", "steel", (2, 9, 6), (7, 9.5, 10)),
+        box("screen", "screen", (2.5, 9.5, 6.5), (5.5, 9.8, 9.5)),
+        box("dial", "knob", (6, 9.5, 7.5), (7, 10.5, 8.5)),
+        # grip and trigger underneath
+        box("grip", "steel", (3, -0.5, 6.5), (6.5, 2, 9.5)),
+        box("trigger", "knob", (6.8, 0.5, 7.5), (7.6, 2, 8.5)),
+        # the portal fluid tank on the front top: socket, four glass posts, cap and a little bulb
+        box("tank_socket", "steel", (8.5, 9, 6), (13.5, 10, 10)),
+        box("tank_cap", "steel", (8.5, 15, 6), (13.5, 16, 10)),
+        box("tank_bulb", "glass", (10.5, 16, 7.5), (11.5, 16.8, 8.5)),
+        *[
+            box(f"tank_post_{index}", "glass", (x0, 10, z0), (x0 + 1, 15, z0 + 1))
+            for index, (x0, z0) in enumerate(((9, 6.5), (12, 6.5), (9, 8.5), (12, 8.5)))
+        ],
+    ]
+    if level > 0:
+        elements.append(box("tank_fluid", "liquid", (10, 10, 7), (12, 10 + 1.25 * level, 9)))
+    return elements
+
+
+RIFT_GUN_TANK_LEVELS = 4
+
+# The rift portal: a flat, animated swirl shown by an item display entity (Java only, Bedrock players see particles).
+RIFT_PORTAL_FRAMES = 8
+RIFT_PORTAL_SIZE = 32
+
 FACES = ["north", "east", "south", "west", "up", "down"]
 
 
-def check_model():
+def check_model(model):
     """Fails if two boxes have overlapping outer faces on the same plane, which flickers in game."""
     import itertools
 
@@ -184,7 +247,7 @@ def check_model():
                 yield axis, direction, value, [(a[i], b[i]) for i in others]
 
     problems = []
-    for first, second in itertools.combinations(ELEMENTS, 2):
+    for first, second in itertools.combinations(model["elements"], 2):
         for f1 in faces(first):
             for f2 in faces(second):
                 if f1[:2] == f2[:2] and abs(f1[2] - f2[2]) < 1e-9:
@@ -192,16 +255,16 @@ def check_model():
                     if overlap:
                         problems.append(f"{first['name']} / {second['name']}")
     if problems:
-        raise SystemExit("coplanar overlapping faces: " + ", ".join(problems))
-    for element in ELEMENTS:
-        start, end = placed(element)
+        raise SystemExit(f"{model['item']}: coplanar overlapping faces: " + ", ".join(problems))
+    for element in model["elements"]:
+        start, end = placed(element, model["offset"])
         if min(start) < -16 or max(end) > 32:
             raise SystemExit(f"{element['name']} is outside the -16..32 range Java models allow")
 
 
-def placed(element):
-    start = [element["from"][i] + OFFSET[i] for i in range(3)]
-    end = [element["to"][i] + OFFSET[i] for i in range(3)]
+def placed(element, offset):
+    start = [element["from"][i] + offset[i] for i in range(3)]
+    end = [element["to"][i] + offset[i] for i in range(3)]
     return start, end
 
 
@@ -222,7 +285,7 @@ def region_uv16(name):
 # Display transforms. The barrel lies along +X; in the hand slots a y rotation of +90 (right hand) / -90 (left hand)
 # points it away from the player (-90 made players hold it the wrong way round in 1.3.1). Bedrock animations are
 # derived from these values.
-DISPLAY = {
+PORTAL_GUN_DISPLAY = {
     "firstperson_righthand": {"rotation": [0, 90, 0], "translation": [1.5, 2.5, 1.5], "scale": [0.42] * 3},
     "firstperson_lefthand": {"rotation": [0, -90, 0], "translation": [1.5, 2.5, 1.5], "scale": [0.42] * 3},
     "thirdperson_righthand": {"rotation": [0, 90, 0], "translation": [0, 3, 1], "scale": [0.38] * 3},
@@ -233,44 +296,105 @@ DISPLAY = {
     "head": {"rotation": [0, -90, 0], "translation": [0, 10, 0], "scale": [0.5] * 3},
 }
 
+RIFT_GUN_DISPLAY = {
+    "firstperson_righthand": {"rotation": [0, 90, 0], "translation": [1.5, 2.5, 1.5], "scale": [0.7] * 3},
+    "firstperson_lefthand": {"rotation": [0, -90, 0], "translation": [1.5, 2.5, 1.5], "scale": [0.7] * 3},
+    "thirdperson_righthand": {"rotation": [0, 90, 0], "translation": [0, 3, 1], "scale": [0.6] * 3},
+    "thirdperson_lefthand": {"rotation": [0, -90, 0], "translation": [0, 3, 1], "scale": [0.6] * 3},
+    "gui": {"rotation": [20, -35, 0], "translation": [0, 0, 0], "scale": [0.75] * 3},
+    "ground": {"rotation": [0, 0, 0], "translation": [0, 2, 0], "scale": [0.45] * 3},
+    "fixed": {"rotation": [0, 180, 0], "translation": [0, 0, 0], "scale": [0.8] * 3},
+    "head": {"rotation": [0, -90, 0], "translation": [0, 10, 0], "scale": [0.7] * 3},
+}
 
-def java_model():
-    elements = []
-    for element in ELEMENTS:
+# A model: Java item model plus, through Geyser, a Bedrock attachable. "variants" are extra Java models the item
+# definition switches between by the first custom_model_data float (the rift gun's tank level).
+PORTAL_GUN = {
+    "item": "portal_gun",
+    "name": "PorticleGun",
+    "base": "minecraft:brewing_stand",
+    "elements": PORTAL_GUN_ELEMENTS,
+    "offset": (-7.8, 0, 0),
+    "display": PORTAL_GUN_DISPLAY,
+    "tints": DEFAULT_TINTS,
+}
+RIFT_GUN = {
+    "item": "interdimensional_gun",
+    "name": "Interdimensional Gun",
+    "base": "minecraft:warped_fungus_on_a_stick",
+    "elements": rift_gun_elements(RIFT_GUN_TANK_LEVELS),
+    "variants": [rift_gun_elements(level) for level in range(RIFT_GUN_TANK_LEVELS + 1)],
+    "offset": (-1.3, -0.15, 0),
+    "display": RIFT_GUN_DISPLAY,
+    "tints": None,
+}
+GUNS = [PORTAL_GUN, RIFT_GUN]
+
+# flat items, drawn as pixel art (see FLAT_ITEM_ART)
+FLAT_ITEMS = [
+    {"item": "rift_shard", "name": "Rift Shard", "base": "minecraft:paper"},
+    {"item": "portal_fluid", "name": "Portal Fluid", "base": "minecraft:paper"},
+]
+
+
+def identifier(item):
+    return f"{NAMESPACE}:{item}"
+
+
+def icon(item):
+    """Bedrock icon shorthand in item_texture.json, set explicitly in the Geyser mapping."""
+    return f"{NAMESPACE}_{item}"
+
+
+def java_model(model, elements=None):
+    entries = []
+    for element in elements if elements is not None else model["elements"]:
         material, tint = java_material(element["material"])
         face = {"uv": region_uv16(material), "texture": "#gun"}
         if tint is not None:
             face["tintindex"] = tint
-        start, end = placed(element)
+        start, end = placed(element, model["offset"])
         entry = {
             "name": element["name"],
             "from": start,
             "to": end,
             "faces": {direction: dict(face) for direction in FACES},
         }
-        if tint is not None:
+        if tint is not None or material == "liquid":
             entry["light_emission"] = 15
-        elements.append(entry)
+        entries.append(entry)
 
     return {
-        "textures": {"gun": f"{NAMESPACE}:item/{ITEM}", "particle": f"{NAMESPACE}:item/{ITEM}"},
-        "elements": elements,
+        "textures": {"gun": f"{NAMESPACE}:item/{ATLAS_NAME}", "particle": f"{NAMESPACE}:item/{ATLAS_NAME}"},
+        "elements": entries,
         "gui_light": "front",
-        "display": DISPLAY,
+        "display": model["display"],
     }
 
 
-def java_item_definition():
-    return {
-        "model": {
-            "type": "minecraft:model",
-            "model": f"{NAMESPACE}:item/{ITEM}",
-            "tints": [
-                {"type": "minecraft:custom_model_data", "index": index, "default": color}
-                for index, color in enumerate(DEFAULT_TINTS)
-            ],
+def java_item_definition(model):
+    item = model["item"]
+    if "variants" in model:
+        # the plugin sets the first custom_model_data float to the variant number (rift gun: tank level)
+        return {
+            "model": {
+                "type": "minecraft:range_dispatch",
+                "property": "minecraft:custom_model_data",
+                "index": 0,
+                "entries": [
+                    {"threshold": level, "model": {"type": "minecraft:model", "model": f"{NAMESPACE}:item/{item}_{level}"}}
+                    for level in range(1, len(model["variants"]))
+                ],
+                "fallback": {"type": "minecraft:model", "model": f"{NAMESPACE}:item/{item}_0"},
+            }
         }
-    }
+    definition = {"type": "minecraft:model", "model": f"{NAMESPACE}:item/{item}"}
+    if model.get("tints"):
+        definition["tints"] = [
+            {"type": "minecraft:custom_model_data", "index": index, "default": color}
+            for index, color in enumerate(model["tints"])
+        ]
+    return {"model": definition}
 
 
 def java_pack_mcmeta():
@@ -293,7 +417,6 @@ def java_pack_mcmeta():
 ROOT_BONE = NAMESPACE
 AXIS_BONES = [f"{NAMESPACE}_x", f"{NAMESPACE}_y", f"{NAMESPACE}_z"]
 ATTACHABLE_MATERIAL = "entity_alphatest_one_sided"
-DISABLE_ANIMATION = f"animation.{NAMESPACE}.disable"
 # UVs are given in a 16x16 space like in the converter, inset slightly so neighbouring tiles never bleed in
 UV_SPACE = 16
 UV_INSET = 0.016
@@ -319,10 +442,10 @@ def bedrock_face_uv(material, direction):
     }
 
 
-def bedrock_geometry():
+def bedrock_geometry(model):
     cubes = []
-    for element in ELEMENTS:
-        start, end = placed(element)
+    for element in model["elements"]:
+        start, end = placed(element, model["offset"])
         cubes.append({
             # Bedrock mirrors the x axis compared to Java models and centres x/z at 0
             "origin": [roundit(-end[0] + 8), roundit(start[1]), roundit(start[2] - 8)],
@@ -348,7 +471,7 @@ def bedrock_geometry():
         "minecraft:geometry": [
             {
                 "description": {
-                    "identifier": f"geometry.{NAMESPACE}.{ITEM}",
+                    "identifier": f"geometry.{NAMESPACE}.{model['item']}",
                     "texture_width": UV_SPACE,
                     "texture_height": UV_SPACE,
                     "visible_bounds_width": 4,
@@ -361,22 +484,22 @@ def bedrock_geometry():
     }
 
 
-def animation_name(context):
-    return f"animation.{NAMESPACE}.{ITEM}.{context}"
+def animation_name(model, context):
+    return f"animation.{NAMESPACE}.{model['item']}.{context}"
 
 
-def bedrock_attachable():
+def bedrock_attachable(model):
     return {
         "format_version": "1.10.0",
         "minecraft:attachable": {
             "description": {
-                "identifier": IDENTIFIER,
+                "identifier": identifier(model["item"]),
                 "materials": {"default": ATTACHABLE_MATERIAL, "enchanted": ATTACHABLE_MATERIAL},
                 "textures": {
-                    "default": f"textures/entity/{NAMESPACE}/{ITEM}",
+                    "default": f"textures/entity/{NAMESPACE}/{ATLAS_NAME}",
                     "enchanted": "textures/misc/enchanted_item_glint",
                 },
-                "geometry": {"default": f"geometry.{NAMESPACE}.{ITEM}"},
+                "geometry": {"default": f"geometry.{NAMESPACE}.{model['item']}"},
                 "scripts": {
                     "pre_animation": [
                         "v.main_hand = c.item_slot == 'main_hand';",
@@ -393,12 +516,12 @@ def bedrock_attachable():
                     ],
                 },
                 "animations": {
-                    "thirdperson_main_hand": animation_name("thirdperson_main_hand"),
-                    "thirdperson_off_hand": animation_name("thirdperson_off_hand"),
-                    "thirdperson_head": animation_name("head"),
-                    "firstperson_main_hand": animation_name("firstperson_main_hand"),
-                    "firstperson_off_hand": animation_name("firstperson_off_hand"),
-                    "firstperson_head": DISABLE_ANIMATION,
+                    "thirdperson_main_hand": animation_name(model, "thirdperson_main_hand"),
+                    "thirdperson_off_hand": animation_name(model, "thirdperson_off_hand"),
+                    "thirdperson_head": animation_name(model, "head"),
+                    "firstperson_main_hand": animation_name(model, "firstperson_main_hand"),
+                    "firstperson_off_hand": animation_name(model, "firstperson_off_hand"),
+                    "firstperson_head": animation_name(model, "disable"),
                 },
                 "render_controllers": ["controller.render.item_default"],
             }
@@ -415,17 +538,18 @@ def axis_bones(display, position):
     }
 
 
-def bedrock_animations():
+def bedrock_animations(model):
+    display_values = model["display"]
     third_person_root = {"rotation": [90, 0, 0], "position": [0, 13, -3]}
     first_person_root = {"rotation": [90, 60, -40], "position": [4, 10, 4], "scale": 1.5}
 
     def pose(java_key, root, mirror_x, negate_z):
-        display = DISPLAY[java_key]
+        display = display_values[java_key]
         tx, ty, tz = display["translation"]
         position = [tx if mirror_x else -tx, ty, -tz if negate_z else tz]
         return {"loop": True, "bones": {ROOT_BONE: root, **axis_bones(display, position)}}
 
-    head = DISPLAY["head"]
+    head = display_values["head"]
     hx, hy, hz = head["translation"]
     head_bones = axis_bones(head, [roundit(-hx * 0.625), roundit(hy * 0.625), roundit(hz * 0.625)])
     head_bones[AXIS_BONES[0]]["scale"] = [roundit(value * 0.625) for value in head["scale"]]
@@ -433,12 +557,23 @@ def bedrock_animations():
     return {
         "format_version": "1.8.0",
         "animations": {
-            animation_name("thirdperson_main_hand"): pose("thirdperson_righthand", third_person_root, False, False),
-            animation_name("thirdperson_off_hand"): pose("thirdperson_lefthand", third_person_root, True, False),
-            animation_name("head"): {"loop": True, "bones": {ROOT_BONE: {"position": [0, 19.9, 0]}, **head_bones}},
-            animation_name("firstperson_main_hand"): pose("firstperson_righthand", first_person_root, False, True),
-            animation_name("firstperson_off_hand"): pose("firstperson_lefthand", first_person_root, True, True),
-            DISABLE_ANIMATION: {"loop": True, "override_previous_animation": True, "bones": {ROOT_BONE: {"scale": 0}}},
+            animation_name(model, "thirdperson_main_hand"): pose(
+                "thirdperson_righthand", third_person_root, False, False
+            ),
+            animation_name(model, "thirdperson_off_hand"): pose("thirdperson_lefthand", third_person_root, True, False),
+            animation_name(model, "head"): {
+                "loop": True,
+                "bones": {ROOT_BONE: {"position": [0, 19.9, 0]}, **head_bones},
+            },
+            animation_name(model, "firstperson_main_hand"): pose(
+                "firstperson_righthand", first_person_root, False, True
+            ),
+            animation_name(model, "firstperson_off_hand"): pose("firstperson_lefthand", first_person_root, True, True),
+            animation_name(model, "disable"): {
+                "loop": True,
+                "override_previous_animation": True,
+                "bones": {ROOT_BONE: {"scale": 0}},
+            },
         },
     }
 
@@ -448,7 +583,7 @@ def bedrock_manifest():
         "format_version": 2,
         "header": {
             "name": "PorticleGun",
-            "description": "3D portal gun for PorticleGun (Geyser)",
+            "description": "3D guns and items of PorticleGun (Geyser)",
             "uuid": BEDROCK_HEADER_UUID,
             "version": BEDROCK_VERSION,
             "min_engine_version": [1, 21, 0],
@@ -461,26 +596,24 @@ def bedrock_item_texture():
     return {
         "resource_pack_name": "PorticleGun",
         "texture_name": "atlas.items",
-        "texture_data": {ICON: {"textures": [f"textures/items/{ITEM}"]}},
+        "texture_data": {
+            icon(entry["item"]): {"textures": [f"textures/items/{entry['item']}"]} for entry in GUNS + FLAT_ITEMS
+        },
     }
 
 
 def geyser_mappings():
-    return {
-        "format_version": 2,
-        "items": {
-            BASE_ITEM: [
-                {
-                    "type": "definition",
-                    "model": IDENTIFIER,
-                    "bedrock_identifier": IDENTIFIER,
-                    "display_name": "PorticleGun",
-                    # without an explicit icon Geyser looks for "porticlegun.portal_gun" in item_texture.json
-                    "bedrock_options": {"icon": ICON, "display_handheld": True},
-                }
-            ]
-        },
-    }
+    items = {}
+    for entry in GUNS + FLAT_ITEMS:
+        items.setdefault(entry["base"], []).append({
+            "type": "definition",
+            "model": identifier(entry["item"]),
+            "bedrock_identifier": identifier(entry["item"]),
+            "display_name": entry["name"],
+            # without an explicit icon Geyser looks for "porticlegun.<item>" in item_texture.json
+            "bedrock_options": {"icon": icon(entry["item"]), "display_handheld": entry in GUNS},
+        })
+    return {"format_version": 2, "items": items}
 
 
 # --- portal status overlay (HUD) -----------------------------------------------------------------------------------
@@ -572,6 +705,109 @@ def bedrock_glyph_sheet():
     return pixels
 
 
+# --- flat items and the rift portal ---------------------------------------------------------------------------------
+FLAT_ITEM_PALETTES = {
+    "rift_shard": {"d": 0x2E1648, "p": 0x6E36B0, "l": 0xC7A3FF, "g": 0x5CFF7A, "w": 0xF4FFF6},
+    "portal_fluid": {
+        "c": 0x8B5A2B, "C": 0x5E3A1A, "G": 0xBFE3E3, "h": 0xFFFFFF, "L": 0x5CFF7A, "M": 0x22C944, "D": 0x0E8A2A,
+    },
+}
+FLAT_ITEM_ART = {
+    # a crystal splinter from the space between dimensions: purple shell, green glowing core
+    "rift_shard": [
+        "................",
+        "..........dd....",
+        ".........dpld...",
+        "........dpllgd..",
+        ".......dpllggd..",
+        "......dplgggd...",
+        ".....dplgggpd...",
+        "....dplggwpd....",
+        "...dplggwpd.....",
+        "...dpggwpd......",
+        "..dpgggpd.......",
+        "..dpggpd........",
+        ".dppgpd.........",
+        ".dpppd..........",
+        "..ddd...........",
+        "................",
+    ],
+    # a corked bottle of glowing green portal fluid
+    "portal_fluid": [
+        "................",
+        "......cccc......",
+        "......cCCc......",
+        ".......GG.......",
+        ".......GG.......",
+        "......GhLG......",
+        ".....GhLLMG.....",
+        "....GhLLLMMG....",
+        "...GhLLLLMMDG...",
+        "...GLLLLLMMDG...",
+        "...GLLLLMMDDG...",
+        "...GMLLMMMDDG...",
+        "....GMMMMDDG....",
+        ".....GDDDDG.....",
+        "......GGGG......",
+        "................",
+    ],
+}
+
+
+def flat_item_texture(item):
+    palette = FLAT_ITEM_PALETTES[item]
+    return [
+        [(*hex_rgb(palette[c]), 255) if c != "." else (0, 0, 0, 0) for c in row] for row in FLAT_ITEM_ART[item]
+    ]
+
+
+def java_flat_item_model(item):
+    return {"parent": "minecraft:item/generated", "textures": {"layer0": f"{NAMESPACE}:item/{item}"}}
+
+
+def rift_portal_frames():
+    """Animated swirl, frames stacked vertically: dark green spiral arms around a bright core, a glowing rim."""
+    size = RIFT_PORTAL_SIZE
+    frames = []
+    for frame in range(RIFT_PORTAL_FRAMES):
+        phase = 2 * math.pi * frame / RIFT_PORTAL_FRAMES
+        for y in range(size):
+            row = []
+            for x in range(size):
+                dx, dy = (x + 0.5 - size / 2) / (size / 2), (y + 0.5 - size / 2) / (size / 2)
+                r = math.hypot(dx, dy)
+                if r > 1:
+                    row.append((0, 0, 0, 0))
+                    continue
+                if r > 0.86:
+                    row.append((*hex_rgb(0xB6FF7A), 255))  # rim
+                    continue
+                spiral = math.sin(3 * math.atan2(dy, dx) + 9 * r - phase)
+                light = 0.35 + 0.35 * spiral + 0.45 * (1 - r) ** 2
+                green = tuple(max(0, min(255, round(c * light))) for c in hex_rgb(RIFT_GREEN))
+                core = max(0.0, 1 - r / 0.25)
+                color = tuple(round(g + (255 - g) * core * 0.85) for g in green)
+                row.append((*color, 255))
+            frames.append(row)
+    return frames
+
+
+def java_rift_portal_model():
+    face = {"uv": [0, 0, 16, 16], "texture": "#portal"}
+    return {
+        "textures": {"portal": f"{NAMESPACE}:item/rift_portal", "particle": f"{NAMESPACE}:item/rift_portal"},
+        "elements": [
+            {
+                "from": [0, 0, 7.75],
+                "to": [16, 16, 8.25],
+                "light_emission": 15,
+                "faces": {"north": dict(face), "south": dict(face)},
+            }
+        ],
+        "display": {"fixed": {"rotation": [0, 0, 0], "translation": [0, 0, 0], "scale": [1, 1, 1]}},
+    }
+
+
 # --- rendering (icons and previews) ---------------------------------------------------------------------------------
 FACE_SHADE = {"up": 1.0, "down": 0.55, "north": 0.8, "south": 0.8, "east": 0.68, "west": 0.68}
 
@@ -613,17 +849,22 @@ def inside(polygon, x, y):
     return result
 
 
+def glowing(material):
+    return material.startswith("glow") or material == "liquid"
+
+
 def material_color(material):
     x, y, size = REGIONS[bedrock_material(material)]
     return ATLAS[y + size // 2][x + size // 2][:3]
 
 
-def render(yaw, pitch, size, margin=1, outline=True):
+def render(yaw, pitch, size, margin=1, outline=True, model=PORTAL_GUN):
     """Orthographic render from the given angle, scaled to fit a size x size image."""
     transform = make_view(yaw, pitch)
+    elements = model["elements"]
     faces = []
-    for index, element in enumerate(ELEMENTS):
-        start, end = placed(element)
+    for index, element in enumerate(elements):
+        start, end = placed(element, model["offset"])
         for direction, (quad, normal) in face_quads(start, end).items():
             n = transform((normal[0] + 8, normal[1] + 8, normal[2] + 8))
             if n[2] <= 1e-6:
@@ -642,7 +883,7 @@ def render(yaw, pitch, size, margin=1, outline=True):
     for depth, index, direction, points, material in sorted(faces, key=lambda f: f[0]):
         polygon = [((p[0] - cx) * scale + size / 2, (cy - p[1]) * scale + size / 2) for p in points]
         color = material_color(material)
-        if not material.startswith("glow"):
+        if not glowing(material):
             color = shade(color, FACE_SHADE[direction])
         min_x = max(0, int(min(p[0] for p in polygon)))
         max_x = min(size - 1, int(max(p[0] for p in polygon)) + 1)
@@ -664,14 +905,14 @@ def render(yaw, pitch, size, margin=1, outline=True):
                     nx, ny = px + dx, py + dy
                     if not (0 <= nx < size and 0 <= ny < size) or owner[ny][nx] is None:
                         # lights stay bright at the edge, everything else gets a dark rim
-                        if not ELEMENTS[owner[py][px]]["material"].startswith("glow"):
+                        if not glowing(elements[owner[py][px]]["material"]):
                             result[py][px] = (*shade(image[py][px][:3], 0.55), 255)
                         break
         image = result
     return image
 
 
-def render_showcase(yaw, pitch, size, supersample=3, margin=0.06, tints=None):
+def render_showcase(yaw, pitch, size, supersample=3, margin=0.06, tints=None, model=PORTAL_GUN):
     """High quality render for the README: textured faces, smooth edges, transparent background.
 
     tints: optional (primary, secondary) RGB ints; the lights are then coloured like Java tints them in game.
@@ -679,8 +920,8 @@ def render_showcase(yaw, pitch, size, supersample=3, margin=0.06, tints=None):
     transform = make_view(yaw, pitch)
     full = size * supersample
     faces = []
-    for element in ELEMENTS:
-        start, end = placed(element)
+    for element in model["elements"]:
+        start, end = placed(element, model["offset"])
         for direction, (quad, normal) in face_quads(start, end).items():
             n = transform((normal[0] + 8, normal[1] + 8, normal[2] + 8))
             if n[2] <= 1e-6:
@@ -709,8 +950,7 @@ def render_showcase(yaw, pitch, size, supersample=3, margin=0.06, tints=None):
             tx0, ty0, tile = REGIONS["glow"]
         else:
             tx0, ty0, tile = REGIONS[bedrock_material(material)]
-        glowing = material.startswith("glow")
-        factor = 1.0 if glowing else FACE_SHADE[direction]
+        factor = 1.0 if glowing(material) else FACE_SHADE[direction]
         min_x = max(0, int(min(p[0] for p in polygon)))
         max_x = min(full - 1, int(max(p[0] for p in polygon)) + 1)
         min_y = max(0, int(min(p[1] for p in polygon)))
@@ -839,48 +1079,109 @@ ATLAS = paint_atlas()
 ICON_VIEW = (-20, 15)
 
 
+def enlarge(pixels, factor):
+    return [[p for p in row for _ in range(factor)] for row in pixels for _ in range(factor)]
+
+
+def render_rift_showcase(size=360):
+    """The interdimensional gun from empty to full tank, as the tank drains in game."""
+    renders = [
+        render_showcase(-35, 22, size, model={**RIFT_GUN, "elements": elements}) for elements in RIFT_GUN["variants"]
+    ]
+    return [sum((render[y] for render in renders), []) for y in range(size)]
+
+
+def render_items_showcase(cell=128, gap=48):
+    """The new items side by side: rift shard, portal fluid and a still frame of the rift portal."""
+    shard = enlarge(flat_item_texture("rift_shard"), cell // 16)
+    fluid = enlarge(flat_item_texture("portal_fluid"), cell // 16)
+    portal = enlarge(rift_portal_frames()[:RIFT_PORTAL_SIZE], cell // RIFT_PORTAL_SIZE)
+    images = [shard, fluid, portal]
+    width = len(images) * cell + (len(images) - 1) * gap
+    rows = []
+    for y in range(cell):
+        row = []
+        for index, image in enumerate(images):
+            if index:
+                row += [(0, 0, 0, 0)] * gap
+            row += image[y]
+        rows.append(row)
+    assert len(rows[0]) == width
+    return rows
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--preview", help="directory for preview renders")
-    parser.add_argument("--showcase", action="store_true", help="also render images/portal_gun_3d.png for the README")
+    parser.add_argument("--showcase", action="store_true", help="also render the README images in images/")
     args = parser.parse_args()
-    check_model()
+    for gun in GUNS:
+        for elements in gun.get("variants", [gun["elements"]]):
+            check_model({**gun, "elements": elements})
 
     java = os.path.join(OUT, "java")
+    java_assets = os.path.join(java, "assets", NAMESPACE)
     write_json(os.path.join(java, "pack.mcmeta"), java_pack_mcmeta())
-    write_json(os.path.join(java, "assets", NAMESPACE, "items", f"{ITEM}.json"), java_item_definition())
-    write_json(os.path.join(java, "assets", NAMESPACE, "models", "item", f"{ITEM}.json"), java_model())
-    write_png(os.path.join(java, "assets", NAMESPACE, "textures", "item", f"{ITEM}.png"), ATLAS)
+    write_png(os.path.join(java_assets, "textures", "item", f"{ATLAS_NAME}.png"), ATLAS)
+    for gun in GUNS:
+        item = gun["item"]
+        write_json(os.path.join(java_assets, "items", f"{item}.json"), java_item_definition(gun))
+        if "variants" in gun:
+            for level, elements in enumerate(gun["variants"]):
+                write_json(os.path.join(java_assets, "models", "item", f"{item}_{level}.json"), java_model(gun, elements))
+        else:
+            write_json(os.path.join(java_assets, "models", "item", f"{item}.json"), java_model(gun))
+    for entry in FLAT_ITEMS:
+        item = entry["item"]
+        write_json(os.path.join(java_assets, "items", f"{item}.json"),
+                   {"model": {"type": "minecraft:model", "model": f"{NAMESPACE}:item/{item}"}})
+        write_json(os.path.join(java_assets, "models", "item", f"{item}.json"), java_flat_item_model(item))
+        write_png(os.path.join(java_assets, "textures", "item", f"{item}.png"), flat_item_texture(item))
+    write_json(os.path.join(java_assets, "items", "rift_portal.json"),
+               {"model": {"type": "minecraft:model", "model": f"{NAMESPACE}:item/rift_portal"}})
+    write_json(os.path.join(java_assets, "models", "item", "rift_portal.json"), java_rift_portal_model())
+    write_png(os.path.join(java_assets, "textures", "item", "rift_portal.png"), rift_portal_frames())
+    write_json(os.path.join(java_assets, "textures", "item", "rift_portal.png.mcmeta"),
+               {"animation": {"frametime": 2, "interpolate": True}})
     write_png(os.path.join(java, "pack.png"), render(*ICON_VIEW, 128, margin=6))
     write_json(os.path.join(java, "assets", "minecraft", "font", "default.json"), java_font())
-    write_png(os.path.join(java, "assets", NAMESPACE, "textures", "font", "portal_hud.png"), hud_glyph_strip())
+    write_png(os.path.join(java_assets, "textures", "font", "portal_hud.png"), hud_glyph_strip())
 
     bedrock = os.path.join(OUT, "bedrock")
     write_json(os.path.join(bedrock, "manifest.json"), bedrock_manifest())
-    write_json(os.path.join(bedrock, "attachables", f"{ITEM}.json"), bedrock_attachable())
-    write_json(os.path.join(bedrock, "models", "entity", f"{ITEM}.geo.json"), bedrock_geometry())
-    write_json(os.path.join(bedrock, "animations", f"{ITEM}.animation.json"), bedrock_animations())
+    write_png(os.path.join(bedrock, "textures", "entity", NAMESPACE, f"{ATLAS_NAME}.png"), ATLAS)
+    for gun in GUNS:
+        item = gun["item"]
+        write_json(os.path.join(bedrock, "attachables", f"{item}.json"), bedrock_attachable(gun))
+        write_json(os.path.join(bedrock, "models", "entity", f"{item}.geo.json"), bedrock_geometry(gun))
+        write_json(os.path.join(bedrock, "animations", f"{item}.animation.json"), bedrock_animations(gun))
+        write_png(os.path.join(bedrock, "textures", "items", f"{item}.png"), render(*ICON_VIEW, 32, model=gun))
+    for entry in FLAT_ITEMS:
+        write_png(os.path.join(bedrock, "textures", "items", f"{entry['item']}.png"), flat_item_texture(entry["item"]))
     write_json(os.path.join(bedrock, "textures", "item_texture.json"), bedrock_item_texture())
-    write_png(os.path.join(bedrock, "textures", "entity", NAMESPACE, f"{ITEM}.png"), ATLAS)
-    write_png(os.path.join(bedrock, "textures", "items", f"{ITEM}.png"), render(*ICON_VIEW, 32))
     write_png(os.path.join(bedrock, "pack_icon.png"), render(*ICON_VIEW, 128, margin=6))
     write_png(os.path.join(bedrock, "font", "glyph_E9.png"), bedrock_glyph_sheet())
 
     write_json(os.path.join(OUT, "geyser", f"{NAMESPACE}_mappings.json"), geyser_mappings())
 
     if args.showcase:
-        write_png(os.path.join(ROOT, "images", "portal_gun_3d.png"), render_showcase(-35, 22, 720))
-        write_png(os.path.join(ROOT, "images", "portal_gun_colors.png"), render_colour_variants())
-        write_png(os.path.join(ROOT, "images", "divider.png"), render_divider())
-        write_png(os.path.join(ROOT, "images", "portal_hud.png"), render_hud_preview())
+        images = os.path.join(ROOT, "images")
+        write_png(os.path.join(images, "portal_gun_3d.png"), render_showcase(-35, 22, 720))
+        write_png(os.path.join(images, "portal_gun_colors.png"), render_colour_variants())
+        write_png(os.path.join(images, "divider.png"), render_divider())
+        write_png(os.path.join(images, "portal_hud.png"), render_hud_preview())
+        write_png(os.path.join(images, "interdimensional_gun_3d.png"), render_showcase(-35, 22, 720, model=RIFT_GUN))
+        write_png(os.path.join(images, "interdimensional_gun_tank.png"), render_rift_showcase())
+        write_png(os.path.join(images, "rift_items.png"), render_items_showcase())
 
     if args.preview:
         views = {"iso": (-35, 25), "iso_back": (145, 25), "side": (0, 0), "top": (0, 90), "rear": (90, 0)}
-        for name, (yaw, pitch) in views.items():
-            write_png(os.path.join(args.preview, f"{name}.png"), render(yaw, pitch, 320, margin=12))
-        icon = render(*ICON_VIEW, 32)
-        enlarged = [[p for p in row for _ in range(8)] for row in icon for _ in range(8)]
-        write_png(os.path.join(args.preview, "icon_x8.png"), enlarged)
+        for gun in GUNS:
+            for name, (yaw, pitch) in views.items():
+                write_png(os.path.join(args.preview, f"{gun['item']}_{name}.png"),
+                          render(yaw, pitch, 320, margin=12, model=gun))
+            write_png(os.path.join(args.preview, f"{gun['item']}_icon_x8.png"),
+                      enlarge(render(*ICON_VIEW, 32, model=gun), 8))
 
 
 if __name__ == "__main__":
