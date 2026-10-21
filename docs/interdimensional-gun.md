@@ -50,6 +50,9 @@ opened where `porticlegun-portal-create` is denied.
 - **Rift shards** drop when mining end stone (`end-stone-chance`, plus `end-stone-fortune-bonus` per fortune level)
   and from endermen killed by a player (`enderman-chance`, plus `enderman-looting-bonus` per looting level).
 - **Portal fluid**: three rift shards, a glass bottle and glowstone dust (shapeless).
+
+  ![Portal fluid recipe](../images/crafting_portal_fluid.png)
+
 - **Tank**: "Fill tank" in the menu takes one portal fluid from the inventory, gives the bottle back and adds
   `rifts-per-fluid` rifts, up to `tank-capacity`. Every rift uses one. The dome on the gun shows the level in five
   steps on Java.
@@ -57,6 +60,8 @@ opened where `porticlegun-portal-create` is denied.
   recipes.
 
 ## Crafting the gun
+
+![Interdimensional gun recipe](../images/crafting_interdimensional_gun.png)
 
 | | | |
 |---|---|---|

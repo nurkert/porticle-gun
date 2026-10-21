@@ -29,6 +29,8 @@ Formatting is enforced with Spotless (palantir-java-format). Fix it with `mvn sp
 
 - Resource packs: `python3 scripts/validate_bedrock_pack.py --schemas <checkout>` checks the Bedrock pack (see
   [bedrock.md](bedrock.md)); CI also checks that the generated JSON files are up to date.
+- Recipe images: `python3 scripts/render_recipes.py <minecraft client jar>` (needs Pillow) re-renders the crafting
+  recipe images in `images/` from the PorticleGun recipe screenshot, vanilla textures and the generated models.
 - Manual testing: `scripts/dev-server.sh` builds the plugin and starts Paper with Geyser and Floodgate in `run/dev`.
   Java clients connect to `localhost:25565`, Bedrock clients to `localhost:19132`.
 

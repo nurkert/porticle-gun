@@ -107,10 +107,13 @@ gun's tank from its menu. One bottle opens four rifts, and the glass dome on top
   <img src="images/interdimensional_gun_tank.png" alt="The tank from empty to full" width="100%">
 </p>
 
-| Recipe | |
-|---|---|
-| **Portal fluid** (shapeless) | 3 rift shards · glass bottle · glowstone dust |
-| **Interdimensional gun** | Rift shard · Nether star · Rift shard<br>Echo shard · **PorticleGun** · Echo shard<br>Iron block · Portal fluid · Iron block |
+<p align="center">
+  <img src="images/crafting_portal_fluid.png" alt="Portal fluid: three rift shards, a glass bottle and glowstone dust" width="420">
+  <img src="images/crafting_interdimensional_gun.png" alt="Interdimensional gun recipe" width="420">
+</p>
+
+<p align="center"><sub><b>Portal fluid</b> (shapeless): 3 rift shards · glass bottle · glowstone dust &nbsp;|&nbsp;
+<b>Interdimensional gun</b>: rift shards, nether star, echo shards, a PorticleGun, iron blocks and portal fluid</sub></p>
 
 The interdimensional gun is an upgrade: it needs the Overworld (echo shards from the Deep Dark), the Nether (a nether
 star) and the End (rift shards). Details in [docs/interdimensional-gun.md](docs/interdimensional-gun.md).
