@@ -5,6 +5,8 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+## [1.6.6] - 2026-10-22
+
 ### Added
 - **Charging rifts**: the entrance shows up the moment the gun fires, as a small, pulsing orange rift that cannot be
   walked through yet. Once the destination is found and its chunk is loaded it grows into the green rift; if no
