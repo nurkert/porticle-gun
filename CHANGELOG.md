@@ -5,6 +5,13 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+## [1.6.5] - 2026-10-22
+
+### Fixed
+- Scrolling backwards through the portal colours now visits exactly the same colours as scrolling forwards, in
+  reverse. After `/porticlegun reload` (or with custom colours) a gun's colour was no longer found in the colour list,
+  and both arrows jumped to the first colour instead of moving one step.
+
 ## [1.6.4] - 2026-10-22
 
 ### Changed

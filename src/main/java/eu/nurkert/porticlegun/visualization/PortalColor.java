@@ -150,28 +150,38 @@ public final class PortalColor {
         return dustOptions;
     }
 
+    /**
+     * @return the colour after this one, going round: the same order as {@link #previous()}, backwards
+     */
     public PortalColor next() {
-        List<PortalColor> colors = REGISTERED_COLORS;
-        if (colors.isEmpty()) {
-            return this;
-        }
-        int index = colors.indexOf(this);
-        if (index < 0) {
-            return colors.get(0);
-        }
-        return colors.get((index + 1) % colors.size());
+        return step(1);
     }
 
+    /**
+     * @return the colour before this one, going round: exactly the order of {@link #next()}, backwards
+     */
     public PortalColor previous() {
+        return step(-1);
+    }
+
+    private PortalColor step(int direction) {
         List<PortalColor> colors = REGISTERED_COLORS;
         if (colors.isEmpty()) {
             return this;
         }
-        int index = colors.indexOf(this);
-        if (index < 0) {
-            return colors.get(0);
+        // by name, not by object: after a reload the registered colours are new objects, while guns may still hold
+        // the old ones; looking them up by identity made both directions jump to the first colour
+        int index = -1;
+        for (int i = 0; i < colors.size(); i++) {
+            if (colors.get(i).name.equals(name)) {
+                index = i;
+                break;
+            }
         }
-        return colors.get((index - 1 + colors.size()) % colors.size());
+        if (index < 0) {
+            return direction > 0 ? colors.get(0) : colors.get(colors.size() - 1);
+        }
+        return colors.get(Math.floorMod(index + direction, colors.size()));
     }
 
     public String getName() {
