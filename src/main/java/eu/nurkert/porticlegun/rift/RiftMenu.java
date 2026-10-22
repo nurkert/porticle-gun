@@ -116,6 +116,7 @@ public class RiftMenu implements Listener {
 
         // header: whether the gun is attuned, the gun itself (tank and destination in its tooltip), and the only free
         // slot of the menu with the load button next to it
+        inventory.setItem(0, currentDestination(player, gun));
         inventory.setItem(2, compassStatus(player, gun));
         inventory.setItem(4, gun.clone());
         inventory.setItem(INPUT_SLOT, null);
@@ -208,8 +209,7 @@ public class RiftMenu implements Listener {
                         text(player, "rift.menu.home", placeholders),
                         lines(player, "rift.menu.home-lore", placeholders));
                 if (RiftDestination.home(home).equals(selected)) {
-                    glow(icon);
-                    addLine(icon, text(player, "rift.menu.selected"));
+                    markSelected(player, icon);
                 }
                 action = () -> openHome(player, holder.slot, number);
             }
@@ -598,8 +598,7 @@ public class RiftMenu implements Listener {
             RiftDestination selected) {
         ItemStack icon = item(material, name, lore);
         if (destination.equals(selected)) {
-            glow(icon);
-            addLine(icon, text(player, "rift.menu.selected"));
+            markSelected(player, icon);
         } else {
             addLine(icon, text(player, "rift.menu.click-select"));
         }
@@ -637,6 +636,54 @@ public class RiftMenu implements Listener {
         return item;
     }
 
+    /**
+     * The selected destination is unmistakable: it glows, its name gets a green tick and the first line of its
+     * tooltip says so.
+     */
+    private static void markSelected(Player player, ItemStack icon) {
+        glow(icon);
+        ItemMeta meta = icon.getItemMeta();
+        meta.setDisplayName("§a§l✔ §r" + meta.getDisplayName());
+        List<String> lore = meta.hasLore() ? new ArrayList<>(meta.getLore()) : new ArrayList<>();
+        lore.add(0, text(player, "rift.menu.current"));
+        meta.setLore(lore);
+        icon.setItemMeta(meta);
+    }
+
+    /** The first slot of the menu always shows where the next rift goes. */
+    private ItemStack currentDestination(Player player, ItemStack gun) {
+        RiftDestination destination = RiftItems.destination(gun);
+        if (destination == null) {
+            return item(
+                    Material.STRUCTURE_VOID,
+                    text(player, "rift.menu.current-none"),
+                    lines(player, "rift.menu.current-none-lore", Map.of()));
+        }
+        ItemStack icon = item(
+                destinationIcon(destination),
+                text(player, "rift.menu.current-name", Map.of("destination", RiftNames.describe(destination, player))),
+                List.of());
+        glow(icon);
+        return icon;
+    }
+
+    private static Material destinationIcon(RiftDestination destination) {
+        return switch (destination.type()) {
+            case WORLD -> {
+                World world = Bukkit.getWorld(destination.world());
+                yield world == null ? Material.GRASS_BLOCK : worldIcon(world);
+            }
+            case SPAWN -> Material.LODESTONE;
+            case HOME -> Material.LIME_BED;
+            case BACK -> Material.RECOVERY_COMPASS;
+            case DEATH -> Material.SKELETON_SKULL;
+            case STRUCTURE -> {
+                RiftStructure structure = RiftStructure.byId(destination.world());
+                yield structure == null ? Material.FILLED_MAP : structure.icon();
+            }
+        };
+    }
+
     private ItemStack compassStatus(Player player, ItemStack gun) {
         RiftSettings settings = module.settings();
         boolean attuned = RiftItems.isAttuned(gun);
@@ -661,7 +708,7 @@ public class RiftMenu implements Listener {
                 text(player, attuned ? "rift.menu.atlas.name" : "rift.menu.atlas-locked"),
                 lines(player, attuned ? "rift.menu.atlas.lore" : "rift.menu.atlas-locked-lore", Map.of()));
         if (selected != null && selected.type() == RiftDestination.Type.STRUCTURE) {
-            glow(icon);
+            markSelected(player, icon);
             addLine(
                     icon,
                     text(

@@ -2,6 +2,7 @@ package eu.nurkert.porticlegun.rift;
 
 import eu.nurkert.porticlegun.PorticleGun;
 import eu.nurkert.porticlegun.messages.MessageManager;
+import eu.nurkert.porticlegun.util.ChunkLoader;
 import eu.nurkert.porticlegun.util.WorldGuardIntegration;
 import java.util.HashMap;
 import java.util.Map;
@@ -150,7 +151,7 @@ public class RiftGunListener implements Listener {
 
         Vector looking = player.getLocation().getDirection().setY(0);
         Vector direction = looking.lengthSquared() < 1e-6 ? new Vector(0, 0, 1) : looking.normalize();
-        RiftPlacement.Spot entrance = RiftPlacement.entrance(player.getLocation(), direction);
+        RiftPlacement.Spot entrance = RiftPlacement.entrance(player);
         if (entrance == null) {
             deny(player, "rift.no-room");
             return;
@@ -161,33 +162,43 @@ public class RiftGunListener implements Listener {
             return;
         }
 
+        // the entrance shows up right away, small and orange, until the far side is ready
+        module.portals().charge(player, entrance.feet(), entrance.normal());
         Consumer<Location> openAt = target -> {
-            if (!player.isOnline()) {
-                return;
-            }
-            ItemStack current = player.getInventory().getItem(slot);
-            if (!RiftItems.isGun(current) || (!free && RiftItems.charges(current) <= 0)) {
-                return;
-            }
             if (target == null) {
                 deny(player, "rift.no-safe-spot");
                 return;
             }
             RiftPlacement.Spot exit = RiftPlacement.exit(target, direction);
-            module.portals()
-                    .open(
-                            player,
-                            entrance.feet(),
-                            entrance.normal(),
-                            exit.feet(),
-                            exit.normal(),
-                            settings.portalTicks(),
-                            settings.closeDistance());
-            if (!free) {
-                RiftItems.setCharges(current, RiftItems.charges(current) - 1, settings);
-            }
-            player.getInventory().setItem(slot, current);
-            lastRift.put(id, System.currentTimeMillis());
+            // load the far side first (in the background on Paper), so travellers never wait inside the rift
+            ChunkLoader.whenLoaded(
+                    module.plugin(),
+                    exit.feet().getWorld(),
+                    exit.feet().getBlockX(),
+                    exit.feet().getBlockZ(),
+                    () -> {
+                        ItemStack current = player.getInventory().getItem(slot);
+                        if (!player.isOnline()
+                                || !RiftItems.isGun(current)
+                                || (!free && RiftItems.charges(current) <= 0)) {
+                            module.portals().cancelCharge(id);
+                            return;
+                        }
+                        module.portals()
+                                .open(
+                                        player,
+                                        entrance.feet(),
+                                        entrance.normal(),
+                                        exit.feet(),
+                                        exit.normal(),
+                                        settings.portalTicks(),
+                                        settings.closeDistance());
+                        if (!free) {
+                            RiftItems.setCharges(current, RiftItems.charges(current) - 1, settings);
+                        }
+                        player.getInventory().setItem(slot, current);
+                        lastRift.put(id, System.currentTimeMillis());
+                    });
         };
 
         switch (destination.type()) {
@@ -313,7 +324,9 @@ public class RiftGunListener implements Listener {
         openAt.accept(RiftPlacement.refine(location));
     }
 
+    /** Tells the player why no rift opens; a charging entrance collapses. */
     private void deny(Player player, String key) {
+        module.portals().cancelCharge(player.getUniqueId());
         player.playSound(player, Sound.BLOCK_NOTE_BLOCK_BASS, 1f, 0.7f);
         actionBar(player, MessageManager.getMessage(player, key));
     }

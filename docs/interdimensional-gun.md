@@ -57,13 +57,17 @@ menu has room for eight, so on servers with more worlds list the ones nobody sho
 ## Where rifts appear
 
 - Both portals stand on the block grid: they face north, east, south or west and fill exactly two blocks.
-- The entrance stands about two blocks in front of the player, on the ground if there is ground, closer when a wall is
-  near, and floating in the air when the player stands at an edge.
+- The entrance stands where the player looks (up to six blocks away): in front of the wall they aim at, on the
+  ground they aim at, or floating three blocks ahead when they look into the open. Where it does not fit it moves
+  closer, a block up or down, or one block to the side.
+- Until the destination is ready (found and its chunk loaded) the entrance is a small, pulsing orange rift that
+  cannot be walked through yet; it grows into the green rift once the far side is there, or collapses when no
+  destination is found.
 - At the destination all four compass directions are scored: room for the exit portal behind the landing spot, free
   space in front of it, and the direction the player walked in. Travellers step out facing open space.
 - Stored places (homes, back, death, spawn) that have been built over move to the nearest safe spot within three
   blocks.
-- A rift pair closes when its opener is farther than `close-distance` blocks from both portals for five seconds, and
+- A rift pair closes when its opener is farther than `close-distance` blocks from both portals for three seconds, and
   after `portal-seconds` at the latest. Opening a new pair closes the old one.
 
 Players, mobs and items travel through rifts; WorldGuard's `porticlegun-portal-use` flag applies, and rifts cannot be
