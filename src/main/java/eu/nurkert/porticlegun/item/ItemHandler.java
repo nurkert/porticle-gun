@@ -45,6 +45,28 @@ public class ItemHandler implements Listener {
         return new NamespacedKey(PorticleGun.getInstance(), "gun_id");
     }
 
+    /**
+     * Rewrites the name and lore of a gun created while its texts were missing from an outdated messages.yml.
+     *
+     * @return whether the item changed
+     */
+    public static boolean repairTexts(ItemStack gun) {
+        ItemMeta meta = gun.getItemMeta();
+        boolean changed = false;
+        if (MessageManager.isMissing(meta.getDisplayName())) {
+            meta.setDisplayName(getPorticleGunName());
+            changed = true;
+        }
+        if (meta.hasLore() && meta.getLore().stream().anyMatch(MessageManager::isMissing)) {
+            meta.setLore(List.of(MessageManager.getMessage("items.porticlegun.lore")));
+            changed = true;
+        }
+        if (changed) {
+            gun.setItemMeta(meta);
+        }
+        return changed;
+    }
+
     public static String getPorticleGunName() {
         return MessageManager.getMessage("items.porticlegun.name");
     }

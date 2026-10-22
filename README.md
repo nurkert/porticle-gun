@@ -43,8 +43,8 @@
       <img src="images/basic_preview.gif" alt="Placing portals" width="100%"><br>
       <b>Real portal physics</b><br>
       Left- or right-click to place a portal where you look. Walk, fall or fly through linked portals on walls, floors
-      and ceilings. Speed and view direction carry over, so you can fling yourself across the map. Mobs, items and
-      arrows travel too.
+      and ceilings. Speed and view direction carry over, so you can fling yourself across the map. Stack a floor and a
+      ceiling portal to fall forever, without fall damage. Mobs, items and arrows travel too.
     </td>
     <td width="33%" valign="top">
       <img src="images/gravity_preview.gif" alt="Gravity gun carrying a spawner" width="49%">
@@ -81,7 +81,7 @@ Players without it simply see a brewing stand. More in [docs/resourcepack.md](do
 
 The big brother of the PorticleGun. Instead of two portals on walls it tears **green rifts** right into the air: one in
 front of you, one at the destination, both wobbling and walkable in both directions, so friends can follow you before
-they close. Choose where to go in its menu (sneak + use):
+they close. Left click opens a rift, right click opens the menu to choose where to go:
 
 | Destination | |
 |---|---|
@@ -94,6 +94,7 @@ they close. Choose where to go in its menu (sneak + use):
 Rifts open where you would expect them: on the ground in front of you, closer when a wall is near, floating when you
 stand at an edge. At the destination you step out facing open space instead of a wall, and stored places that have
 been built over move to the nearest safe spot. A rift pair closes when you walk away from it or after half a minute.
+When the tank runs dry, the gun refills itself from portal fluid in your inventory.
 
 ### Portal fluid and rift shards
 
@@ -199,8 +200,9 @@ Every gun has its own pair of portals. Placing a new primary or secondary portal
 | Gravity gun: pick up / let go | Drop key (Q) | Drop |
 | Drop the gun itself | Drop key twice quickly | Drop twice quickly |
 | Break free when carried by another player | Sneak | Sneak |
-| Interdimensional gun: open a rift | Right click | Left trigger (LT / L2) |
-| Interdimensional gun: menu | Sneak + right click | Sneak + left trigger |
+| Interdimensional gun: open a rift | Left click | Right trigger (RT / R2) |
+| Interdimensional gun: menu | Right click | Left trigger (LT / L2) |
+| Drop a gun from the open inventory | Drag it out or press the drop key over it | Drag it out |
 
 <p align="center">
   <img src="images/portal_hud.png" alt="Portal status overlay around the crosshair" width="520">

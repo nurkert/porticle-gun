@@ -1,5 +1,6 @@
 package eu.nurkert.porticlegun.rift;
 
+import eu.nurkert.porticlegun.util.ChunkLoader;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
@@ -12,11 +13,11 @@ import org.bukkit.WorldBorder;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
 import org.bukkit.plugin.java.JavaPlugin;
-import org.bukkit.scheduler.BukkitRunnable;
 
 /**
- * Searches a random safe landing spot in a world. One candidate is checked per tick, so loading chunks never freezes
- * the server; chunks that already exist are tried first. If nothing is found the callback gets {@code null}, except
+ * Searches a random safe landing spot in a world. One candidate is checked per tick, and its chunk is loaded in the
+ * background first (on Paper), so loading or generating chunks never freezes the server; chunks that already exist
+ * are tried first. If nothing is found the callback gets {@code null}, except
  * in the end, where the main island is the fallback.
  */
 public class SafeLocationFinder {
@@ -45,37 +46,29 @@ public class SafeLocationFinder {
                 ? new Location(world, 0, 0, 0)
                 : world.getSpawnLocation();
         int attempts = settings.searchAttempts();
-
-        new BukkitRunnable() {
-            private int attempt;
-
-            @Override
-            public void run() {
-                if (attempt >= attempts) {
-                    cancel();
+        search(
+                attempts,
+                attempt -> {
+                    // the first half of the attempts only uses chunks that are already generated
+                    boolean allowGeneration = attempt >= attempts / 2;
+                    int x = centre.getBlockX() + random.nextInt(radius * 2 + 1) - radius;
+                    int z = centre.getBlockZ() + random.nextInt(radius * 2 + 1) - radius;
+                    if (!insideBorder(world, x, z) || (!allowGeneration && !world.isChunkGenerated(x >> 4, z >> 4))) {
+                        return null;
+                    }
+                    return new int[] {x, z};
+                },
+                (x, z) -> check(world, x, z),
+                world,
+                () -> {
                     callback.accept(world.getEnvironment() == World.Environment.THE_END ? endFallback(world) : null);
-                    return;
-                }
-                // the first half of the attempts only uses chunks that are already generated
-                boolean allowGeneration = attempt >= attempts / 2;
-                attempt++;
-                int x = centre.getBlockX() + random.nextInt(radius * 2 + 1) - radius;
-                int z = centre.getBlockZ() + random.nextInt(radius * 2 + 1) - radius;
-                if (!insideBorder(world, x, z) || (!allowGeneration && !world.isChunkGenerated(x >> 4, z >> 4))) {
-                    return;
-                }
-                Location spot = check(world, x, z);
-                if (spot != null) {
-                    cancel();
-                    callback.accept(spot);
-                }
-            }
-        }.runTaskTimer(plugin, 1L, 1L);
+                },
+                callback);
     }
 
     /**
-     * Searches a safe spot around a structure, one candidate column per tick, spiralling outwards from its centre. For
-     * underground structures caves inside or next to the structure come first, then the surface above.
+     * Searches a safe spot around a structure, one candidate column at a time, spiralling outwards from its centre.
+     * For underground structures caves inside or next to the structure come first, then the surface above.
      */
     public void findNear(World world, Location centre, RiftStructure.Landing landing, Consumer<Location> callback) {
         List<int[]> offsets = new ArrayList<>();
@@ -90,31 +83,78 @@ public class SafeLocationFinder {
         }
         boolean underground = landing == RiftStructure.Landing.UNDERGROUND;
         int passes = underground ? 2 : 1;
-        new BukkitRunnable() {
-            private int index;
+        search(
+                offsets.size() * passes,
+                index -> {
+                    int[] offset = offsets.get(index % offsets.size());
+                    int x = centre.getBlockX() + offset[0];
+                    int z = centre.getBlockZ() + offset[1];
+                    if (!insideBorder(world, x, z)) {
+                        return null;
+                    }
+                    // the cave pass is marked by a third entry
+                    return underground && index < offsets.size() ? new int[] {x, z, 1} : new int[] {x, z};
+                },
+                null,
+                world,
+                () -> callback.accept(null),
+                callback);
+    }
 
-            @Override
-            public void run() {
-                if (index >= offsets.size() * passes) {
-                    cancel();
-                    callback.accept(null);
+    /** Picks the candidate column of an attempt, or {@code null} to skip it. */
+    private interface Candidates {
+        int[] pick(int attempt);
+    }
+
+    /** Checks a column whose chunk is loaded. */
+    private interface Check {
+        Location check(int x, int z);
+    }
+
+    /**
+     * Tries up to {@code attempts} candidates, at most one per tick. The chunk of a candidate is loaded in the
+     * background first where the server supports it, so neither loading nor generating chunks freezes the server.
+     */
+    private void search(
+            int attempts,
+            Candidates candidates,
+            Check check,
+            World world,
+            Runnable nothingFound,
+            Consumer<Location> found) {
+        new Object() {
+            private int attempt;
+
+            void next() {
+                if (!plugin.isEnabled()) {
                     return;
                 }
-                boolean caves = underground && index < offsets.size();
-                int[] offset = offsets.get(index % offsets.size());
-                index++;
-                int x = centre.getBlockX() + offset[0];
-                int z = centre.getBlockZ() + offset[1];
-                if (!insideBorder(world, x, z)) {
+                if (attempt >= attempts) {
+                    nothingFound.run();
                     return;
                 }
-                Location spot = caves ? deepestCave(world, x, z) : check(world, x, z);
-                if (spot != null) {
-                    cancel();
-                    callback.accept(spot);
+                int[] candidate = candidates.pick(attempt++);
+                if (candidate == null) {
+                    plugin.getServer().getScheduler().runTask(plugin, this::next);
+                    return;
                 }
+                int x = candidate[0];
+                int z = candidate[1];
+                ChunkLoader.whenLoaded(plugin, world, x, z, () -> {
+                    Location spot;
+                    if (check != null) {
+                        spot = check.check(x, z);
+                    } else {
+                        spot = candidate.length > 2 ? deepestCave(world, x, z) : check(world, x, z);
+                    }
+                    if (spot != null) {
+                        found.accept(spot);
+                    } else {
+                        plugin.getServer().getScheduler().runTask(plugin, this::next);
+                    }
+                });
             }
-        }.runTaskTimer(plugin, 1L, 1L);
+        }.next();
     }
 
     /**
