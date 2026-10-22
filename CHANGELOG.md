@@ -5,6 +5,13 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+### Changed
+- Settings menu arrows are sharp triangles without a protruding bar, pointing up above and down below the colour
+  banners. When a colour changes, they fade from the colour they showed before over grey to their new colour, in
+  step with the banner filling.
+- Colour names in the settings menu are translated (`colors.*` in messages.yml); custom colours without a
+  translation show their name in readable form.
+
 ## [1.6.3] - 2026-10-22
 
 ### Changed

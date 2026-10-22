@@ -8,6 +8,9 @@ and German (`de`) are included.
 - `default-language` is the fallback language and the one used for console output.
 - Every language key (`en`, `de`, ...) has the same structure. Copy a section to add a language.
 - Colours use `&` codes; placeholders look like `%gun_id%`, `%player%` or `%label%`.
+- Portal colour names live under `colors` (e.g. `colors.dark_blue`); a custom colour from `config.yml` can get a
+  translation there under its lower-case name, otherwise its name is shown in readable form.
+- Texts missing from your `messages.yml` (e.g. added by a newer version) are taken from the plugin itself.
 - Run `/porticlegun reload` after editing.
 
 ## Language per player

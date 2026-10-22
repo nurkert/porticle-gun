@@ -1,5 +1,6 @@
 package eu.nurkert.porticlegun.visualization;
 
+import eu.nurkert.porticlegun.messages.MessageManager;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Iterator;
@@ -13,6 +14,7 @@ import org.bukkit.ChatColor;
 import org.bukkit.Color;
 import org.bukkit.DyeColor;
 import org.bukkit.Particle;
+import org.bukkit.command.CommandSender;
 
 /**
  * A portal colour: particle colour, chat colour and banner dye. Loaded from config.yml.
@@ -174,6 +176,27 @@ public final class PortalColor {
 
     public String getName() {
         return name;
+    }
+
+    /**
+     * @return the colour's name in the player's language ({@code colors.<name>} in messages.yml); custom colours
+     *     without a translation show their configured name, e.g. "Light Purple" for {@code LIGHT_PURPLE}
+     */
+    public String displayName(CommandSender viewer) {
+        String key = "colors." + name.toLowerCase(Locale.ROOT);
+        String translated = MessageManager.getMessage(viewer, key);
+        if (!MessageManager.isMissing(translated)) {
+            return translated;
+        }
+        StringBuilder readable = new StringBuilder();
+        for (String word : name.toLowerCase(Locale.ROOT).split("_")) {
+            if (!word.isEmpty()) {
+                readable.append(readable.length() == 0 ? "" : " ")
+                        .append(Character.toUpperCase(word.charAt(0)))
+                        .append(word.substring(1));
+            }
+        }
+        return readable.toString();
     }
 
     public boolean isCustom() {
