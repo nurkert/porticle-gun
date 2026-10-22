@@ -125,31 +125,45 @@ public class SettingsHandler implements Listener {
     /**
      * An arrow in the colour it switches to, so the next and the previous colour can be seen before clicking: a sharp
      * triangle, pointing up in the upper half of the banner (above the colour banner in the menu) or down in the
-     * lower half (below it).
+     * lower half (below it). The background stays black, grey only behind a black arrow so it can be seen.
      *
      * @param up an arrow pointing up (next colour) or down (previous colour)
-     * @param background the banner's background, black unless the arrow is shown in the middle of a colour change
      */
-    private static ItemStack arrow(PortalColor target, boolean up, DyeColor background, Player player) {
+    private static ItemStack arrow(PortalColor target, boolean up, Player player) {
         DyeColor dye = target.getDyeColor();
+        DyeColor background = arrowBackground(target);
+        return arrowBanner(
+                target,
+                up,
+                player,
+                // a diamond with its lower (or upper) half covered leaves a triangle with clean, sharp edges
+                new Pattern(dye, PatternType.RHOMBUS),
+                new Pattern(background, up ? PatternType.HALF_HORIZONTAL_BOTTOM : PatternType.HALF_HORIZONTAL));
+    }
+
+    /**
+     * The arrow on its way in: a larger triangle at the far edge, so the arrow seems to slide in the direction it
+     * points to before it settles.
+     */
+    private static ItemStack arrowSlidingIn(PortalColor target, boolean up, Player player) {
+        return arrowBanner(
+                target,
+                up,
+                player,
+                new Pattern(target.getDyeColor(), up ? PatternType.TRIANGLE_BOTTOM : PatternType.TRIANGLE_TOP));
+    }
+
+    private static ItemStack arrowBanner(PortalColor target, boolean up, Player player, Pattern... patterns) {
         return new BannerBuilder()
-                .setBaseColor(background)
+                .setBaseColor(arrowBackground(target))
                 .setName((up ? "§f▲ " : "§f▼ ") + target.getChatColor() + target.displayName(player))
-                .setPatterns(
-                        // a diamond with its lower (or upper) half covered leaves a triangle with clean, sharp edges
-                        new Pattern(dye, PatternType.RHOMBUS),
-                        new Pattern(background, up ? PatternType.HALF_HORIZONTAL_BOTTOM : PatternType.HALF_HORIZONTAL))
+                .setPatterns(patterns)
                 .hideItemFlags()
                 .build();
     }
 
-    /** The resting background of an arrow: black, or grey behind a black arrow so it can be seen. */
     private static DyeColor arrowBackground(PortalColor target) {
         return target.getDyeColor() == DyeColor.BLACK ? DyeColor.GRAY : DyeColor.BLACK;
-    }
-
-    private static ItemStack arrow(PortalColor target, boolean up, Player player) {
-        return arrow(target, up, arrowBackground(target), player);
     }
 
     // running colour animations, by menu and colour banner slot, so a fast second click restarts instead of overlapping
@@ -157,8 +171,7 @@ public class SettingsHandler implements Listener {
 
     /**
      * Shows a new colour in four frames, two ticks apart: the colour banner fills with the new colour, from below
-     * after the down arrow and from above after the up arrow, while the two arrows fade from the colour they showed
-     * before over grey to their resting background, already showing their new colours.
+     * after the down arrow and from above after the up arrow, while the two arrows slide in with their new colours.
      */
     private void changeColour(
             Inventory inventory, String gunID, Player player, int slot, PortalColor before, boolean fromBelow) {
@@ -185,8 +198,8 @@ public class SettingsHandler implements Listener {
         };
         PortalColor next = after.next();
         PortalColor previousColour = after.previous();
-        DyeColor[] upBackgrounds = {before.next().getDyeColor(), DyeColor.GRAY, arrowBackground(next)};
-        DyeColor[] downBackgrounds = {before.previous().getDyeColor(), DyeColor.GRAY, arrowBackground(previousColour)};
+        ItemStack[] upArrows = {arrowSlidingIn(next, true, player), arrow(next, true, player)};
+        ItemStack[] downArrows = {arrowSlidingIn(previousColour, false, player), arrow(previousColour, false, player)};
         running.put(
                 slot,
                 new BukkitRunnable() {
@@ -206,9 +219,9 @@ public class SettingsHandler implements Listener {
                             return;
                         }
                         inventory.setItem(slot, banners[frame]);
-                        if (frame < upBackgrounds.length) {
-                            inventory.setItem(column, arrow(next, true, upBackgrounds[frame], player));
-                            inventory.setItem(column + 6, arrow(previousColour, false, downBackgrounds[frame], player));
+                        if (frame < upArrows.length) {
+                            inventory.setItem(column, upArrows[frame]);
+                            inventory.setItem(column + 6, downArrows[frame]);
                         }
                         frame++;
                     }
