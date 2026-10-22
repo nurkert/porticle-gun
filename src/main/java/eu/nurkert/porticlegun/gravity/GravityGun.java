@@ -38,6 +38,7 @@ import org.bukkit.event.entity.EntityChangeBlockEvent;
 import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.entity.EntityDropItemEvent;
 import org.bukkit.event.inventory.InventoryClickEvent;
+import org.bukkit.event.inventory.InventoryType;
 import org.bukkit.event.player.PlayerDropItemEvent;
 import org.bukkit.event.player.PlayerItemHeldEvent;
 import org.bukkit.event.player.PlayerMoveEvent;
@@ -340,7 +341,8 @@ public class GravityGun implements Listener {
                 switch (event.getAction()) {
                     case DROP_ALL_CURSOR, DROP_ONE_CURSOR -> event.getCursor();
                     case DROP_ALL_SLOT, DROP_ONE_SLOT -> event.getCurrentItem();
-                    default -> null;
+                        // creative mode reports a drop out of the window as a click outside it
+                    default -> event.getSlotType() == InventoryType.SlotType.OUTSIDE ? event.getCursor() : null;
                 };
         if (dropped != null && ItemHandler.isValidGun(dropped) != null) {
             event.getWhoClicked()

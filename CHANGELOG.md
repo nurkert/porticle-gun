@@ -5,6 +5,8 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+## [1.6.1] - 2026-10-22
+
 ### Changed
 - **Interdimensional gun controls**: left click (attack) opens a rift, right click (use) opens the menu, like the
   PorticleGun. Attacking without a destination opens the menu, and an empty tank refills itself from portal fluid in

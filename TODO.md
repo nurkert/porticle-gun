@@ -3,7 +3,7 @@
 Befunde aus dem Code-Review. Status: `[ ]` offen · `[~]` in Arbeit · `[x]` erledigt · `[!]` gesperrt, nur nach Rücksprache.
 
 > **Regel:** Das Einstellungs-GUI (`SettingsHandler`, Dropper-Menü) bleibt genau so, wie es ist. Keine Änderung an Layout, Slots, Bedienung oder Optik ohne vorherige Diskussion mit dem User.
-> **Release:** [`v1.6.0`](https://github.com/nurkert/porticle-gun/releases/tag/v1.6.0) (2026-10-21). Damit werden die offenen „Du:“-Punkte (PG-14, PG-15, PG-16, PG-22, PG-23, PG-24, PG-25) auf dem Server getestet.
+> **Release:** [`v1.6.1`](https://github.com/nurkert/porticle-gun/releases/tag/v1.6.1) (2026-10-22). Damit werden die offenen „Du:“-Punkte (PG-14, PG-15, PG-16, PG-22, PG-23, PG-24, PG-25, PG-26) auf dem Server getestet.
 
 Reihenfolge = Priorität. Unter jedem Punkt: Problem, Lösungsansatz, Notizen beim Abarbeiten.
 
@@ -150,6 +150,19 @@ Reihenfolge = Priorität. Unter jedem Punkt: Problem, Lösungsansatz, Notizen be
   - [ ] **Du:** Auf Bedrock im Creative-Inventar die Items suchen, eins nehmen und benutzen (Gun schießt, Riss-Items funktionieren)
   - [ ] **Du:** Partikel-Risse auf Java und Bedrock anschauen (Wackeln, Öffnen/Schließen, Performance)
   - Notizen: Bedrock-Creative hängt davon ab, dass Geyser beim Nehmen das Item-Modell mitschickt; sonst bleibt das Menü `/pg`.
+
+- [~] **PG-26 Riss-Gun: Lag, Optik, Bedienung; Texte nach Updates; Portal-Loop (Wünsche nach 1.6.0)**
+  - [x] Fehlende Texte (alte `messages.yml` nach einem Update) kommen aus der Jar; Items mit „Missing message“-Namen werden repariert
+  - [x] Zufallsziele laden Chunks auf Paper im Hintergrund (vorher bis zu 20 Chunks synchron erzeugt); Chunks offener Risse bleiben geladen
+  - [x] Partikel-Riss im Rick-and-Morty-Stil (dicker wabernder Rand, Bläschen, dunkler Körper, Spiralarme, heller Kern)
+  - [x] Linksklick: Riss, Rechtsklick: Menü; ohne Ziel öffnet sich das Menü; leerer Tank füllt sich aus dem Inventar; Gun baut keine Blöcke ab
+  - [x] Riss-Menü neu (Kopfzeile, Zeilen je Zielart, Auswahl schließt das Menü mit Actionbar-Bestätigung, Atlas nach Dimension)
+  - [x] Boden- und Deckenportal übereinander: endloser Fall ohne Fallschaden, Tempo bleibt
+  - [x] Gun aus dem offenen Inventar werfen (Herausziehen, Droptaste über dem Slot, Creative) löst die Gravity Gun nicht aus
+  - [ ] **Du:** Auf eurem Server prüfen, ob nach dem Update auf 1.6.1 Portale und Menüs wieder gehen; sonst `logs/latest.log` schicken
+  - [ ] **Du:** Riss-Gun auf Java und Bedrock: Links-/Rechtsklick, neues Menü, Partikel, kein Lag beim Zufallsziel
+  - [ ] **Du:** Portal-Loop (Boden + Decke) und Gun aus dem Inventar werfen, Java und Bedrock
+  - Notizen: Die Struktursuche des Riss-Atlas läuft weiter im Hauptthread (die Server-API bietet keine asynchrone Variante); bei Rucklern den `structure-search-radius` senken.
 
 ## P2 – Robustheit / Performance
 
