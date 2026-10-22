@@ -91,6 +91,9 @@ public class RiftMenu implements Listener {
         if (!RiftItems.isGun(gun)) {
             return;
         }
+        if (RiftItems.claimPlayerHomes(gun, player, module.storage())) {
+            player.getInventory().setItem(slot, gun);
+        }
         RiftSettings settings = module.settings();
         RiftDestination selected = RiftItems.destination(gun);
         List<World> worlds = new ArrayList<>();
@@ -189,7 +192,7 @@ public class RiftMenu implements Listener {
         inventory.setItem(homeRow, label(Material.RED_BED, text(player, "rift.menu.homes")));
         for (int home = 0; home < settings.homes(); home++) {
             int number = home;
-            Location location = module.storage().home(player.getUniqueId(), home);
+            Location location = RiftItems.home(gun, home);
             Map<String, String> placeholders = new HashMap<>(coordinates(location));
             placeholders.put("home", String.valueOf(home + 1));
             ItemStack icon;
@@ -200,7 +203,7 @@ public class RiftMenu implements Listener {
                         text(player, "rift.menu.home-empty", placeholders),
                         lines(player, "rift.menu.home-empty-lore", placeholders));
                 action = () -> {
-                    setHome(player, number);
+                    setHome(player, holder.slot, number);
                     choose(player, holder, RiftDestination.home(number));
                 };
             } else {
@@ -324,8 +327,7 @@ public class RiftMenu implements Listener {
             return;
         }
         Holder holder = new Holder(Page.HOME, home, slot, RiftItems.gunId(gun));
-        Map<String, String> placeholders =
-                new HashMap<>(coordinates(module.storage().home(player.getUniqueId(), home)));
+        Map<String, String> placeholders = new HashMap<>(coordinates(RiftItems.home(gun, home)));
         placeholders.put("home", String.valueOf(home + 1));
         Inventory inventory = create(holder, 27, text(player, "rift.menu.home-title", placeholders));
         fill(inventory);
@@ -347,7 +349,7 @@ public class RiftMenu implements Listener {
                         text(player, "rift.menu.home-set"),
                         lines(player, "rift.menu.home-set-lore", placeholders)),
                 () -> {
-                    setHome(player, home);
+                    setHome(player, holder.slot, home);
                     openHome(player, holder.slot, home);
                 });
         button(
@@ -379,10 +381,13 @@ public class RiftMenu implements Listener {
                 11,
                 item(Material.RED_CONCRETE, text(player, "rift.menu.delete-confirm", placeholders), List.of()),
                 () -> {
-                    module.storage().deleteHome(player.getUniqueId(), home);
                     ItemStack current = player.getInventory().getItem(holder.slot);
-                    if (RiftItems.isGun(current) && RiftDestination.home(home).equals(RiftItems.destination(current))) {
-                        RiftItems.setDestination(current, RiftDestination.back(), module.settings());
+                    if (RiftItems.isGun(current)) {
+                        RiftItems.setHome(current, home, null);
+                        if (RiftDestination.home(home).equals(RiftItems.destination(current))) {
+                            RiftItems.setDestination(current, RiftDestination.back(), module.settings());
+                        }
+                        player.getInventory().setItem(holder.slot, current);
                     }
                     player.playSound(player, Sound.BLOCK_FIRE_EXTINGUISH, 0.6f, 1.2f);
                     player.sendMessage(text(player, "rift.home-deleted", placeholders));
@@ -566,8 +571,14 @@ public class RiftMenu implements Listener {
         }
     }
 
-    private void setHome(Player player, int home) {
-        module.storage().setHome(player.getUniqueId(), home, player.getLocation());
+    /** Sets a home of the gun in the given slot to where the player stands. */
+    private void setHome(Player player, int slot, int home) {
+        ItemStack gun = player.getInventory().getItem(slot);
+        if (!RiftItems.isGun(gun)) {
+            return;
+        }
+        RiftItems.setHome(gun, home, player.getLocation());
+        player.getInventory().setItem(slot, gun);
         player.playSound(player, Sound.BLOCK_RESPAWN_ANCHOR_SET_SPAWN, 0.7f, 1.4f);
         player.sendMessage(text(player, "rift.home-set", Map.of("home", String.valueOf(home + 1))));
     }

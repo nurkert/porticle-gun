@@ -229,7 +229,13 @@ public class RiftGunListener implements Listener {
                 }
                 openAt.accept(RiftPlacement.refine(world.getSpawnLocation().add(0.5, 0, 0.5)));
             }
-            case HOME -> openStored(player, module.storage().home(id, destination.home()), "rift.home-missing", openAt);
+            case HOME -> {
+                // homes belong to the gun; an older gun first takes over the homes its player had
+                if (RiftItems.claimPlayerHomes(gun, player, module.storage())) {
+                    player.getInventory().setItem(slot, gun);
+                }
+                openStored(player, RiftItems.home(gun, destination.home()), "rift.home-missing", openAt);
+            }
             case BACK -> openStored(player, module.storage().back(id), "rift.back-missing", openAt);
             case DEATH -> openStored(player, module.storage().death(id), "rift.death-missing", openAt);
             case STRUCTURE -> {

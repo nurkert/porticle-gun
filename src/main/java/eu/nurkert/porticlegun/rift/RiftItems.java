@@ -6,6 +6,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
 import org.bukkit.entity.Player;
@@ -24,6 +25,9 @@ import org.bukkit.persistence.PersistentDataType;
  * item models; without the pack they show as their base items.
  */
 public final class RiftItems {
+
+    // the most homes the menu can show (one row)
+    static final int MAX_HOMES = 7;
 
     public enum Type {
         INTERDIMENSIONAL_GUN("interdimensional_gun", Material.WARPED_FUNGUS_ON_A_STICK, "interdimensional-gun"),
@@ -79,6 +83,14 @@ public final class RiftItems {
 
     private static NamespacedKey attunedKey() {
         return key("rift_attuned_until");
+    }
+
+    private static NamespacedKey homeKey(int index) {
+        return key("home_" + index);
+    }
+
+    private static NamespacedKey homesKey() {
+        return key("homes");
     }
 
     private static NamespacedKey gunIdKey() {
@@ -169,6 +181,53 @@ public final class RiftItems {
             }
         }
         return false;
+    }
+
+    /**
+     * @return a home stored on the gun itself, or {@code null} if it is not set (or its world is not loaded)
+     */
+    static Location home(ItemStack gun, int index) {
+        return RiftStorage.parse(
+                gun.getItemMeta().getPersistentDataContainer().get(homeKey(index), PersistentDataType.STRING));
+    }
+
+    /** Stores a home on the gun; {@code null} deletes it. The homes travel with the gun, whoever holds it. */
+    static void setHome(ItemStack gun, int index, Location location) {
+        ItemMeta meta = gun.getItemMeta();
+        PersistentDataContainer data = meta.getPersistentDataContainer();
+        if (location == null) {
+            data.remove(homeKey(index));
+        } else {
+            data.set(homeKey(index), PersistentDataType.STRING, RiftStorage.serialize(location));
+        }
+        data.set(homesKey(), PersistentDataType.BYTE, (byte) 1);
+        gun.setItemMeta(meta);
+    }
+
+    /**
+     * Guns made before homes were stored on the gun have none yet. The first such gun a player uses takes over the
+     * homes the player had (they were kept per player in rift.yml), so nothing is lost; afterwards they belong to
+     * that gun only.
+     *
+     * @return whether the gun changed
+     */
+    static boolean claimPlayerHomes(ItemStack gun, Player player, RiftStorage storage) {
+        ItemMeta meta = gun.getItemMeta();
+        if (meta.getPersistentDataContainer().has(homesKey(), PersistentDataType.BYTE)) {
+            return false;
+        }
+        for (int index = 0; index < MAX_HOMES; index++) {
+            Location home = storage.home(player.getUniqueId(), index);
+            if (home != null) {
+                setHome(gun, index, home);
+                storage.deleteHome(player.getUniqueId(), index);
+            }
+        }
+        // mark the gun even without homes, so it never takes over homes later on
+        meta = gun.getItemMeta();
+        meta.getPersistentDataContainer().set(homesKey(), PersistentDataType.BYTE, (byte) 1);
+        gun.setItemMeta(meta);
+        return true;
     }
 
     public static String gunId(ItemStack gun) {

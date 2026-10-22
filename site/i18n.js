@@ -41,7 +41,7 @@ window.PG_DE = {
   "dest.spawn": "Welt-Spawn",
   "dest.spawn.d": "Der Spawnpunkt jeder Welt",
   "dest.home": "Homes",
-  "dest.home.d": "Bis zu sieben pro Spieler, mit einem Klick gesetzt",
+  "dest.home.d": "Bis zu sieben pro Gun, mit einem Klick gesetzt und mit der Gun gespeichert",
   "dest.back": "Zurück",
   "dest.back.d": "Wo du zuletzt in einen Riss gestiegen bist",
   "dest.death": "Letzter Tod",
