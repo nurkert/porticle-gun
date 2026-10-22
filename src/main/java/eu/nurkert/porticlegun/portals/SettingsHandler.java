@@ -1,5 +1,6 @@
 package eu.nurkert.porticlegun.portals;
 
+import eu.nurkert.porticlegun.PorticleGun;
 import eu.nurkert.porticlegun.audio.AudioHandler;
 import eu.nurkert.porticlegun.builders.BannerBuilder;
 import eu.nurkert.porticlegun.builders.ItemBuilder;
@@ -27,6 +28,8 @@ import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.InventoryView;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
+import org.bukkit.scheduler.BukkitRunnable;
+import org.bukkit.scheduler.BukkitTask;
 
 /**
  * The settings menu of a gun (sneak and right click): portal colours, portal shape and closing the portals.
@@ -43,23 +46,6 @@ public class SettingsHandler implements Listener {
         this.gunColors = gunColors;
         this.persistence = persistence;
     }
-
-    final ItemStack up = new BannerBuilder()
-            .setBaseColor(DyeColor.GRAY)
-            .setName("§f▲")
-            .setPatterns(
-                    new Pattern(DyeColor.LIGHT_GRAY, PatternType.DIAGONAL_LEFT),
-                    new Pattern(DyeColor.LIGHT_GRAY, PatternType.DIAGONAL_UP_RIGHT))
-            .hideItemFlags()
-            .build();
-    final ItemStack down = new BannerBuilder()
-            .setBaseColor(DyeColor.GRAY)
-            .setName("§f▼")
-            .setPatterns(
-                    new Pattern(DyeColor.LIGHT_GRAY, PatternType.DIAGONAL_RIGHT),
-                    new Pattern(DyeColor.LIGHT_GRAY, PatternType.DIAGONAL_UP_LEFT))
-            .hideItemFlags()
-            .build();
 
     final ItemStack resetTemplate = new BannerBuilder()
             .setBaseColor(DyeColor.LIGHT_GRAY)
@@ -86,22 +72,22 @@ public class SettingsHandler implements Listener {
                         } else {
                             lastClick.put(gunID, System.currentTimeMillis());
                         }
-                    } else if (event.getRawSlot() == 0) {
-                        gunColors.selectNextPrimary(gunID);
-                        Inventory inv = getCurrentSettings(gunID, player);
-                        event.getClickedInventory().setContents(inv.getContents());
-                    } else if (event.getRawSlot() == 6) {
-                        gunColors.selectPreviousPrimary(gunID);
-                        Inventory inv = getCurrentSettings(gunID, player);
-                        event.getClickedInventory().setContents(inv.getContents());
-                    } else if (event.getRawSlot() == 2) {
-                        gunColors.selectNextSecondary(gunID);
-                        Inventory inv = getCurrentSettings(gunID, player);
-                        event.getClickedInventory().setContents(inv.getContents());
-                    } else if (event.getRawSlot() == 8) {
-                        gunColors.selectPreviousSecondary(gunID);
-                        Inventory inv = getCurrentSettings(gunID, player);
-                        event.getClickedInventory().setContents(inv.getContents());
+                    } else if (event.getRawSlot() == 0 || event.getRawSlot() == 6) {
+                        PortalColor before = gunColors.getColors(gunID).getPrimary();
+                        if (event.getRawSlot() == 0) {
+                            gunColors.selectNextPrimary(gunID);
+                        } else {
+                            gunColors.selectPreviousPrimary(gunID);
+                        }
+                        changeColour(event.getClickedInventory(), gunID, player, 3, before, event.getRawSlot() == 6);
+                    } else if (event.getRawSlot() == 2 || event.getRawSlot() == 8) {
+                        PortalColor before = gunColors.getColors(gunID).getSecondary();
+                        if (event.getRawSlot() == 2) {
+                            gunColors.selectNextSecondary(gunID);
+                        } else {
+                            gunColors.selectPreviousSecondary(gunID);
+                        }
+                        changeColour(event.getClickedInventory(), gunID, player, 5, before, event.getRawSlot() == 8);
                     } else if (event.getRawSlot() == 7) {
 
                         Portal[] portals = new Portal[] {
@@ -127,11 +113,99 @@ public class SettingsHandler implements Listener {
         }
     }
 
+    /** The colour banner: filled with the colour, so it is clear at a glance which colour a portal has. */
     public ItemStack getColorPreview(PortalColor color) {
         return new BannerBuilder()
-                .setBaseColor(DyeColor.LIGHT_GRAY)
+                .setBaseColor(color.getDyeColor())
                 .setName(color.getChatColor() + color.toString())
-                .setPatterns(new Pattern(color.getDyeColor(), PatternType.BORDER))
+                .hideItemFlags()
+                .build();
+    }
+
+    /**
+     * An arrow in the colour it switches to, so the next and the previous colour can be seen before clicking.
+     *
+     * @param up an arrow pointing up (next colour) or down (previous colour)
+     */
+    private static ItemStack arrow(PortalColor target, boolean up) {
+        DyeColor dye = target.getDyeColor();
+        // a black arrow needs a lighter background to be seen
+        DyeColor background = dye == DyeColor.BLACK ? DyeColor.GRAY : DyeColor.BLACK;
+        return new BannerBuilder()
+                .setBaseColor(background)
+                .setName((up ? "§f▲ " : "§f▼ ") + target.getChatColor() + target)
+                .setPatterns(
+                        new Pattern(dye, PatternType.RHOMBUS),
+                        new Pattern(background, up ? PatternType.HALF_HORIZONTAL_BOTTOM : PatternType.HALF_HORIZONTAL),
+                        new Pattern(dye, PatternType.STRIPE_CENTER),
+                        new Pattern(background, PatternType.BORDER))
+                .hideItemFlags()
+                .build();
+    }
+
+    // running colour animations, by menu and slot, so a fast second click restarts instead of overlapping
+    private final Map<Inventory, Map<Integer, BukkitTask>> animations = new HashMap<>();
+
+    /**
+     * Shows a new colour: the arrows switch at once, the colour banner fills with the new colour in a few frames,
+     * from below after the down arrow and from above after the up arrow.
+     */
+    private void changeColour(
+            Inventory inventory, String gunID, Player player, int slot, PortalColor before, boolean fromBelow) {
+        GunColors colors = gunColors.getColors(gunID);
+        PortalColor after = slot == 3 ? colors.getPrimary() : colors.getSecondary();
+        int column = slot == 3 ? 0 : 2;
+        inventory.setItem(column, arrow(after.next(), true));
+        inventory.setItem(column + 6, arrow(after.previous(), false));
+
+        Map<Integer, BukkitTask> running = animations.computeIfAbsent(inventory, key -> new HashMap<>());
+        BukkitTask previous = running.remove(slot);
+        if (previous != null) {
+            previous.cancel();
+        }
+        DyeColor oldDye = before.getDyeColor();
+        DyeColor newDye = after.getDyeColor();
+        PatternType edge = fromBelow ? PatternType.STRIPE_BOTTOM : PatternType.STRIPE_TOP;
+        PatternType half = fromBelow ? PatternType.HALF_HORIZONTAL_BOTTOM : PatternType.HALF_HORIZONTAL;
+        PatternType rest = fromBelow ? PatternType.STRIPE_TOP : PatternType.STRIPE_BOTTOM;
+        ItemStack[] frames = {
+            fill(oldDye, new Pattern(newDye, edge)),
+            fill(oldDye, new Pattern(newDye, half)),
+            fill(newDye, new Pattern(oldDye, rest)),
+            getColorPreview(after)
+        };
+        String name = after.getChatColor() + after.toString();
+        running.put(
+                slot,
+                new BukkitRunnable() {
+                    private int frame;
+
+                    @Override
+                    public void run() {
+                        if (inventory.getViewers().isEmpty() || frame >= frames.length) {
+                            cancel();
+                            Map<Integer, BukkitTask> tasks = animations.get(inventory);
+                            if (tasks != null) {
+                                tasks.remove(slot);
+                                if (tasks.isEmpty()) {
+                                    animations.remove(inventory);
+                                }
+                            }
+                            return;
+                        }
+                        ItemStack item = frames[frame++];
+                        ItemMeta meta = item.getItemMeta();
+                        meta.setDisplayName("§r" + name);
+                        item.setItemMeta(meta);
+                        inventory.setItem(slot, item);
+                    }
+                }.runTaskTimer(PorticleGun.getInstance(), 0L, 2L));
+    }
+
+    private static ItemStack fill(DyeColor base, Pattern pattern) {
+        return new BannerBuilder()
+                .setBaseColor(base)
+                .setPatterns(pattern)
                 .hideItemFlags()
                 .build();
     }
@@ -160,12 +234,11 @@ public class SettingsHandler implements Listener {
     public Inventory getCurrentSettings(String gunID, Player player) {
         Inventory inv = Bukkit.createInventory(
                 null, InventoryType.DROPPER, MessageManager.getMessage(player, "menus.settings.title"));
-        inv.setItem(0, up);
-        inv.setItem(2, up);
-        inv.setItem(6, down);
-        inv.setItem(8, down);
-
         GunColors colors = gunColors.getColors(gunID);
+        inv.setItem(0, arrow(colors.getPrimary().next(), true));
+        inv.setItem(2, arrow(colors.getSecondary().next(), true));
+        inv.setItem(6, arrow(colors.getPrimary().previous(), false));
+        inv.setItem(8, arrow(colors.getSecondary().previous(), false));
 
         inv.setItem(3, getColorPreview(colors.getPrimary()));
         inv.setItem(5, getColorPreview(colors.getSecondary()));

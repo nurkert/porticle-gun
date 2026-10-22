@@ -37,8 +37,9 @@ The current destination glows.
 ## Destinations
 
 - **Random spot in a world**: candidates are checked one after another around the world spawn (`random-radius`,
-  `nether-radius`, `end-radius`), chunks that already exist first. Every world keeps two such spots ready in the
-  background (their chunks stay loaded), so the rift usually opens at once; only when none is ready a search runs,
+  `nether-radius`, `end-radius`), chunks that already exist first. Every world keeps two such spots ready, found in
+  the background; their chunks are not kept loaded, only generated once, so opening a rift there just loads them
+  back from disk. The rift usually opens right away; only when none is ready a search runs,
   which gives up after 20 seconds. On Paper their chunks are loaded and generated in
   the background, so searching never freezes the server; on Spigot one candidate per tick is loaded directly. A spot is
   safe when the ground is solid and harmless (no lava, magma, cactus, fire, powder snow, water), there are two free

@@ -197,15 +197,18 @@ public class RiftGunListener implements Listener {
                     deny(player, "rift.world-unavailable");
                     return;
                 }
-                // usually a spot is ready and the rift opens at once; otherwise search one now
-                Location ready = module.readySpots().take(world);
-                if (ready != null) {
-                    openAt.accept(ready);
-                    return;
-                }
-                player.playSound(player, Sound.BLOCK_BEACON_AMBIENT, 1f, 1.8f);
-                actionBar(player, MessageManager.getMessage(player, "rift.searching"));
-                module.finder().find(world, settings, search(player, "rift.no-safe-spot", openAt));
+                // usually a spot is ready and the rift opens right away; otherwise search one now
+                // (marked as a search right away, so a second click meanwhile does not open a second rift)
+                Consumer<Location> found = search(player, "rift.no-safe-spot", openAt);
+                module.readySpots().take(world, ready -> {
+                    if (ready != null) {
+                        found.accept(ready);
+                        return;
+                    }
+                    player.playSound(player, Sound.BLOCK_BEACON_AMBIENT, 1f, 1.8f);
+                    actionBar(player, MessageManager.getMessage(player, "rift.searching"));
+                    module.finder().find(world, settings, found);
+                });
             }
             case SPAWN -> {
                 World world = Bukkit.getWorld(destination.world());

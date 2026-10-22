@@ -5,6 +5,19 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+### Changed
+- **PorticleGun settings menu**: the arrows show the colour they switch to, the colour banners are filled with the
+  portal's colour instead of a thin frame, and a new colour fills its banner in a short animation, from below after
+  the down arrow and from above after the up arrow. (The old arrow banners showed up as plain white on current
+  versions.)
+- Rifts draw every tick with half of their particles each, instead of all of them every other tick, so they no
+  longer pulse; their spiral arms flow steadily into the core.
+- Ready rift destinations no longer keep their chunks loaded: they are generated once and loaded back from disk (in
+  the background on Paper) when a rift opens there.
+
+### Fixed
+- Worlds loaded after the server start also get the chunk that keeps the gun menus from freezing the server.
+
 ## [1.6.2] - 2026-10-22
 
 ### Added
