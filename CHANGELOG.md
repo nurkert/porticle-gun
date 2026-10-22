@@ -5,6 +5,8 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+## [1.6.3] - 2026-10-22
+
 ### Changed
 - **PorticleGun settings menu**: the arrows show the colour they switch to, the colour banners are filled with the
   portal's colour instead of a thin frame, and a new colour fills its banner in a short animation, from below after
