@@ -1,6 +1,7 @@
 package eu.nurkert.porticlegun.rift;
 
 import eu.nurkert.porticlegun.PorticleGun;
+import eu.nurkert.porticlegun.util.BedrockSupport;
 import eu.nurkert.porticlegun.util.WorldGuardIntegration;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -21,7 +22,9 @@ import org.bukkit.entity.Entity;
 import org.bukkit.entity.Hanging;
 import org.bukkit.entity.Player;
 import org.bukkit.entity.Wither;
+import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
+import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.scheduler.BukkitTask;
 import org.bukkit.util.Vector;
 
@@ -29,35 +32,36 @@ import org.bukkit.util.Vector;
  * Opens and runs the green rifts of the interdimensional gun: always a pair, one in front of the player and one at the
  * destination, both walkable in both directions until they close again.
  *
- * <p>A rift is drawn from particles only, so Java and Bedrock players see the same thing without a resource pack: a
- * thick, wobbling lime rim with white bubbles, a dark green body and three light spiral arms turning towards the bright
- * core. It opens and closes by growing from and shrinking to its centre. While a rift is open, the chunks of both
+ * <p>A rift is drawn from particles only, so it needs no resource pack: a crisp, wobbling lime rim, a dark green band
+ * and spiral body, and light streams spiralling into the bright core (Bedrock gets the same shape from dust only). It opens and closes by growing from and shrinking to its centre. While a rift is open, the chunks of both
  * portals stay loaded, so travellers arrive without waiting and the far side keeps working.
  */
 public class RiftPortalManager implements Listener {
 
-    // the colours of a Rick and Morty portal: a thick, glowing lime rim, a dark green body and light swirl arms
-    private static final Particle.DustOptions RIM = new Particle.DustOptions(Color.fromRGB(0xD4FF5A), 2.0f);
-    private static final Particle.DustOptions BUBBLE = new Particle.DustOptions(Color.fromRGB(0xF6FFE8), 2.0f);
-    private static final Particle.DustOptions GLOW = new Particle.DustOptions(Color.fromRGB(0x9BE33F), 1.6f);
-    private static final Particle.DustOptions SWIRL = new Particle.DustOptions(Color.fromRGB(0xC4F55E), 1.25f);
-    private static final Particle.DustOptions BODY = new Particle.DustOptions(Color.fromRGB(0x1C7A2B), 1.9f);
-    private static final Particle.DustOptions BODY_LIGHT = new Particle.DustOptions(Color.fromRGB(0x2FA83A), 1.9f);
-    private static final Particle.DustOptions CORE = new Particle.DustOptions(Color.fromRGB(0xF2FFC4), 1.7f);
+    // a Rick and Morty portal: a crisp lime rim with a pale highlight, a dark green band and body, light streams
+    // spiralling into a bright core
+    private static final Color RIM_COLOUR = Color.fromRGB(0xC8F750);
+    private static final Particle.DustOptions RIM = new Particle.DustOptions(RIM_COLOUR, 1.3f);
+    private static final Particle.DustOptions HIGHLIGHT = new Particle.DustOptions(Color.fromRGB(0xF4FFE0), 0.9f);
+    private static final Particle.DustOptions BAND = new Particle.DustOptions(Color.fromRGB(0x1F8A2E), 1.6f);
+    private static final Particle.DustOptions BODY = new Particle.DustOptions(Color.fromRGB(0x2A9A36), 1.7f);
+    private static final Particle.DustOptions CORE = new Particle.DustOptions(Color.fromRGB(0xF2FFC4), 1.8f);
+    private static final Color[] STREAM_COLOURS = {RIM_COLOUR, Color.fromRGB(0xE6FFB0), Color.fromRGB(0x8FE04A)};
+    // Bedrock has no trail particles and draws dust slower: fewer, bigger particles
+    private static final Particle.DustOptions BEDROCK_RIM = new Particle.DustOptions(RIM_COLOUR, 2.0f);
+    private static final Particle.DustOptions BEDROCK_BAND = new Particle.DustOptions(Color.fromRGB(0x1F8A2E), 2.0f);
+    private static final Particle.DustOptions BEDROCK_ARM = new Particle.DustOptions(Color.fromRGB(0xB6F04E), 1.6f);
     private static final int OPEN_TICKS = 10;
-    private static final int RIM_POINTS = 40;
-    private static final int GLOW_POINTS = 32;
-    private static final int ARMS = 3;
-    private static final int ARM_POINTS = 10;
-    private static final int BODY_POINTS = 12;
     // particles are only sent while a player is this close, the client would not show them farther away anyway
     private static final double VIEW_DISTANCE = 48;
     private static final double LEAVE_DISTANCE = 2.5;
-    private static final int WALK_AWAY_TICKS = 40;
+    private static final int WALK_AWAY_TICKS = 100;
 
     private final PorticleGun plugin;
     private final RiftStorage storage;
     private final Map<UUID, RiftPortal[]> pairs = new HashMap<>();
+    // block -> the open portals covering it
+    private final Map<CellKey, List<RiftPortal>> cells = new HashMap<>();
     // portals still shrinking after they closed
     private final List<RiftPortal> closing = new ArrayList<>();
     // entity -> portal it just came out of; it cannot go back through until it stepped away
@@ -101,6 +105,7 @@ public class RiftPortalManager implements Listener {
             world.playSound(portal.centre(), Sound.ENTITY_ILLUSIONER_PREPARE_MIRROR, 0.8f, 1.2f);
         }
         pairs.put(owner.getUniqueId(), new RiftPortal[] {entrance, exit});
+        index();
         UUID id = owner.getUniqueId();
         closeDistances.put(id, closeDistance);
         lastNear.put(id, tick + WALK_AWAY_TICKS); // a moment of grace after opening
@@ -118,6 +123,9 @@ public class RiftPortalManager implements Listener {
 
     public void close(UUID owner) {
         RiftPortal[] pair = pairs.remove(owner);
+        if (pair != null) {
+            index();
+        }
         closeDistances.remove(owner);
         lastNear.remove(owner);
         if (pair == null) {
@@ -181,7 +189,9 @@ public class RiftPortalManager implements Listener {
                 if (draw) {
                     particles(portal, Math.min(1.0, (tick - portal.openedAt) / (double) OPEN_TICKS));
                 }
-                travel(portal);
+                if (tick % 2 == 0) {
+                    travelOthers(portal);
+                }
             }
         }
         closing.removeIf(portal -> {
@@ -208,7 +218,7 @@ public class RiftPortalManager implements Listener {
         for (Map.Entry<UUID, RiftPortal[]> entry : pairs.entrySet()) {
             UUID owner = entry.getKey();
             Player player = Bukkit.getPlayer(owner);
-            double distance = closeDistances.getOrDefault(owner, 12.0);
+            double distance = closeDistances.getOrDefault(owner, 24.0);
             boolean near = false;
             if (player != null) {
                 for (RiftPortal portal : entry.getValue()) {
@@ -226,127 +236,223 @@ public class RiftPortalManager implements Listener {
     }
 
     /**
-     * Draws one frame of the rift (every second tick, about 110 particles; dust lingers for a moment, so the frames
-     * blend into a swirl). size grows from 0 to 1 while it opens and shrinks back while it closes.
+     * Draws one frame of the rift (every second tick). Java players get a crisp double rim, a dark band and spiral
+     * body, and trail particles that stream from the rim into the core along a spiral, each for a fixed time; Bedrock
+     * players, whose clients know no trail particles, get the same shape from fewer, bigger dust particles. size grows
+     * from 0 to 1 while the rift opens and shrinks back while it closes.
      */
     private void particles(RiftPortal portal, double size) {
-        Location centre = portal.centre();
         if (size <= 0) {
             return;
         }
-        List<Player> viewers = viewers(centre);
-        if (viewers.isEmpty()) {
-            return;
-        }
-        double t = tick;
-        double halfWidth = RiftPortal.HALF_WIDTH * size;
-        double halfHeight = RiftPortal.HEIGHT / 2 * size;
-        // the rim: a blobby oval whose edge wobbles in three waves, with white bubbles running around it
-        for (int i = 0; i < RIM_POINTS; i++) {
-            double angle = i * Math.PI * 2 / RIM_POINTS + t * 0.03;
-            double radius = blob(angle, t);
-            boolean bubble = (i + tick / 4) % 7 == 0;
-            spawn(viewers, portal, centre, angle, halfWidth * radius, halfHeight * radius, bubble ? BUBBLE : RIM);
-        }
-        // a second, darker band just inside, turning the other way
-        for (int i = 0; i < GLOW_POINTS; i++) {
-            double angle = i * Math.PI * 2 / GLOW_POINTS - t * 0.05 + 0.1;
-            double radius = blob(angle, t) * 0.87;
-            spawn(viewers, portal, centre, angle, halfWidth * radius, halfHeight * radius, GLOW);
-        }
-        // three light spiral arms turning towards the core
-        for (int arm = 0; arm < ARMS; arm++) {
-            for (int j = 0; j < ARM_POINTS; j++) {
-                double reach = 0.1 + 0.72 * (j + (tick / 2 % 2) * 0.5) / ARM_POINTS;
-                double angle = arm * Math.PI * 2 / ARMS + 4.6 * reach - t * 0.15;
-                double radius = blob(angle, t) * reach;
-                spawn(viewers, portal, centre, angle, halfWidth * radius, halfHeight * radius, SWIRL);
-            }
-        }
-        // the dark green body between the arms, scattered anew every frame
-        ThreadLocalRandom random = ThreadLocalRandom.current();
-        for (int i = 0; i < BODY_POINTS; i++) {
-            double angle = random.nextDouble(Math.PI * 2);
-            double radius = Math.sqrt(random.nextDouble()) * 0.8 * blob(angle, t);
-            spawn(
-                    viewers,
-                    portal,
-                    centre,
-                    angle,
-                    halfWidth * radius,
-                    halfHeight * radius,
-                    i % 3 == 0 ? BODY_LIGHT : BODY);
-        }
-        for (int i = 0; i < 2; i++) {
-            spawn(viewers, portal, centre, random.nextDouble(Math.PI * 2), 0.07 * size, 0.08 * size, CORE);
-        }
-    }
-
-    private static double blob(double angle, double t) {
-        return 1
-                + 0.055 * Math.sin(3 * angle + t * 0.15)
-                + 0.04 * Math.sin(7 * angle - t * 0.23)
-                + 0.025 * Math.sin(13 * angle + t * 0.41);
-    }
-
-    /** One particle on the ellipse with the given half axes, at the given angle. */
-    private static void spawn(
-            List<Player> viewers,
-            RiftPortal portal,
-            Location centre,
-            double angle,
-            double halfWidth,
-            double halfHeight,
-            Particle.DustOptions colour) {
-        double side = Math.cos(angle) * halfWidth;
-        double x = centre.getX() + portal.right.getX() * side;
-        double y = centre.getY() + Math.sin(angle) * halfHeight;
-        double z = centre.getZ() + portal.right.getZ() * side;
-        for (Player viewer : viewers) {
-            viewer.spawnParticle(Particle.DUST, x, y, z, 1, 0, 0, 0, 0, colour);
-        }
-    }
-
-    private static List<Player> viewers(Location centre) {
-        List<Player> viewers = new ArrayList<>();
+        Location centre = portal.centre();
+        List<Player> java = new ArrayList<>();
+        List<Player> bedrock = new ArrayList<>();
         for (Player player : centre.getWorld().getPlayers()) {
             if (player.getLocation().distanceSquared(centre) < VIEW_DISTANCE * VIEW_DISTANCE) {
-                viewers.add(player);
+                (BedrockSupport.isBedrock(player) ? bedrock : java).add(player);
             }
         }
-        return viewers;
+        Frame frame = new Frame(portal, centre, size, tick);
+        if (!java.isEmpty()) {
+            frame.java(java);
+        }
+        if (!bedrock.isEmpty() && tick % 4 == 0) {
+            frame.bedrock(bedrock);
+        }
+    }
+
+    /** One frame of a rift: positions on its wobbling oval, in the portal's plane. */
+    private static final class Frame {
+        private final RiftPortal portal;
+        private final Location centre;
+        private final double halfWidth;
+        private final double halfHeight;
+        private final double t;
+
+        Frame(RiftPortal portal, Location centre, double size, long tick) {
+            this.portal = portal;
+            this.centre = centre;
+            this.halfWidth = RiftPortal.HALF_WIDTH * size;
+            this.halfHeight = RiftPortal.HEIGHT / 2 * size;
+            this.t = tick;
+        }
+
+        void java(List<Player> viewers) {
+            ring(viewers, 32, 1.0, t * 0.03, 0, RIM);
+            ring(viewers, 16, 1.045, t * 0.03, 0.5, HIGHLIGHT);
+            ring(viewers, 24, 0.88, -t * 0.05, 0, BAND);
+            arms(viewers, 6, BODY);
+            ThreadLocalRandom random = ThreadLocalRandom.current();
+            for (int i = 0; i < 18; i++) {
+                // a stream starts just inside the rim and ends near the core, a third of a turn further
+                double angle = random.nextDouble(Math.PI * 2);
+                double start = random.nextDouble(0.7, 0.84);
+                Location target = at(angle + 1.6, 0.12);
+                Particle.Trail trail =
+                        new Particle.Trail(target, STREAM_COLOURS[i % STREAM_COLOURS.length], random.nextInt(16, 25));
+                spawn(viewers, Particle.TRAIL, at(angle, start), trail);
+            }
+            spawn(viewers, Particle.DUST, at(0, 0), CORE);
+        }
+
+        void bedrock(List<Player> viewers) {
+            ring(viewers, 24, 1.0, t * 0.03, 0, BEDROCK_RIM);
+            ring(viewers, 16, 0.86, -t * 0.05, 0, BEDROCK_BAND);
+            arms(viewers, 5, BEDROCK_ARM);
+            spawn(viewers, Particle.DUST, at(0, 0), CORE);
+        }
+
+        private void ring(
+                List<Player> viewers,
+                int points,
+                double radius,
+                double turn,
+                double offset,
+                Particle.DustOptions dust) {
+            for (int i = 0; i < points; i++) {
+                spawn(viewers, Particle.DUST, at((i + offset) * Math.PI * 2 / points + turn, radius), dust);
+            }
+        }
+
+        /** Three spiral arms turning towards the core. */
+        private void arms(List<Player> viewers, int points, Particle.DustOptions dust) {
+            for (int arm = 0; arm < 3; arm++) {
+                for (int j = 0; j < points; j++) {
+                    double reach = 0.15 + 0.65 * (j + (t / 2 % 2) * 0.5) / points;
+                    spawn(viewers, Particle.DUST, at(arm * Math.PI * 2 / 3 + 4.6 * reach - t * 0.15, reach), dust);
+                }
+            }
+        }
+
+        /** The point at the given angle, radius 1 being the wobbling rim. */
+        private Location at(double angle, double radius) {
+            double wobble = radius
+                    * (1
+                            + 0.055 * Math.sin(3 * angle + t * 0.15)
+                            + 0.04 * Math.sin(7 * angle - t * 0.23)
+                            + 0.025 * Math.sin(13 * angle + t * 0.41));
+            double side = Math.cos(angle) * halfWidth * wobble;
+            return new Location(
+                    centre.getWorld(),
+                    centre.getX() + portal.right.getX() * side,
+                    centre.getY() + Math.sin(angle) * halfHeight * wobble,
+                    centre.getZ() + portal.right.getZ() * side);
+        }
+
+        private static <T> void spawn(List<Player> viewers, Particle particle, Location at, T data) {
+            for (Player viewer : viewers) {
+                viewer.spawnParticle(particle, at, 1, 0, 0, 0, 0, data);
+            }
+        }
     }
 
     private static boolean loaded(RiftPortal portal) {
         return portal.feet.getWorld().isChunkLoaded(portal.feet.getBlockX() >> 4, portal.feet.getBlockZ() >> 4);
     }
 
-    private void travel(RiftPortal portal) {
-        Location centre = portal.centre();
-        for (Entity entity : centre.getWorld().getNearbyEntities(centre, 1.6, 1.8, 1.6)) {
-            if (!canTravel(entity) || exitLocks.get(entity.getUniqueId()) == portal) {
-                continue;
-            }
-            Location middle = entity.getLocation().add(0, entity.getHeight() / 2, 0);
-            if (!portal.contains(middle)) {
-                continue;
-            }
-            RiftPortal target = portal.partner;
-            if (PorticleGun.isWorldGuardEnabled()
-                    && !WorldGuardIntegration.canUsePortal(entity, portal.feet, target.feet)) {
-                continue;
-            }
-            Location before = entity.getLocation();
-            if (entity.teleport(target.exit())) {
-                entity.setVelocity(target.normal.clone().multiply(0.25));
-                entity.setFallDistance(0);
-                exitLocks.put(entity.getUniqueId(), target);
-                target.feet.getWorld().playSound(target.centre(), Sound.ENTITY_ENDERMAN_TELEPORT, 0.8f, 1.3f);
-                if (entity instanceof Player player) {
-                    storage.setBack(player.getUniqueId(), before);
+    /**
+     * Rebuilds the grid of blocks each open portal covers. Players are checked against it only when their body moves
+     * into another block, with one hash lookup instead of a loop over all portals.
+     */
+    private void index() {
+        cells.clear();
+        for (RiftPortal[] pair : pairs.values()) {
+            for (RiftPortal portal : pair) {
+                Location centre = portal.centre();
+                for (double side = -RiftPortal.HALF_WIDTH; side <= RiftPortal.HALF_WIDTH; side += 0.5) {
+                    for (double up = -RiftPortal.HEIGHT / 2; up <= RiftPortal.HEIGHT / 2; up += 0.5) {
+                        for (double depth = -0.45; depth <= 0.45; depth += 0.45) {
+                            Location cell = centre.clone()
+                                    .add(portal.right.clone().multiply(side))
+                                    .add(portal.normal.clone().multiply(depth))
+                                    .add(0, up, 0);
+                            List<RiftPortal> here = cells.computeIfAbsent(cellKey(cell), key -> new ArrayList<>(1));
+                            if (!here.contains(portal)) {
+                                here.add(portal);
+                            }
+                        }
+                    }
                 }
             }
         }
+    }
+
+    private static CellKey cellKey(Location location) {
+        return new CellKey(
+                location.getWorld().getUID(), location.getBlockX(), location.getBlockY(), location.getBlockZ());
+    }
+
+    private record CellKey(UUID world, int x, int y, int z) {}
+
+    @EventHandler(ignoreCancelled = true)
+    public void on(PlayerMoveEvent event) {
+        if (cells.isEmpty() || event.getTo() == null) {
+            return;
+        }
+        Player player = event.getPlayer();
+        double middle = player.getHeight() / 2;
+        Location from = event.getFrom().clone().add(0, middle, 0);
+        Location to = event.getTo().clone().add(0, middle, 0);
+        if (from.getBlockX() == to.getBlockX()
+                && from.getBlockY() == to.getBlockY()
+                && from.getBlockZ() == to.getBlockZ()
+                && from.getWorld() == to.getWorld()) {
+            return;
+        }
+        List<RiftPortal> here = cells.get(cellKey(to));
+        if (here == null) {
+            return;
+        }
+        for (RiftPortal portal : here) {
+            if (exitLocks.get(player.getUniqueId()) != portal && portal.contains(to) && canTravel(player)) {
+                // after the event the player would be put back to where the event says; move them next tick
+                Bukkit.getScheduler().runTask(plugin, () -> travel(player, portal));
+                return;
+            }
+        }
+    }
+
+    /** Mobs, items and arrows: they have no move event, so the few entities next to each portal are checked. */
+    private void travelOthers(RiftPortal portal) {
+        Location centre = portal.centre();
+        for (Entity entity : centre.getWorld().getNearbyEntities(centre, 1.6, 1.8, 1.6)) {
+            if (entity instanceof Player || !canTravel(entity) || exitLocks.get(entity.getUniqueId()) == portal) {
+                continue;
+            }
+            if (portal.contains(entity.getLocation().add(0, entity.getHeight() / 2, 0))) {
+                travel(entity, portal);
+            }
+        }
+    }
+
+    private void travel(Entity entity, RiftPortal portal) {
+        if (!entity.isValid()
+                || !isOpen(portal)
+                || exitLocks.get(entity.getUniqueId()) == portal
+                || !portal.contains(entity.getLocation().add(0, entity.getHeight() / 2, 0))) {
+            return; // e.g. two move events in one tick: the first already took the player through
+        }
+        RiftPortal target = portal.partner;
+        if (PorticleGun.isWorldGuardEnabled()
+                && !WorldGuardIntegration.canUsePortal(entity, portal.feet, target.feet)) {
+            return;
+        }
+        Location before = entity.getLocation();
+        if (entity.teleport(target.exit())) {
+            entity.setVelocity(target.normal.clone().multiply(0.25));
+            entity.setFallDistance(0);
+            exitLocks.put(entity.getUniqueId(), target);
+            target.feet.getWorld().playSound(target.centre(), Sound.ENTITY_ENDERMAN_TELEPORT, 0.8f, 1.3f);
+            if (entity instanceof Player player) {
+                storage.setBack(player.getUniqueId(), before);
+            }
+        }
+    }
+
+    private boolean isOpen(RiftPortal portal) {
+        RiftPortal[] pair = pairs.get(portal.owner);
+        return pair != null && (pair[0] == portal || pair[1] == portal);
     }
 
     private static boolean canTravel(Entity entity) {

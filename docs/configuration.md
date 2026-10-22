@@ -37,7 +37,7 @@ with a colour that no longer exists, it falls back to the default colour and a w
 | `interdimensional-gun.rifts-per-fluid` | `4` | Rifts one bottle of portal fluid adds. |
 | `interdimensional-gun.starting-charges` | `4` | Rifts a freshly crafted gun has. |
 | `interdimensional-gun.cooldown-seconds` | `3` | Seconds between two rifts. |
-| `interdimensional-gun.close-distance` | `12` | A rift pair closes when its opener is farther than this from both portals for two seconds. |
+| `interdimensional-gun.close-distance` | `24` | A rift pair closes when its opener is farther than this from both portals for five seconds. |
 | `interdimensional-gun.portal-seconds` | `30` | A rift pair closes after this many seconds at the latest. |
 | `interdimensional-gun.homes` | `5` | Home slots per player (0-7). |
 | `interdimensional-gun.random-radius` | `3000` | Radius around the world spawn for random destinations (overworld and other worlds). |

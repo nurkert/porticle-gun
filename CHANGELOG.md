@@ -5,6 +5,30 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+## [1.6.2] - 2026-10-22
+
+### Added
+- **Load slot in the rift menu**: the menu's only free slot takes portal fluid or a rift compass, the banner button
+  next to it loads one per click. A single bottle turns into an empty bottle in the slot, from a stack the empty
+  bottle goes to the inventory (or drops when it is full); whatever is left goes back when the menu closes.
+- **Ready destinations**: every world keeps two safe landing spots searched in the background, with their chunks
+  loaded, so a rift to a random spot opens at once. A search that is still needed gives up after 20 seconds instead of
+  leaving the gun stuck on "Calculating coordinates".
+
+### Changed
+- **Rifts redesigned**: a crisp lime double rim, a dark green band and spiral body, and light streams spiralling
+  into the core (trail particles with a fixed duration). Bedrock players get the same shape from fewer, bigger dust
+  particles.
+- Rifts stand on the block grid: they face a compass direction and fill exactly two blocks, centred between them.
+- Rift pairs stay open until their opener is more than 24 blocks (was 12) from both portals for five seconds (was
+  two).
+- Collision checks use a grid of the blocks portals cover: a player's move is checked with one lookup instead of a
+  loop over all portals (PorticleGun portals and rifts).
+- Structure searches of the rift atlas are cached for ten minutes per area.
+- Banner buttons in the rift menu (load, close, back), like in the PorticleGun settings.
+- Rift shard drops follow vanilla rules: they need the right tool, respect the `doTileDrops` and `doMobLoot` game
+  rules, and the Luck effect raises the chance (a quarter per level, Bad Luck lowers it).
+
 ## [1.6.1] - 2026-10-22
 
 ### Changed

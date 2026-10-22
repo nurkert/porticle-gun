@@ -1,5 +1,6 @@
 package eu.nurkert.porticlegun.rift;
 
+import eu.nurkert.porticlegun.builders.BannerBuilder;
 import eu.nurkert.porticlegun.builders.ItemBuilder;
 import eu.nurkert.porticlegun.messages.MessageManager;
 import java.util.ArrayList;
@@ -9,14 +10,19 @@ import java.util.Map;
 import net.md_5.bungee.api.ChatMessageType;
 import net.md_5.bungee.api.chat.TextComponent;
 import org.bukkit.Bukkit;
+import org.bukkit.DyeColor;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.Sound;
 import org.bukkit.World;
+import org.bukkit.block.banner.Pattern;
+import org.bukkit.block.banner.PatternType;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
+import org.bukkit.event.inventory.InventoryAction;
 import org.bukkit.event.inventory.InventoryClickEvent;
+import org.bukkit.event.inventory.InventoryCloseEvent;
 import org.bukkit.event.inventory.InventoryDragEvent;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.InventoryHolder;
@@ -48,6 +54,7 @@ public class RiftMenu implements Listener {
         final String gunId;
         final Map<Integer, Runnable> actions = new HashMap<>();
         Inventory inventory;
+        int atlasSlot = -1;
 
         Holder(Page page, int home, int slot, String gunId) {
             this.page = page;
@@ -62,6 +69,9 @@ public class RiftMenu implements Listener {
         }
     }
 
+    // the only free slot of the main page, where portal fluid or a rift compass is put, and its load button
+    static final int INPUT_SLOT = 6;
+    private static final int LOAD_SLOT = 7;
     private static final int WORLDS_PER_ROW = 4;
     private static final int MAX_WORLDS = 8;
 
@@ -104,36 +114,12 @@ public class RiftMenu implements Listener {
             inventory.setItem(footer + i, frame);
         }
 
-        // header: rift compass, the gun itself (tank and destination in its tooltip), portal fluid
-        int charges = RiftItems.charges(gun);
-        boolean attuned = RiftItems.isAttuned(gun);
-        Map<String, String> compassPlaceholders =
-                Map.of("minutes", String.valueOf(settings.compassMillis() / 60_000), "time", RiftItems.remaining(gun));
-        ItemStack compassIcon = RiftItems.create(RiftItems.Type.RIFT_COMPASS, 1, settings);
-        decorate(
-                compassIcon,
-                text(player, attuned ? "rift.menu.compass-active" : "rift.menu.compass.name", compassPlaceholders),
-                lines(
-                        player,
-                        attuned ? "rift.menu.compass-active-lore" : "rift.menu.compass.lore",
-                        compassPlaceholders));
-        if (attuned) {
-            glow(compassIcon);
-        }
-        button(holder, inventory, 2, compassIcon, () -> insertCompass(player, holder));
+        // header: whether the gun is attuned, the gun itself (tank and destination in its tooltip), and the only free
+        // slot of the menu with the load button next to it
+        inventory.setItem(2, compassStatus(player, gun));
         inventory.setItem(4, gun.clone());
-        ItemStack fluidIcon = RiftItems.create(RiftItems.Type.PORTAL_FLUID, 1, settings);
-        decorate(
-                fluidIcon,
-                text(player, "rift.menu.fill.name"),
-                lines(
-                        player,
-                        "rift.menu.fill.lore",
-                        Map.of(
-                                "rifts", String.valueOf(settings.riftsPerFluid()),
-                                "charges", String.valueOf(charges),
-                                "capacity", String.valueOf(settings.tankCapacity()))));
-        button(holder, inventory, 6, fluidIcon, () -> fillTank(player, holder));
+        inventory.setItem(INPUT_SLOT, null);
+        button(holder, inventory, LOAD_SLOT, loadButton(player, gun), () -> load(player, holder));
 
         // worlds: a random spot and the spawn of every world that is not disabled, side by side
         inventory.setItem(9, label(Material.FILLED_MAP, text(player, "rift.menu.worlds")));
@@ -187,20 +173,8 @@ public class RiftMenu implements Listener {
                 lines(player, death == null ? "rift.menu.death-empty" : "rift.menu.death-lore", coordinates(death)),
                 RiftDestination.death(),
                 selected);
-        ItemStack atlasIcon = item(
-                attuned ? Material.FILLED_MAP : Material.MAP,
-                text(player, attuned ? "rift.menu.atlas.name" : "rift.menu.atlas-locked"),
-                lines(player, attuned ? "rift.menu.atlas.lore" : "rift.menu.atlas-locked-lore", Map.of()));
-        if (selected != null && selected.type() == RiftDestination.Type.STRUCTURE) {
-            glow(atlasIcon);
-            addLine(
-                    atlasIcon,
-                    text(
-                            player,
-                            "rift.menu.selected-structure",
-                            Map.of("structure", RiftNames.describe(selected, player))));
-        }
-        button(holder, inventory, journeyRow + 4, atlasIcon, () -> {
+        holder.atlasSlot = journeyRow + 4;
+        button(holder, inventory, holder.atlasSlot, atlasButton(player, gun), () -> {
             ItemStack current = player.getInventory().getItem(holder.slot);
             if (RiftItems.isAttuned(current)) {
                 openAtlas(player, holder.slot);
@@ -249,12 +223,7 @@ public class RiftMenu implements Listener {
                         Material.KNOWLEDGE_BOOK,
                         text(player, "rift.menu.help"),
                         lines(player, "rift.menu.guide", Map.of())));
-        button(
-                holder,
-                inventory,
-                footer + 5,
-                item(Material.BARRIER, text(player, "rift.menu.close"), List.of()),
-                player::closeInventory);
+        button(holder, inventory, footer + 5, closeBanner(text(player, "rift.menu.close")), player::closeInventory);
         player.openInventory(inventory);
     }
 
@@ -316,12 +285,7 @@ public class RiftMenu implements Listener {
         inventory.setItem(9, label(Material.GRASS_BLOCK, text(player, "rift.dimension.normal")));
         inventory.setItem(27, label(Material.NETHERRACK, text(player, "rift.dimension.nether")));
         inventory.setItem(32, label(Material.END_STONE, text(player, "rift.dimension.the_end")));
-        button(
-                holder,
-                inventory,
-                40,
-                item(Material.ARROW, text(player, "rift.menu.back"), List.of()),
-                () -> open(player, holder.slot));
+        button(holder, inventory, 40, backBanner(text(player, "rift.menu.back")), () -> open(player, holder.slot));
         player.openInventory(inventory);
     }
 
@@ -395,12 +359,7 @@ public class RiftMenu implements Listener {
                         text(player, "rift.menu.home-delete"),
                         lines(player, "rift.menu.home-delete-lore", placeholders)),
                 () -> openDelete(player, holder.slot, home));
-        button(
-                holder,
-                inventory,
-                22,
-                item(Material.ARROW, text(player, "rift.menu.back"), List.of()),
-                () -> open(player, holder.slot));
+        button(holder, inventory, 22, backBanner(text(player, "rift.menu.back")), () -> open(player, holder.slot));
         player.openInventory(inventory);
     }
 
@@ -443,10 +402,18 @@ public class RiftMenu implements Listener {
         if (!(event.getInventory().getHolder() instanceof Holder holder)) {
             return;
         }
-        // nothing moves in or out of the menu, whatever kind of click it is
+        if (!(event.getWhoClicked() instanceof Player player)) {
+            event.setCancelled(true);
+            return;
+        }
+        int raw = event.getRawSlot();
+        int size = event.getInventory().getSize();
+        if (holder.page == Page.MAIN && mayMoveItems(event, raw, size)) {
+            return; // putting things into the free slot, taking them out, or tidying up the own inventory
+        }
+        // nothing else moves in or out of the menu, whatever kind of click it is
         event.setCancelled(true);
-        if (!(event.getWhoClicked() instanceof Player player)
-                || event.getRawSlot() >= event.getInventory().getSize()) {
+        if (raw < 0 || raw >= size) {
             return;
         }
         ItemStack gun = player.getInventory().getItem(holder.slot);
@@ -454,38 +421,149 @@ public class RiftMenu implements Listener {
             player.closeInventory(); // the gun was moved or swapped in the meantime
             return;
         }
-        Runnable action = holder.actions.get(event.getRawSlot());
+        Runnable action = holder.actions.get(raw);
         if (action != null) {
             player.playSound(player, Sound.UI_BUTTON_CLICK, 0.5f, 1.4f);
             action.run();
         }
     }
 
+    /**
+     * @return whether a click on the main page may move items: in the free slot only portal fluid and rift compasses
+     *     go in (anything there may be taken out), in the own inventory everything works as usual
+     */
+    private static boolean mayMoveItems(InventoryClickEvent event, int raw, int size) {
+        InventoryAction action = event.getAction();
+        if (action == InventoryAction.COLLECT_TO_CURSOR || action == InventoryAction.UNKNOWN) {
+            return false; // would pull matching items out of the menu
+        }
+        if (raw == INPUT_SLOT) {
+            ItemStack incoming = action == InventoryAction.HOTBAR_SWAP
+                    ? event.getWhoClicked().getInventory().getItem(event.getHotbarButton())
+                    : event.getCursor();
+            return isEmpty(incoming) || isLoadable(incoming);
+        }
+        if (raw >= size) {
+            if (action == InventoryAction.MOVE_TO_OTHER_INVENTORY) {
+                // shift click: it can only land in the free slot
+                ItemStack moving = event.getCurrentItem();
+                ItemStack waiting = event.getInventory().getItem(INPUT_SLOT);
+                return isLoadable(moving) && (isEmpty(waiting) || waiting.isSimilar(moving));
+            }
+            return true;
+        }
+        return false;
+    }
+
+    private static boolean isLoadable(ItemStack item) {
+        RiftItems.Type type = RiftItems.type(item);
+        return type == RiftItems.Type.PORTAL_FLUID || type == RiftItems.Type.RIFT_COMPASS;
+    }
+
+    private static boolean isEmpty(ItemStack item) {
+        return item == null || item.getType() == Material.AIR;
+    }
+
     @EventHandler
     public void on(InventoryDragEvent event) {
-        if (event.getInventory().getHolder() instanceof Holder) {
+        if (!(event.getInventory().getHolder() instanceof Holder holder)) {
+            return;
+        }
+        int size = event.getInventory().getSize();
+        boolean allowed = holder.page == Page.MAIN;
+        for (int raw : event.getRawSlots()) {
+            if (raw < size && (raw != INPUT_SLOT || !isLoadable(event.getOldCursor()))) {
+                allowed = false;
+            }
+        }
+        if (!allowed) {
             event.setCancelled(true);
         }
     }
 
-    private void fillTank(Player player, Holder holder) {
+    /** Whatever is left in the free slot goes back to the player when the menu closes. */
+    @EventHandler
+    public void on(InventoryCloseEvent event) {
+        if (event.getInventory().getHolder() instanceof Holder holder
+                && holder.page == Page.MAIN
+                && event.getPlayer() instanceof Player player) {
+            ItemStack left = event.getInventory().getItem(INPUT_SLOT);
+            event.getInventory().setItem(INPUT_SLOT, null);
+            give(player, left);
+        }
+    }
+
+    /** Hands back what waits in the free slot of open menus when the plugin stops. */
+    void shutdown() {
+        for (Player player : Bukkit.getOnlinePlayers()) {
+            Inventory top = player.getOpenInventory().getTopInventory();
+            if (top.getHolder() instanceof Holder holder && holder.page == Page.MAIN) {
+                give(player, top.getItem(INPUT_SLOT));
+                top.setItem(INPUT_SLOT, null);
+                player.closeInventory();
+            }
+        }
+    }
+
+    private static void give(Player player, ItemStack item) {
+        if (isEmpty(item)) {
+            return;
+        }
+        for (ItemStack leftover : player.getInventory().addItem(item).values()) {
+            player.getWorld().dropItemNaturally(player.getLocation(), leftover);
+        }
+    }
+
+    /**
+     * Loads one item from the free slot: portal fluid fills the tank (one bottle alone turns into an empty bottle in
+     * the slot, from a stack the empty bottle goes to the inventory), a rift compass attunes the gun. The menu stays
+     * open, so the next one can follow right away.
+     */
+    private void load(Player player, Holder holder) {
         RiftSettings settings = module.settings();
+        Inventory inventory = holder.inventory;
+        ItemStack input = inventory.getItem(INPUT_SLOT);
         ItemStack gun = player.getInventory().getItem(holder.slot);
-        int charges = RiftItems.charges(gun);
-        if (charges >= settings.tankCapacity()) {
-            player.sendMessage(text(player, "rift.tank-full"));
-            return;
-        }
-        if (!RiftItems.consumeFluid(player)) {
+        RiftItems.Type type = RiftItems.type(input);
+        if (type == RiftItems.Type.PORTAL_FLUID) {
+            int charges = RiftItems.charges(gun);
+            if (charges >= settings.tankCapacity()) {
+                player.playSound(player, Sound.BLOCK_NOTE_BLOCK_BASS, 1f, 0.7f);
+                player.sendMessage(text(player, "rift.tank-full"));
+                return;
+            }
+            RiftItems.setCharges(gun, Math.min(settings.tankCapacity(), charges + settings.riftsPerFluid()), settings);
+            if (input.getAmount() == 1) {
+                inventory.setItem(INPUT_SLOT, new ItemStack(Material.GLASS_BOTTLE));
+            } else {
+                input.setAmount(input.getAmount() - 1);
+                inventory.setItem(INPUT_SLOT, input);
+                give(player, new ItemStack(Material.GLASS_BOTTLE));
+            }
+            player.playSound(player, Sound.ITEM_BOTTLE_EMPTY, 1f, 0.9f);
+            player.playSound(player, Sound.BLOCK_BREWING_STAND_BREW, 0.6f, 1.6f);
+        } else if (type == RiftItems.Type.RIFT_COMPASS) {
+            // a second compass adds to the remaining time
+            long start = Math.max(System.currentTimeMillis(), RiftItems.attunedUntil(gun));
+            RiftItems.attune(gun, start + settings.compassMillis(), settings);
+            input.setAmount(input.getAmount() - 1);
+            inventory.setItem(INPUT_SLOT, input.getAmount() > 0 ? input : null);
+            player.playSound(player, Sound.ITEM_LODESTONE_COMPASS_LOCK, 1f, 1f);
+            player.playSound(player, Sound.BLOCK_BEACON_POWER_SELECT, 0.6f, 1.6f);
+            player.sendMessage(text(player, "rift.attuned", Map.of("time", RiftItems.remaining(gun))));
+        } else {
             player.playSound(player, Sound.BLOCK_NOTE_BLOCK_BASS, 1f, 0.7f);
-            player.sendMessage(text(player, "rift.no-fluid"));
+            player.sendMessage(text(player, "rift.menu.load-nothing"));
             return;
         }
-        RiftItems.setCharges(gun, Math.min(settings.tankCapacity(), charges + settings.riftsPerFluid()), settings);
         player.getInventory().setItem(holder.slot, gun);
-        player.playSound(player, Sound.ITEM_BOTTLE_EMPTY, 1f, 0.9f);
-        player.playSound(player, Sound.BLOCK_BREWING_STAND_BREW, 0.6f, 1.6f);
-        open(player, holder.slot);
+        // refresh the header in place; reopening would hand back what is still waiting in the slot
+        inventory.setItem(2, compassStatus(player, gun));
+        inventory.setItem(4, gun.clone());
+        inventory.setItem(LOAD_SLOT, loadButton(player, gun));
+        if (type == RiftItems.Type.RIFT_COMPASS) {
+            refreshAtlasButton(player, holder, gun);
+        }
     }
 
     private void setHome(Player player, int home) {
@@ -557,6 +635,99 @@ public class RiftMenu implements Listener {
         meta.addItemFlags(ItemFlag.values());
         item.setItemMeta(meta);
         return item;
+    }
+
+    private ItemStack compassStatus(Player player, ItemStack gun) {
+        RiftSettings settings = module.settings();
+        boolean attuned = RiftItems.isAttuned(gun);
+        Map<String, String> placeholders =
+                Map.of("minutes", String.valueOf(settings.compassMillis() / 60_000), "time", RiftItems.remaining(gun));
+        ItemStack icon = RiftItems.create(RiftItems.Type.RIFT_COMPASS, 1, settings);
+        decorate(
+                icon,
+                text(player, attuned ? "rift.menu.compass-active" : "rift.menu.compass-idle", placeholders),
+                lines(player, attuned ? "rift.menu.compass-active-lore" : "rift.menu.compass-idle-lore", placeholders));
+        if (attuned) {
+            glow(icon);
+        }
+        return icon;
+    }
+
+    private ItemStack atlasButton(Player player, ItemStack gun) {
+        boolean attuned = RiftItems.isAttuned(gun);
+        RiftDestination selected = RiftItems.destination(gun);
+        ItemStack icon = item(
+                attuned ? Material.FILLED_MAP : Material.MAP,
+                text(player, attuned ? "rift.menu.atlas.name" : "rift.menu.atlas-locked"),
+                lines(player, attuned ? "rift.menu.atlas.lore" : "rift.menu.atlas-locked-lore", Map.of()));
+        if (selected != null && selected.type() == RiftDestination.Type.STRUCTURE) {
+            glow(icon);
+            addLine(
+                    icon,
+                    text(
+                            player,
+                            "rift.menu.selected-structure",
+                            Map.of("structure", RiftNames.describe(selected, player))));
+        }
+        return icon;
+    }
+
+    private void refreshAtlasButton(Player player, Holder holder, ItemStack gun) {
+        if (holder.atlasSlot >= 0) {
+            holder.inventory.setItem(holder.atlasSlot, atlasButton(player, gun));
+        }
+    }
+
+    private ItemStack loadButton(Player player, ItemStack gun) {
+        RiftSettings settings = module.settings();
+        // a lime arrow pouring down into a green glow
+        ItemStack banner = new BannerBuilder()
+                .setBaseColor(DyeColor.BLACK)
+                .setPatterns(
+                        new Pattern(DyeColor.GREEN, PatternType.GRADIENT_UP),
+                        new Pattern(DyeColor.LIME, PatternType.STRIPE_BOTTOM),
+                        new Pattern(DyeColor.LIME, PatternType.TRIANGLE_BOTTOM),
+                        new Pattern(DyeColor.LIME, PatternType.STRIPE_CENTER),
+                        new Pattern(DyeColor.BLACK, PatternType.STRIPE_TOP),
+                        new Pattern(DyeColor.BLACK, PatternType.CURLY_BORDER))
+                .hideItemFlags()
+                .build();
+        decorate(
+                banner,
+                text(player, "rift.menu.load.name"),
+                lines(
+                        player,
+                        "rift.menu.load.lore",
+                        Map.of(
+                                "rifts", String.valueOf(settings.riftsPerFluid()),
+                                "charges", String.valueOf(RiftItems.charges(gun)),
+                                "capacity", String.valueOf(settings.tankCapacity()))));
+        return banner;
+    }
+
+    private static ItemStack closeBanner(String name) {
+        return new BannerBuilder()
+                .setBaseColor(DyeColor.LIGHT_GRAY)
+                .setName(name)
+                .setPatterns(
+                        new Pattern(DyeColor.RED, PatternType.CROSS),
+                        new Pattern(DyeColor.LIGHT_GRAY, PatternType.BORDER))
+                .hideItemFlags()
+                .build();
+    }
+
+    /** A banner with an arrow pointing left. */
+    private static ItemStack backBanner(String name) {
+        return new BannerBuilder()
+                .setBaseColor(DyeColor.GRAY)
+                .setName(name)
+                .setPatterns(
+                        new Pattern(DyeColor.WHITE, PatternType.RHOMBUS),
+                        new Pattern(DyeColor.GRAY, PatternType.HALF_VERTICAL_RIGHT),
+                        new Pattern(DyeColor.WHITE, PatternType.STRIPE_MIDDLE),
+                        new Pattern(DyeColor.GRAY, PatternType.BORDER))
+                .hideItemFlags()
+                .build();
     }
 
     private static void fill(Inventory inventory) {

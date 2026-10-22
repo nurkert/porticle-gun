@@ -49,9 +49,9 @@ interdimensional-gun:
   starting-charges: 4
   # seconds between two rifts
   cooldown-seconds: 3
-  # a rift pair closes once its opener is farther than close-distance blocks from both portals for two seconds,
+  # a rift pair closes once its opener is farther than close-distance blocks from both portals for five seconds,
   # and after portal-seconds at the latest
-  close-distance: 12
+  close-distance: 24
   portal-seconds: 30
   # home slots per player (0-7)
   homes: 5

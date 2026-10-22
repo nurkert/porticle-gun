@@ -110,7 +110,7 @@ When the tank runs dry, the gun refills itself from portal fluid in your invento
 · 3D in hand, animated icons in the inventory</sub></p>
 
 The gun runs on **portal fluid**. Where the End frays, **rift shards** are left behind: mine end stone or hunt endermen
-(fortune and looting help), distil three shards with a glass bottle and glowstone dust, and pour the fluid into the
+(fortune, looting and the Luck effect help), distil three shards with a glass bottle and glowstone dust, and pour the fluid into the
 gun's tank from its menu. One bottle opens four rifts, and the glass dome on top of the gun shows how full it is:
 
 <p align="center">
