@@ -5,6 +5,20 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+### Added
+- **Charging rifts**: the entrance shows up the moment the gun fires, as a small, pulsing orange rift that cannot be
+  walked through yet. Once the destination is found and its chunk is loaded it grows into the green rift; if no
+  destination is found it collapses. Nobody walks into a rift that does nothing anymore.
+- The rift menu shows the current destination in its first slot, and the selected button glows, gets a green tick
+  and says "Current destination" first.
+
+### Changed
+- Rifts open where the player looks: in front of the wall they aim at, on the spot of ground they aim at (up to six
+  blocks away), or floating three blocks ahead when they look into the open. They still snap to the block grid and
+  face a compass direction, so their hitbox stays two blocks wide and axis aligned.
+- Rift pairs close when their opener is more than 7 blocks from both portals for three seconds (`close-distance`;
+  existing configs keep their value).
+
 ## [1.6.5] - 2026-10-22
 
 ### Fixed

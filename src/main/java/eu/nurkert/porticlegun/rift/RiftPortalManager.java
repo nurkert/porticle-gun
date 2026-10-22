@@ -52,10 +52,14 @@ public class RiftPortalManager implements Listener {
     private static final Particle.DustOptions BEDROCK_BAND = new Particle.DustOptions(Color.fromRGB(0x1F8A2E), 2.0f);
     private static final Particle.DustOptions BEDROCK_ARM = new Particle.DustOptions(Color.fromRGB(0xB6F04E), 1.6f);
     private static final int OPEN_TICKS = 10;
+    // a charging entrance is this big compared to an open rift
+    private static final double CHARGING_SIZE = 0.4;
+    private static final Particle.DustOptions CHARGING_RIM = new Particle.DustOptions(Color.fromRGB(0xFF9A1F), 1.4f);
+    private static final Particle.DustOptions CHARGING_CORE = new Particle.DustOptions(Color.fromRGB(0xFFE08A), 1.2f);
     // particles are only sent while a player is this close, the client would not show them farther away anyway
     private static final double VIEW_DISTANCE = 48;
     private static final double LEAVE_DISTANCE = 2.5;
-    private static final int WALK_AWAY_TICKS = 100;
+    private static final int WALK_AWAY_TICKS = 60;
 
     private final PorticleGun plugin;
     private final RiftStorage storage;
@@ -64,6 +68,8 @@ public class RiftPortalManager implements Listener {
     private final Map<CellKey, List<RiftPortal>> cells = new HashMap<>();
     // portals still shrinking after they closed
     private final List<RiftPortal> closing = new ArrayList<>();
+    // owner -> the entrance shown while the far side is not ready yet: small, orange, pulsing, not walkable
+    private final Map<UUID, RiftPortal> charging = new HashMap<>();
     // entity -> portal it just came out of; it cannot go back through until it stepped away
     private final Map<UUID, RiftPortal> exitLocks = new HashMap<>();
     // owner -> how far they may walk away, and the last tick they were that close to one of their portals
@@ -76,6 +82,31 @@ public class RiftPortalManager implements Listener {
         this.plugin = plugin;
         this.storage = storage;
         task = Bukkit.getScheduler().runTaskTimer(plugin, this::tick, 1L, 1L);
+    }
+
+    /**
+     * Shows the entrance right away while the destination is still being prepared (found, its chunk loaded): a small,
+     * pulsing orange rift that cannot be walked through yet. {@link #open} turns it into the real rift, {@link
+     * #cancelCharge} lets it collapse.
+     */
+    public void charge(Player owner, Location feet, Vector normal) {
+        close(owner.getUniqueId());
+        cancelCharge(owner.getUniqueId());
+        RiftPortal portal = new RiftPortal(owner.getUniqueId(), feet, normal);
+        portal.openedAt = tick;
+        charging.put(owner.getUniqueId(), portal);
+        feet.getWorld().playSound(portal.centre(), Sound.BLOCK_BEACON_AMBIENT, 1.0f, 1.8f);
+    }
+
+    /** Lets a charging entrance collapse, e.g. when no destination was found. */
+    public void cancelCharge(UUID owner) {
+        RiftPortal portal = charging.remove(owner);
+        if (portal != null) {
+            portal.closedAt = tick;
+            portal.charging = true;
+            closing.add(portal);
+            portal.feet.getWorld().playSound(portal.centre(), Sound.BLOCK_FIRE_EXTINGUISH, 0.6f, 1.4f);
+        }
     }
 
     /**
@@ -93,12 +124,13 @@ public class RiftPortalManager implements Listener {
             int lifetimeTicks,
             double closeDistance) {
         close(owner.getUniqueId());
+        charging.remove(owner.getUniqueId()); // the charging entrance becomes the real one and grows from its size
         RiftPortal entrance = new RiftPortal(owner.getUniqueId(), entranceFeet, entranceNormal);
         RiftPortal exit = new RiftPortal(owner.getUniqueId(), exitFeet, exitNormal);
         entrance.partner = exit;
         exit.partner = entrance;
         for (RiftPortal portal : List.of(entrance, exit)) {
-            portal.openedAt = tick;
+            portal.openedAt = portal == entrance ? tick - Math.round(OPEN_TICKS * CHARGING_SIZE) : tick;
             World world = portal.feet.getWorld();
             world.addPluginChunkTicket(portal.feet.getBlockX() >> 4, portal.feet.getBlockZ() >> 4, plugin);
             world.playSound(portal.centre(), Sound.BLOCK_RESPAWN_ANCHOR_CHARGE, 1.0f, 1.4f);
@@ -122,6 +154,7 @@ public class RiftPortalManager implements Listener {
     }
 
     public void close(UUID owner) {
+        cancelCharge(owner);
         RiftPortal[] pair = pairs.remove(owner);
         if (pair != null) {
             index();
@@ -200,7 +233,15 @@ public class RiftPortalManager implements Listener {
         });
         for (RiftPortal portal : closing) {
             if (loaded(portal)) {
-                particles(portal, 1.0 - (tick - portal.closedAt) / (double) OPEN_TICKS);
+                double shrink = 1.0 - (tick - portal.closedAt) / (double) OPEN_TICKS;
+                particles(portal, portal.charging ? shrink * CHARGING_SIZE : shrink);
+            }
+        }
+        for (RiftPortal portal : charging.values()) {
+            if (loaded(portal)) {
+                // grows to its small size, then pulses there until the far side is ready
+                double grown = Math.min(1.0, (tick - portal.openedAt) / (double) OPEN_TICKS);
+                particles(portal, grown * CHARGING_SIZE * (1 + 0.12 * Math.sin(tick * 0.45)), true);
             }
         }
     }
@@ -213,7 +254,7 @@ public class RiftPortalManager implements Listener {
         for (Map.Entry<UUID, RiftPortal[]> entry : pairs.entrySet()) {
             UUID owner = entry.getKey();
             Player player = Bukkit.getPlayer(owner);
-            double distance = closeDistances.getOrDefault(owner, 24.0);
+            double distance = closeDistances.getOrDefault(owner, 7.0);
             boolean near = false;
             if (player != null) {
                 for (RiftPortal portal : entry.getValue()) {
@@ -237,6 +278,10 @@ public class RiftPortalManager implements Listener {
      * from 0 to 1 while the rift opens and shrinks back while it closes.
      */
     private void particles(RiftPortal portal, double size) {
+        particles(portal, size, portal.charging);
+    }
+
+    private void particles(RiftPortal portal, double size, boolean charging) {
         if (size <= 0) {
             return;
         }
@@ -247,6 +292,15 @@ public class RiftPortalManager implements Listener {
             if (player.getLocation().distanceSquared(centre) < VIEW_DISTANCE * VIEW_DISTANCE) {
                 (BedrockSupport.isBedrock(player) ? bedrock : java).add(player);
             }
+        }
+        if (charging) {
+            // the same small orange oval for everyone: not ready yet
+            List<Player> everyone = new ArrayList<>(java);
+            everyone.addAll(bedrock);
+            if (!everyone.isEmpty()) {
+                new Frame(portal, centre, size, tick, (int) (tick % 2)).charging(everyone);
+            }
+            return;
         }
         if (!java.isEmpty()) {
             new Frame(portal, centre, size, tick, (int) (tick % 2)).java(java);
@@ -292,6 +346,13 @@ public class RiftPortalManager implements Listener {
             }
             if (half == 0) {
                 spawn(viewers, Particle.DUST, at(0, 0), CORE);
+            }
+        }
+
+        void charging(List<Player> viewers) {
+            ring(viewers, 20, 1.0, t * 0.08, 0, CHARGING_RIM);
+            if (half == 0) {
+                spawn(viewers, Particle.DUST, at(0, 0), CHARGING_CORE);
             }
         }
 

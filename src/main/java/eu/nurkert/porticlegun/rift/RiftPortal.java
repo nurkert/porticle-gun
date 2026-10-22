@@ -20,6 +20,8 @@ final class RiftPortal {
     RiftPortal partner;
     long openedAt;
     long closedAt;
+    // a charging entrance (shown while the destination is prepared) collapsing because nothing was found
+    boolean charging;
 
     RiftPortal(UUID owner, Location feet, Vector normal) {
         this.owner = owner;
