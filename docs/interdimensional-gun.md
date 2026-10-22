@@ -21,8 +21,10 @@ go. Attacking with the gun never breaks blocks, also not in creative mode.
 Every menu action is a single click, so it works the same with a mouse, a controller or a touch screen; shift and
 right clicks do the same as a left click.
 
-- **Top row**: the rift compass (insert one to attune the gun), the gun itself with its tank and destination, and the
-  portal fluid (fills the tank by hand).
+- **Top row**: whether the gun is attuned, the gun itself with its tank and destination, the menu's only free slot
+  and the load button. Put portal fluid or a rift compass into the slot and click the button to load one: a single
+  bottle turns into an empty bottle in the slot, from a stack the empty bottle goes to the inventory (or drops when
+  it is full). Anything left in the slot goes back to the inventory when the menu closes.
 - **Worlds**: a random spot and the spawn of every world, side by side. A second row appears with more than four
   worlds.
 - **Journeys**: back, last death and the rift atlas. Clicking the locked atlas with a rift compass in the inventory
@@ -35,7 +37,9 @@ The current destination glows.
 ## Destinations
 
 - **Random spot in a world**: candidates are checked one after another around the world spawn (`random-radius`,
-  `nether-radius`, `end-radius`), chunks that already exist first. On Paper their chunks are loaded and generated in
+  `nether-radius`, `end-radius`), chunks that already exist first. Every world keeps two such spots ready in the
+  background (their chunks stay loaded), so the rift usually opens at once; only when none is ready a search runs,
+  which gives up after 20 seconds. On Paper their chunks are loaded and generated in
   the background, so searching never freezes the server; on Spigot one candidate per tick is loaded directly. A spot is
   safe when the ground is solid and harmless (no lava, magma, cactus, fire, powder snow, water), there are two free
   blocks above, no lava next to it, and in the nether it is below the bedrock roof. In the end only islands count; the
@@ -51,13 +55,14 @@ menu has room for eight, so on servers with more worlds list the ones nobody sho
 
 ## Where rifts appear
 
+- Both portals stand on the block grid: they face north, east, south or west and fill exactly two blocks.
 - The entrance stands about two blocks in front of the player, on the ground if there is ground, closer when a wall is
   near, and floating in the air when the player stands at an edge.
-- At the destination all eight compass directions are scored: room for the exit portal behind the landing spot, free
+- At the destination all four compass directions are scored: room for the exit portal behind the landing spot, free
   space in front of it, and the direction the player walked in. Travellers step out facing open space.
 - Stored places (homes, back, death, spawn) that have been built over move to the nearest safe spot within three
   blocks.
-- A rift pair closes when its opener is farther than `close-distance` blocks from both portals for two seconds, and
+- A rift pair closes when its opener is farther than `close-distance` blocks from both portals for five seconds, and
   after `portal-seconds` at the latest. Opening a new pair closes the old one.
 
 Players, mobs and items travel through rifts; WorldGuard's `porticlegun-portal-use` flag applies, and rifts cannot be
@@ -66,7 +71,10 @@ opened where `porticlegun-portal-create` is denied.
 ## Tank, fluid and shards
 
 - **Rift shards** drop when mining end stone (`end-stone-chance`, plus `end-stone-fortune-bonus` per fortune level)
-  and from endermen killed by a player (`enderman-chance`, plus `enderman-looting-bonus` per looting level).
+  and from endermen killed by a player (`enderman-chance`, plus `enderman-looting-bonus` per looting level). Like
+  vanilla drops they need the right tool (end stone drops nothing by hand) and respect the `doTileDrops` and
+  `doMobLoot` game rules. The player's luck scales the chance: every point (the Luck effect gives one per level) adds
+  a quarter, Bad Luck takes it away.
 - **Portal fluid**: three rift shards, a glass bottle and glowstone dust (shapeless).
 
   ![Portal fluid recipe](../images/crafting_portal_fluid.png)

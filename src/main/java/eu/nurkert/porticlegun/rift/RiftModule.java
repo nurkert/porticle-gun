@@ -13,6 +13,7 @@ public class RiftModule {
     private final PorticleGun plugin;
     private final RiftStorage storage;
     private final SafeLocationFinder finder;
+    private final ReadySpots readySpots;
     private final StructureLocator structures;
     private final RiftPortalManager portals;
     private final RiftMenu menu;
@@ -25,6 +26,7 @@ public class RiftModule {
         this.settings = RiftSettings.load(plugin.getConfig());
         this.storage = new RiftStorage(new PersistentHandler(plugin, "rift.yml"));
         this.finder = new SafeLocationFinder(plugin);
+        this.readySpots = new ReadySpots(plugin, finder, this::settings);
         this.structures = new StructureLocator(plugin);
         this.portals = new RiftPortalManager(plugin, storage);
         this.menu = new RiftMenu(this);
@@ -61,6 +63,10 @@ public class RiftModule {
         return finder;
     }
 
+    ReadySpots readySpots() {
+        return readySpots;
+    }
+
     StructureLocator structures() {
         return structures;
     }
@@ -80,6 +86,8 @@ public class RiftModule {
     }
 
     public void shutdown() {
+        readySpots.shutdown();
+        menu.shutdown();
         gunListener.shutdown();
         portals.shutdown();
         recipes.unregister();

@@ -1,6 +1,8 @@
 package eu.nurkert.porticlegun.rift;
 
+import java.util.HashMap;
 import java.util.Iterator;
+import java.util.Map;
 import java.util.function.Consumer;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
@@ -12,11 +14,21 @@ import org.bukkit.util.StructureSearchResult;
 
 /**
  * Finds the nearest structure of a kind for a player. The search starts at the player's position (scaled between the
- * overworld and the nether, at the centre of the end) and checks one structure variant per tick.
+ * overworld and the nether, at the centre of the end) and checks one structure variant per tick. Results are cached
+ * for ten minutes per area, so repeated rifts to the same kind of structure cost nothing.
  */
 public class StructureLocator {
 
+    // searching structures is expensive and only possible on the main thread, so results are kept for a while for
+    // everyone starting nearby (cells of 8 by 8 chunks)
+    private static final long CACHE_MILLIS = 10 * 60_000;
+
+    private record Key(RiftStructure structure, String world, int cellX, int cellZ) {}
+
+    private record Result(Location location, long foundAt) {}
+
     private final JavaPlugin plugin;
+    private final Map<Key, Result> cache = new HashMap<>();
 
     public StructureLocator(JavaPlugin plugin) {
         this.plugin = plugin;
@@ -62,6 +74,14 @@ public class StructureLocator {
 
     public void locate(
             RiftStructure structure, World world, Location origin, int radiusChunks, Consumer<Location> callback) {
+        long now = System.currentTimeMillis();
+        cache.values().removeIf(result -> now - result.foundAt() > CACHE_MILLIS);
+        Key key = new Key(structure, world.getName(), origin.getBlockX() >> 7, origin.getBlockZ() >> 7);
+        Result cached = cache.get(key);
+        if (cached != null) {
+            callback.accept(cached.location() == null ? null : cached.location().clone());
+            return;
+        }
         Iterator<Structure> variants = structure.structures().iterator();
         new BukkitRunnable() {
             private Location nearest;
@@ -70,7 +90,8 @@ public class StructureLocator {
             public void run() {
                 if (!variants.hasNext()) {
                     cancel();
-                    callback.accept(nearest);
+                    cache.put(key, new Result(nearest, System.currentTimeMillis()));
+                    callback.accept(nearest == null ? null : nearest.clone());
                     return;
                 }
                 Structure variant = variants.next();

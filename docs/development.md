@@ -34,6 +34,8 @@ Formatting is enforced with Spotless (palantir-java-format). Fix it with `mvn sp
 - Animated images: `python3 scripts/render_gifs.py` (needs Pillow) renders the turntables, the tank, the item icons
   and the rift into `images/animations/` with a transparent background and a fixed scale.
 - Manual testing: `scripts/dev-server.sh` builds the plugin and starts Paper with Geyser and Floodgate in `run/dev`.
+  On macOS, start it from your own terminal: processes started by background tools (such as coding agents) run at
+  background priority there, which makes ticks and garbage collection many times slower and looks like plugin lag.
   Java clients connect to `localhost:25565`, Bedrock clients to `localhost:19132`.
 
 CI (`.github/workflows/ci.yml`) runs the build and both smoke tests for every push to `main` and every pull request.

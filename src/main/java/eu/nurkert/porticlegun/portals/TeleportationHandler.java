@@ -7,6 +7,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
@@ -37,6 +38,8 @@ public class TeleportationHandler implements Listener {
 
     private final Map<UUID, Long> teleportCooldown;
     private final Map<UUID, Portal> portalReentryLock;
+    // block -> the linked portals in it, so a player's move is checked with one lookup
+    private final Map<CellKey, List<Portal>> cells = new HashMap<>();
     // a player's movement during the last tick: the server does not know a player's real velocity
     private final Map<UUID, Vector> playerMotion = new HashMap<>();
     private final Set<UUID> heldMotion = new HashSet<>();
@@ -82,27 +85,57 @@ public class TeleportationHandler implements Listener {
             return;
         }
 
+        // one hash lookup for the block the player moved into (and the one above, for ceiling portals) instead of a
+        // loop over every portal
         Player player = event.getPlayer();
-        ArrayList<Portal> portals = activePortals.getRelevantPortals(player);
-        for (Portal portal : portals) {
-            boolean inPortal = isEntityInPortal(portal, event.getTo());
-            if (inPortal) {
-                if (isPortalLocked(player, portal)) {
-                    continue;
-                }
-                if (teleportEntityThroughPortal(player, portal)) {
-                    break;
-                }
-            } else {
-                clearPortalLockIfMatches(player, portal);
+        Portal locked = portalReentryLock.get(player.getUniqueId());
+        if (locked != null && !isEntityInPortal(locked, event.getTo())) {
+            portalReentryLock.remove(player.getUniqueId());
+        }
+        Location to = event.getTo();
+        for (int up = 0; up <= 1; up++) {
+            List<Portal> here =
+                    cells.get(new CellKey(to.getWorld().getUID(), to.getBlockX(), to.getBlockY() + up, to.getBlockZ()));
+            if (here == null) {
+                continue;
             }
+            for (Portal portal : here) {
+                if (isEntityInPortal(portal, to)
+                        && !isPortalLocked(player, portal)
+                        && teleportEntityThroughPortal(player, portal)) {
+                    return;
+                }
+            }
+        }
+    }
+
+    private record CellKey(UUID world, int x, int y, int z) {}
+
+    /** Rebuilds the block -> portals grid; portals are few, so once per tick costs next to nothing. */
+    private void index(List<Portal> portals) {
+        cells.clear();
+        for (Portal portal : portals) {
+            Location location = portal.getLocation();
+            if (portal.getLinkedPortal() == null || location == null || location.getWorld() == null) {
+                continue;
+            }
+            cells.computeIfAbsent(
+                            new CellKey(
+                                    location.getWorld().getUID(),
+                                    location.getBlockX(),
+                                    location.getBlockY(),
+                                    location.getBlockZ()),
+                            key -> new ArrayList<>(1))
+                    .add(portal);
         }
     }
 
     private void tickEntityTeleports() {
         cleanupCooldowns();
+        List<Portal> portals = activePortals.getAllPortal();
+        index(portals);
 
-        for (Portal portal : activePortals.getAllPortal()) {
+        for (Portal portal : portals) {
             Portal linked = portal.getLinkedPortal();
             if (linked == null) {
                 continue;

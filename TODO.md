@@ -3,7 +3,7 @@
 Befunde aus dem Code-Review. Status: `[ ]` offen · `[~]` in Arbeit · `[x]` erledigt · `[!]` gesperrt, nur nach Rücksprache.
 
 > **Regel:** Das Einstellungs-GUI (`SettingsHandler`, Dropper-Menü) bleibt genau so, wie es ist. Keine Änderung an Layout, Slots, Bedienung oder Optik ohne vorherige Diskussion mit dem User.
-> **Release:** [`v1.6.1`](https://github.com/nurkert/porticle-gun/releases/tag/v1.6.1) (2026-10-22). Damit werden die offenen „Du:“-Punkte (PG-14, PG-15, PG-16, PG-22, PG-23, PG-24, PG-25, PG-26) auf dem Server getestet.
+> **Release:** [`v1.6.2`](https://github.com/nurkert/porticle-gun/releases/tag/v1.6.2) (2026-10-22). Damit werden die offenen „Du:“-Punkte (PG-14, PG-15, PG-16, PG-22, PG-23, PG-24, PG-25, PG-26) auf dem Server getestet.
 
 Reihenfolge = Priorität. Unter jedem Punkt: Problem, Lösungsansatz, Notizen beim Abarbeiten.
 
@@ -159,10 +159,17 @@ Reihenfolge = Priorität. Unter jedem Punkt: Problem, Lösungsansatz, Notizen be
   - [x] Riss-Menü neu (Kopfzeile, Zeilen je Zielart, Auswahl schließt das Menü mit Actionbar-Bestätigung, Atlas nach Dimension)
   - [x] Boden- und Deckenportal übereinander: endloser Fall ohne Fallschaden, Tempo bleibt
   - [x] Gun aus dem offenen Inventar werfen (Herausziehen, Droptaste über dem Slot, Creative) löst die Gravity Gun nicht aus
-  - [ ] **Du:** Auf eurem Server prüfen, ob nach dem Update auf 1.6.1 Portale und Menüs wieder gehen; sonst `logs/latest.log` schicken
+  - [x] Riss-Partikel neu: scharfer Doppelrand, dunkles Band, Spiralkörper, Leuchtspuren (`TRAIL`) in den Kern; Bedrock bekommt eine sparsame Dust-Variante
+  - [x] Risse am Blockraster (Himmelsrichtung, genau zwei Blöcke breit, mittig zwischen zwei Blöcken)
+  - [x] Zwei Landeplätze pro Welt werden im Hintergrund vorgehalten (Chunks geladen); Live-Suche mit 20 s Zeitlimit; Struktur-Ergebnisse 10 min gecacht
+  - [x] Kollision über ein Block-Raster (eine Hash-Abfrage pro Blockwechsel) für PorticleGun-Portale und Risse
+  - [x] Einfüllfeld im Riss-Menü mit Banner-Knopf (Flüssigkeit/Kompass, eins pro Klick, Rest zurück beim Schließen); Banner für Schließen/Zurück
+  - [x] Risse schließen erst nach 24 Blöcken und 5 s Abstand
+  - [x] Riss-Splitter-Drops wie Vanilla: richtiges Werkzeug, Spielregeln `doTileDrops`/`doMobLoot`, Glückseffekt erhöht die Chance
+  - [ ] **Du:** Auf eurem Server prüfen, ob nach dem Update auf 1.6.2 Portale und Menüs wieder gehen; sonst `logs/latest.log` schicken
   - [ ] **Du:** Riss-Gun auf Java und Bedrock: Links-/Rechtsklick, neues Menü, Partikel, kein Lag beim Zufallsziel
   - [ ] **Du:** Portal-Loop (Boden + Decke) und Gun aus dem Inventar werfen, Java und Bedrock
-  - Notizen: Die Struktursuche des Riss-Atlas läuft weiter im Hauptthread (die Server-API bietet keine asynchrone Variante); bei Rucklern den `structure-search-radius` senken.
+  - Notizen: Lag auf dem lokalen Testserver kam vor allem vom Mac: Prozesse aus Claude Code laufen mit Hintergrund-Priorität (PRI 4), dazu Speicherdruck (llama-server, Client, Photoshop). Testserver jetzt über Terminal starten (`start-server.command` im Scratchpad bzw. `scripts/dev-server.sh` im eigenen Terminal). Die Struktursuche des Riss-Atlas läuft weiter im Hauptthread (die Server-API bietet keine asynchrone Variante); bei Rucklern den `structure-search-radius` senken.
 
 ## P2 – Robustheit / Performance
 

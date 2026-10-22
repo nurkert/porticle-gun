@@ -45,7 +45,7 @@ public record RiftSettings(
                 Math.max(0, Math.min(capacity, section.getInt("starting-charges", 4))),
                 Math.max(0, Math.round(section.getDouble("cooldown-seconds", 3) * 1000)),
                 Math.max(40, (int) Math.round(section.getDouble("portal-seconds", 30) * 20)),
-                Math.max(3, section.getDouble("close-distance", 12)),
+                Math.max(3, section.getDouble("close-distance", 24)),
                 Math.max(0, Math.min(7, section.getInt("homes", 5))),
                 Math.max(16, section.getInt("random-radius", 3000)),
                 Math.max(16, section.getInt("nether-radius", 1000)),
