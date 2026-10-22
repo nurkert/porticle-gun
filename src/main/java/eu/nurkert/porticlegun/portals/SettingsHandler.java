@@ -114,49 +114,57 @@ public class SettingsHandler implements Listener {
     }
 
     /** The colour banner: filled with the colour, so it is clear at a glance which colour a portal has. */
-    public ItemStack getColorPreview(PortalColor color) {
+    public ItemStack getColorPreview(PortalColor color, Player player) {
         return new BannerBuilder()
                 .setBaseColor(color.getDyeColor())
-                .setName(color.getChatColor() + color.toString())
+                .setName(color.getChatColor() + color.displayName(player))
                 .hideItemFlags()
                 .build();
     }
 
     /**
-     * An arrow in the colour it switches to, so the next and the previous colour can be seen before clicking.
+     * An arrow in the colour it switches to, so the next and the previous colour can be seen before clicking: a sharp
+     * triangle, pointing up in the upper half of the banner (above the colour banner in the menu) or down in the
+     * lower half (below it).
      *
      * @param up an arrow pointing up (next colour) or down (previous colour)
+     * @param background the banner's background, black unless the arrow is shown in the middle of a colour change
      */
-    private static ItemStack arrow(PortalColor target, boolean up) {
+    private static ItemStack arrow(PortalColor target, boolean up, DyeColor background, Player player) {
         DyeColor dye = target.getDyeColor();
-        // a black arrow needs a lighter background to be seen
-        DyeColor background = dye == DyeColor.BLACK ? DyeColor.GRAY : DyeColor.BLACK;
         return new BannerBuilder()
                 .setBaseColor(background)
-                .setName((up ? "§f▲ " : "§f▼ ") + target.getChatColor() + target)
+                .setName((up ? "§f▲ " : "§f▼ ") + target.getChatColor() + target.displayName(player))
                 .setPatterns(
+                        // a diamond with its lower (or upper) half covered leaves a triangle with clean, sharp edges
                         new Pattern(dye, PatternType.RHOMBUS),
-                        new Pattern(background, up ? PatternType.HALF_HORIZONTAL_BOTTOM : PatternType.HALF_HORIZONTAL),
-                        new Pattern(dye, PatternType.STRIPE_CENTER),
-                        new Pattern(background, PatternType.BORDER))
+                        new Pattern(background, up ? PatternType.HALF_HORIZONTAL_BOTTOM : PatternType.HALF_HORIZONTAL))
                 .hideItemFlags()
                 .build();
     }
 
-    // running colour animations, by menu and slot, so a fast second click restarts instead of overlapping
+    /** The resting background of an arrow: black, or grey behind a black arrow so it can be seen. */
+    private static DyeColor arrowBackground(PortalColor target) {
+        return target.getDyeColor() == DyeColor.BLACK ? DyeColor.GRAY : DyeColor.BLACK;
+    }
+
+    private static ItemStack arrow(PortalColor target, boolean up, Player player) {
+        return arrow(target, up, arrowBackground(target), player);
+    }
+
+    // running colour animations, by menu and colour banner slot, so a fast second click restarts instead of overlapping
     private final Map<Inventory, Map<Integer, BukkitTask>> animations = new HashMap<>();
 
     /**
-     * Shows a new colour: the arrows switch at once, the colour banner fills with the new colour in a few frames,
-     * from below after the down arrow and from above after the up arrow.
+     * Shows a new colour in four frames, two ticks apart: the colour banner fills with the new colour, from below
+     * after the down arrow and from above after the up arrow, while the two arrows fade from the colour they showed
+     * before over grey to their resting background, already showing their new colours.
      */
     private void changeColour(
             Inventory inventory, String gunID, Player player, int slot, PortalColor before, boolean fromBelow) {
         GunColors colors = gunColors.getColors(gunID);
         PortalColor after = slot == 3 ? colors.getPrimary() : colors.getSecondary();
         int column = slot == 3 ? 0 : 2;
-        inventory.setItem(column, arrow(after.next(), true));
-        inventory.setItem(column + 6, arrow(after.previous(), false));
 
         Map<Integer, BukkitTask> running = animations.computeIfAbsent(inventory, key -> new HashMap<>());
         BukkitTask previous = running.remove(slot);
@@ -165,16 +173,20 @@ public class SettingsHandler implements Listener {
         }
         DyeColor oldDye = before.getDyeColor();
         DyeColor newDye = after.getDyeColor();
+        String name = "§r" + after.getChatColor() + after.displayName(player);
         PatternType edge = fromBelow ? PatternType.STRIPE_BOTTOM : PatternType.STRIPE_TOP;
         PatternType half = fromBelow ? PatternType.HALF_HORIZONTAL_BOTTOM : PatternType.HALF_HORIZONTAL;
         PatternType rest = fromBelow ? PatternType.STRIPE_TOP : PatternType.STRIPE_BOTTOM;
-        ItemStack[] frames = {
-            fill(oldDye, new Pattern(newDye, edge)),
-            fill(oldDye, new Pattern(newDye, half)),
-            fill(newDye, new Pattern(oldDye, rest)),
-            getColorPreview(after)
+        ItemStack[] banners = {
+            fill(oldDye, new Pattern(newDye, edge), name),
+            fill(oldDye, new Pattern(newDye, half), name),
+            fill(newDye, new Pattern(oldDye, rest), name),
+            getColorPreview(after, player)
         };
-        String name = after.getChatColor() + after.toString();
+        PortalColor next = after.next();
+        PortalColor previousColour = after.previous();
+        DyeColor[] upBackgrounds = {before.next().getDyeColor(), DyeColor.GRAY, arrowBackground(next)};
+        DyeColor[] downBackgrounds = {before.previous().getDyeColor(), DyeColor.GRAY, arrowBackground(previousColour)};
         running.put(
                 slot,
                 new BukkitRunnable() {
@@ -182,7 +194,7 @@ public class SettingsHandler implements Listener {
 
                     @Override
                     public void run() {
-                        if (inventory.getViewers().isEmpty() || frame >= frames.length) {
+                        if (inventory.getViewers().isEmpty() || frame >= banners.length) {
                             cancel();
                             Map<Integer, BukkitTask> tasks = animations.get(inventory);
                             if (tasks != null) {
@@ -193,18 +205,20 @@ public class SettingsHandler implements Listener {
                             }
                             return;
                         }
-                        ItemStack item = frames[frame++];
-                        ItemMeta meta = item.getItemMeta();
-                        meta.setDisplayName("§r" + name);
-                        item.setItemMeta(meta);
-                        inventory.setItem(slot, item);
+                        inventory.setItem(slot, banners[frame]);
+                        if (frame < upBackgrounds.length) {
+                            inventory.setItem(column, arrow(next, true, upBackgrounds[frame], player));
+                            inventory.setItem(column + 6, arrow(previousColour, false, downBackgrounds[frame], player));
+                        }
+                        frame++;
                     }
                 }.runTaskTimer(PorticleGun.getInstance(), 0L, 2L));
     }
 
-    private static ItemStack fill(DyeColor base, Pattern pattern) {
+    private static ItemStack fill(DyeColor base, Pattern pattern, String name) {
         return new BannerBuilder()
                 .setBaseColor(base)
+                .setName(name)
                 .setPatterns(pattern)
                 .hideItemFlags()
                 .build();
@@ -235,13 +249,13 @@ public class SettingsHandler implements Listener {
         Inventory inv = Bukkit.createInventory(
                 null, InventoryType.DROPPER, MessageManager.getMessage(player, "menus.settings.title"));
         GunColors colors = gunColors.getColors(gunID);
-        inv.setItem(0, arrow(colors.getPrimary().next(), true));
-        inv.setItem(2, arrow(colors.getSecondary().next(), true));
-        inv.setItem(6, arrow(colors.getPrimary().previous(), false));
-        inv.setItem(8, arrow(colors.getSecondary().previous(), false));
+        inv.setItem(0, arrow(colors.getPrimary().next(), true, player));
+        inv.setItem(2, arrow(colors.getSecondary().next(), true, player));
+        inv.setItem(6, arrow(colors.getPrimary().previous(), false, player));
+        inv.setItem(8, arrow(colors.getSecondary().previous(), false, player));
 
-        inv.setItem(3, getColorPreview(colors.getPrimary()));
-        inv.setItem(5, getColorPreview(colors.getSecondary()));
+        inv.setItem(3, getColorPreview(colors.getPrimary(), player));
+        inv.setItem(5, getColorPreview(colors.getSecondary(), player));
 
         ItemStack background = new ItemBuilder(Material.GRAY_STAINED_GLASS_PANE)
                 .setName(ItemHandler.vanishID(gunID))
