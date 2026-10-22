@@ -1,9 +1,11 @@
 package eu.nurkert.porticlegun.rift;
 
+import eu.nurkert.porticlegun.util.ChunkLoader;
 import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.function.Consumer;
 import java.util.function.Supplier;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
@@ -13,10 +15,11 @@ import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.scheduler.BukkitTask;
 
 /**
- * Keeps safe landing spots ready for the "random spot in a world" destination, so a rift there opens at once instead
- * of searching first. In the background one spot after another is searched (never two searches at a time) until every
- * world has {@link #PER_WORLD}; the chunk of every ready spot stays loaded. Taking a spot starts the search for the
- * next one.
+ * Keeps safe landing spots ready for the "random spot in a world" destination, so a rift there does not have to
+ * search, let alone generate new terrain, first. In the background one spot after another is searched (never two
+ * searches at a time) until every world has {@link #PER_WORLD}. Their chunks are not kept loaded: they exist on disk
+ * once found, and loading them back (in the background on Paper) takes only a moment. Taking a spot starts the search
+ * for the next one.
  */
 final class ReadySpots {
 
@@ -51,28 +54,31 @@ final class ReadySpots {
     }
 
     /**
-     * @return a ready spot in the world that is still safe, or {@code null} if none is ready
+     * Hands over a ready spot in the world that is still safe (someone may have built there since), or {@code null}
+     * when none is ready. Its chunk is loaded first, in the background where the server supports it.
      */
-    Location take(World world) {
+    void take(World world, Consumer<Location> callback) {
         Deque<Location> spots = ready.get(world.getName());
-        Location spot = null;
-        while (spot == null && spots != null && !spots.isEmpty()) {
-            Location candidate = spots.poll();
-            release(candidate);
-            // the world may have changed since (someone built there); its chunk is still loaded
-            Location still = SafeLocationFinder.spotAbove(candidate.getBlock().getRelative(BlockFace.DOWN));
-            if (still != null) {
-                spot = still;
-            }
-        }
+        Location candidate = spots == null ? null : spots.poll();
         failures.remove(world.getName());
         fill();
-        return spot;
+        if (candidate == null) {
+            callback.accept(null);
+            return;
+        }
+        ChunkLoader.whenLoaded(plugin, world, candidate.getBlockX(), candidate.getBlockZ(), () -> {
+            Location still = SafeLocationFinder.spotAbove(candidate.getBlock().getRelative(BlockFace.DOWN));
+            if (still != null) {
+                callback.accept(still);
+            } else {
+                take(world, callback); // try the next one, or report that none is ready
+            }
+        });
     }
 
     void shutdown() {
         retry.cancel();
-        ready.clear(); // the server drops the chunk tickets of a disabled plugin itself
+        ready.clear();
     }
 
     /** Searches the next missing spot, unless a search is already running or every world is full. */
@@ -95,7 +101,6 @@ final class ReadySpots {
             finder.find(world, current, spot -> {
                 searching = false;
                 if (spot != null && plugin.isEnabled()) {
-                    world.addPluginChunkTicket(spot.getBlockX() >> 4, spot.getBlockZ() >> 4, plugin);
                     ready.get(name).add(spot);
                     failures.remove(name);
                 } else {
@@ -106,23 +111,5 @@ final class ReadySpots {
             });
             return;
         }
-    }
-
-    private void release(Location spot) {
-        int chunkX = spot.getBlockX() >> 4;
-        int chunkZ = spot.getBlockZ() >> 4;
-        if (chunkX == 0 && chunkZ == 0) {
-            return; // the menu keeps chunk 0 0 loaded
-        }
-        for (Deque<Location> spots : ready.values()) {
-            for (Location other : spots) {
-                if (other.getWorld().equals(spot.getWorld())
-                        && other.getBlockX() >> 4 == chunkX
-                        && other.getBlockZ() >> 4 == chunkZ) {
-                    return;
-                }
-            }
-        }
-        spot.getWorld().removePluginChunkTicket(chunkX, chunkZ, plugin);
     }
 }

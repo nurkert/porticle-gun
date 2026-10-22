@@ -12,6 +12,9 @@ import eu.nurkert.porticlegun.visualization.GunColorHandler;
 import eu.nurkert.porticlegun.visualization.PortalHud;
 import org.bukkit.Bukkit;
 import org.bukkit.World;
+import org.bukkit.event.EventHandler;
+import org.bukkit.event.Listener;
+import org.bukkit.event.world.WorldLoadEvent;
 import org.bukkit.plugin.java.JavaPlugin;
 
 /**
@@ -71,6 +74,17 @@ public final class PorticleGun extends JavaPlugin {
         for (World world : Bukkit.getWorlds()) {
             world.addPluginChunkTicket(0, 0, this);
         }
+        // worlds loaded later (e.g. by world managers) need it as well
+        getServer()
+                .getPluginManager()
+                .registerEvents(
+                        new Listener() {
+                            @EventHandler
+                            public void on(WorldLoadEvent event) {
+                                event.getWorld().addPluginChunkTicket(0, 0, PorticleGun.this);
+                            }
+                        },
+                        this);
     }
 
     @Override

@@ -180,15 +180,12 @@ public class RiftPortalManager implements Listener {
                     || !entity.getWorld().equals(entry.getValue().feet.getWorld())
                     || entity.getLocation().distance(entry.getValue().feet) > LEAVE_DISTANCE;
         });
-        boolean draw = tick % 2 == 0;
         for (RiftPortal[] pair : new ArrayList<>(pairs.values())) {
             for (RiftPortal portal : pair) {
                 if (!loaded(portal)) {
                     continue;
                 }
-                if (draw) {
-                    particles(portal, Math.min(1.0, (tick - portal.openedAt) / (double) OPEN_TICKS));
-                }
+                particles(portal, Math.min(1.0, (tick - portal.openedAt) / (double) OPEN_TICKS));
                 if (tick % 2 == 0) {
                     travelOthers(portal);
                 }
@@ -201,11 +198,9 @@ public class RiftPortalManager implements Listener {
             releaseChunk(portal);
             return true;
         });
-        if (draw) {
-            for (RiftPortal portal : closing) {
-                if (loaded(portal)) {
-                    particles(portal, 1.0 - (tick - portal.closedAt) / (double) OPEN_TICKS);
-                }
+        for (RiftPortal portal : closing) {
+            if (loaded(portal)) {
+                particles(portal, 1.0 - (tick - portal.closedAt) / (double) OPEN_TICKS);
             }
         }
     }
@@ -236,8 +231,8 @@ public class RiftPortalManager implements Listener {
     }
 
     /**
-     * Draws one frame of the rift (every second tick). Java players get a crisp double rim, a dark band and spiral
-     * body, and trail particles that stream from the rim into the core along a spiral, each for a fixed time; Bedrock
+     * Draws one frame of the rift (every tick, half of the points each). Java players get a crisp double rim, a dark
+     * band and spiral body, and trail particles that stream from the rim into the core along a spiral, each for a fixed time; Bedrock
      * players, whose clients know no trail particles, get the same shape from fewer, bigger dust particles. size grows
      * from 0 to 1 while the rift opens and shrinks back while it closes.
      */
@@ -253,12 +248,12 @@ public class RiftPortalManager implements Listener {
                 (BedrockSupport.isBedrock(player) ? bedrock : java).add(player);
             }
         }
-        Frame frame = new Frame(portal, centre, size, tick);
         if (!java.isEmpty()) {
-            frame.java(java);
+            new Frame(portal, centre, size, tick, (int) (tick % 2)).java(java);
         }
-        if (!bedrock.isEmpty() && tick % 4 == 0) {
-            frame.bedrock(bedrock);
+        // Bedrock every second tick, again alternating between the two halves of the points
+        if (!bedrock.isEmpty() && tick % 2 == 0) {
+            new Frame(portal, centre, size, tick, (int) (tick / 2 % 2)).bedrock(bedrock);
         }
     }
 
@@ -269,22 +264,24 @@ public class RiftPortalManager implements Listener {
         private final double halfWidth;
         private final double halfHeight;
         private final double t;
+        private final int half;
 
-        Frame(RiftPortal portal, Location centre, double size, long tick) {
+        Frame(RiftPortal portal, Location centre, double size, long tick, int half) {
             this.portal = portal;
             this.centre = centre;
             this.halfWidth = RiftPortal.HALF_WIDTH * size;
             this.halfHeight = RiftPortal.HEIGHT / 2 * size;
             this.t = tick;
+            this.half = half;
         }
 
         void java(List<Player> viewers) {
-            ring(viewers, 32, 1.0, t * 0.03, 0, RIM);
-            ring(viewers, 16, 1.045, t * 0.03, 0.5, HIGHLIGHT);
-            ring(viewers, 24, 0.88, -t * 0.05, 0, BAND);
-            arms(viewers, 6, BODY);
+            ring(viewers, 28, 1.0, t * 0.03, 0, RIM);
+            ring(viewers, 12, 1.045, t * 0.03, 0.5, HIGHLIGHT);
+            ring(viewers, 20, 0.88, -t * 0.05, 0, BAND);
+            arms(viewers, 5, BODY);
             ThreadLocalRandom random = ThreadLocalRandom.current();
-            for (int i = 0; i < 18; i++) {
+            for (int i = 0; i < 6; i++) {
                 // a stream starts just inside the rim and ends near the core, a third of a turn further
                 double angle = random.nextDouble(Math.PI * 2);
                 double start = random.nextDouble(0.7, 0.84);
@@ -293,16 +290,22 @@ public class RiftPortalManager implements Listener {
                         new Particle.Trail(target, STREAM_COLOURS[i % STREAM_COLOURS.length], random.nextInt(16, 25));
                 spawn(viewers, Particle.TRAIL, at(angle, start), trail);
             }
-            spawn(viewers, Particle.DUST, at(0, 0), CORE);
+            if (half == 0) {
+                spawn(viewers, Particle.DUST, at(0, 0), CORE);
+            }
         }
 
         void bedrock(List<Player> viewers) {
-            ring(viewers, 24, 1.0, t * 0.03, 0, BEDROCK_RIM);
-            ring(viewers, 16, 0.86, -t * 0.05, 0, BEDROCK_BAND);
-            arms(viewers, 5, BEDROCK_ARM);
+            ring(viewers, 20, 1.0, t * 0.03, 0, BEDROCK_RIM);
+            ring(viewers, 14, 0.86, -t * 0.05, 0, BEDROCK_BAND);
+            arms(viewers, 4, BEDROCK_ARM);
             spawn(viewers, Particle.DUST, at(0, 0), CORE);
         }
 
+        /**
+         * Every frame draws every second point of a ring, the next frame the others: the same particles per second as
+         * drawing all of them every other tick, but spread evenly, so the rift does not pulse.
+         */
         private void ring(
                 List<Player> viewers,
                 int points,
@@ -310,16 +313,17 @@ public class RiftPortalManager implements Listener {
                 double turn,
                 double offset,
                 Particle.DustOptions dust) {
-            for (int i = 0; i < points; i++) {
+            for (int i = half; i < points; i += 2) {
                 spawn(viewers, Particle.DUST, at((i + offset) * Math.PI * 2 / points + turn, radius), dust);
             }
         }
 
-        /** Three spiral arms turning towards the core. */
+        /** Three spiral arms whose points flow steadily inwards towards the core. */
         private void arms(List<Player> viewers, int points, Particle.DustOptions dust) {
+            double flow = (t * 0.04) % 1;
             for (int arm = 0; arm < 3; arm++) {
-                for (int j = 0; j < points; j++) {
-                    double reach = 0.15 + 0.65 * (j + (t / 2 % 2) * 0.5) / points;
+                for (int j = half; j < points; j += 2) {
+                    double reach = 0.15 + 0.65 * (j + 1 - flow) / points;
                     spawn(viewers, Particle.DUST, at(arm * Math.PI * 2 / 3 + 4.6 * reach - t * 0.15, reach), dust);
                 }
             }
