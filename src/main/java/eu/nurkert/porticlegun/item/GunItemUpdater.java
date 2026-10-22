@@ -96,8 +96,10 @@ public class GunItemUpdater implements Listener {
         changed |= ItemHandler.migrateLegacyGun(item);
         String gunID = ItemHandler.isValidGun(item);
         if (gunID != null) {
+            changed |= ItemHandler.repairTexts(item);
             changed |= GunAppearance.apply(item, gunID);
         }
+        changed |= RiftItems.repairTexts(item);
         RiftModule rift = PorticleGun.getInstance().getRiftModule();
         if (rift != null && RiftItems.isGun(item)) {
             changed |= RiftItems.refresh(item, rift.settings());

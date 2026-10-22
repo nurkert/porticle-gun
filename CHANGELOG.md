@@ -5,6 +5,28 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+### Changed
+- **Interdimensional gun controls**: left click (attack) opens a rift, right click (use) opens the menu, like the
+  PorticleGun. Attacking without a destination opens the menu, and an empty tank refills itself from portal fluid in
+  the inventory. Attacking with the gun never breaks blocks.
+- **Rift menu**: rebuilt with a clear header (rift compass, the gun with its tank, portal fluid) and one row per kind
+  of destination. Choosing a destination closes the menu and confirms it in the action bar; homes show their number,
+  frames have no tooltips, and the rift atlas is sorted by dimension. A rift compass in the inventory unlocks the atlas
+  with one click.
+- **Rifts look like the real thing**: a thick, wobbling lime rim with white bubbles, a dark green body and light
+  spiral arms turning into a bright core.
+- Floor and ceiling portals stacked above each other make an endless fall: players keep their speed, are teleported
+  even when they land on a floor portal, and never take fall damage from it.
+
+### Fixed
+- Servers updated from an older version showed "Missing message" instead of texts (item names, the rift action bar,
+  menus), because new texts were missing from the existing `messages.yml`. Missing texts now come from the plugin
+  itself, and items that were created with a missing name are repaired.
+- Searching a random rift destination generated chunks on the main thread and froze the server for seconds. On Paper
+  chunks are now loaded and generated in the background, and the chunks of an open rift stay loaded until it closes.
+- Dropping a gun out of the open inventory (dragged out, or the drop key over its slot) now really drops it instead of
+  starting the gravity gun, on Java and Bedrock.
+
 ## [1.6.0] - 2026-10-21
 
 ### Added

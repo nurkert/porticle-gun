@@ -8,7 +8,9 @@ import java.util.Map;
 import java.util.UUID;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
+import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.PlayerInventory;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.inventory.meta.components.CustomModelDataComponent;
 import org.bukkit.persistence.PersistentDataContainer;
@@ -119,6 +121,56 @@ public final class RiftItems {
         return item;
     }
 
+    /**
+     * Rewrites the name and lore of an item created while its texts were missing from an outdated messages.yml.
+     *
+     * @return whether the item changed
+     */
+    public static boolean repairTexts(ItemStack item) {
+        Type type = type(item);
+        if (type == null) {
+            return false;
+        }
+        ItemMeta meta = item.getItemMeta();
+        boolean changed = false;
+        if (MessageManager.isMissing(meta.getDisplayName())) {
+            meta.setDisplayName(MessageManager.getMessage("items." + type.messageKey + ".name"));
+            changed = true;
+        }
+        if (type != Type.INTERDIMENSIONAL_GUN
+                && meta.hasLore()
+                && meta.getLore().stream().anyMatch(MessageManager::isMissing)) {
+            meta.setLore(lines(MessageManager.getMessage("items." + type.messageKey + ".lore")));
+            changed = true;
+        }
+        if (changed) {
+            item.setItemMeta(meta);
+        }
+        return changed;
+    }
+
+    /**
+     * Takes one portal fluid from the player's inventory and gives back the empty bottle.
+     *
+     * @return whether the player had portal fluid
+     */
+    static boolean consumeFluid(Player player) {
+        PlayerInventory inventory = player.getInventory();
+        for (int i = 0; i < inventory.getSize(); i++) {
+            ItemStack item = inventory.getItem(i);
+            if (type(item) == Type.PORTAL_FLUID) {
+                item.setAmount(item.getAmount() - 1);
+                inventory.setItem(i, item.getAmount() > 0 ? item : null);
+                for (ItemStack leftover :
+                        inventory.addItem(new ItemStack(Material.GLASS_BOTTLE)).values()) {
+                    player.getWorld().dropItemNaturally(player.getLocation(), leftover);
+                }
+                return true;
+            }
+        }
+        return false;
+    }
+
     public static String gunId(ItemStack gun) {
         return gun.getItemMeta().getPersistentDataContainer().get(gunIdKey(), PersistentDataType.STRING);
     }
@@ -190,7 +242,7 @@ public final class RiftItems {
         meta.setCustomModelDataComponent(modelData);
 
         RiftDestination destination = destination(gun);
-        List<String> lore = new ArrayList<>(lines(MessageManager.getMessage("items.interdimensional-gun.lore")));
+        List<String> lore = new ArrayList<>(lines(MessageManager.getMessage("items.interdimensional-gun.info")));
         lore.add(MessageManager.getMessage(
                 "items.interdimensional-gun.tank",
                 Map.of(

@@ -9,16 +9,34 @@ Both wobble, can be walked through in both directions and close again on their o
 
 | Action | Java | Bedrock (controller / touch) |
 |---|---|---|
-| Open a rift to the selected destination | Right click | Use (LT / L2, tap) |
-| Open the menu | Sneak + right click | Sneak + use |
+| Open a rift to the selected destination | Left click (attack) | Attack (RT / R2, tap) |
+| Open the menu | Right click (use) | Use (LT / L2, long press) |
 
-While the gun is held, the action bar shows the destination and the tank. Every menu action is a single click, so it
-works the same with a mouse, a controller or a touch screen; shift and right clicks do the same as a left click.
+While the gun is held, the action bar shows the destination and the tank. Attacking without a destination opens the
+menu. An empty tank refills itself from portal fluid in the inventory, so the menu is only needed to choose where to
+go. Attacking with the gun never breaks blocks, also not in creative mode.
+
+## The menu
+
+Every menu action is a single click, so it works the same with a mouse, a controller or a touch screen; shift and
+right clicks do the same as a left click.
+
+- **Top row**: the rift compass (insert one to attune the gun), the gun itself with its tank and destination, and the
+  portal fluid (fills the tank by hand).
+- **Worlds**: a random spot and the spawn of every world, side by side. A second row appears with more than four
+  worlds.
+- **Journeys**: back, last death and the rift atlas. Clicking the locked atlas with a rift compass in the inventory
+  inserts it.
+- **Homes**: numbered by their stack size. An empty home is set with one click.
+
+Clicking a destination selects it and closes the menu; the action bar confirms it, and the next attack opens the rift.
+The current destination glows.
 
 ## Destinations
 
-- **Random spot in a world**: one candidate per tick is checked around the world spawn (`random-radius`,
-  `nether-radius`, `end-radius`), chunks that already exist first, so searching never freezes the server. A spot is
+- **Random spot in a world**: candidates are checked one after another around the world spawn (`random-radius`,
+  `nether-radius`, `end-radius`), chunks that already exist first. On Paper their chunks are loaded and generated in
+  the background, so searching never freezes the server; on Spigot one candidate per tick is loaded directly. A spot is
   safe when the ground is solid and harmless (no lava, magma, cactus, fire, powder snow, water), there are two free
   blocks above, no lava next to it, and in the nether it is below the bedrock roof. In the end only islands count; the
   main island is the fallback. If nothing is found within `search-attempts`, the player is told and nothing is used up.

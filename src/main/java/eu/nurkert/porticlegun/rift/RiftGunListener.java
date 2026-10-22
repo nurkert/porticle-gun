@@ -19,7 +19,10 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
+import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.entity.PlayerDeathEvent;
+import org.bukkit.event.inventory.InventoryCloseEvent;
+import org.bukkit.event.player.PlayerDropItemEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.inventory.EquipmentSlot;
@@ -28,8 +31,9 @@ import org.bukkit.scheduler.BukkitTask;
 import org.bukkit.util.Vector;
 
 /**
- * Using the interdimensional gun: use opens a rift pair to the selected destination, sneak and use opens the menu.
- * Both work with a mouse, a controller and on touch screens. While the gun is held, the action bar shows the
+ * Using the interdimensional gun: attack (left click) opens a rift pair to the selected destination, use (right click)
+ * opens the menu. Both work with a mouse, a controller and on touch screens; an empty tank is refilled from the
+ * inventory on its own. While the gun is held, the action bar shows the
  * destination and the tank.
  */
 public class RiftGunListener implements Listener {
@@ -39,6 +43,8 @@ public class RiftGunListener implements Listener {
     private final RiftModule module;
     private final Map<UUID, Long> lastRift = new HashMap<>();
     private final Set<UUID> searching = new HashSet<>();
+    // when a player last dropped an item or closed a menu
+    private final Map<UUID, Long> lastSwingFree = new HashMap<>();
     private final BukkitTask actionBarTask;
 
     RiftGunListener(RiftModule module) {
@@ -56,21 +62,49 @@ public class RiftGunListener implements Listener {
             return;
         }
         Action action = event.getAction();
-        if (action != Action.RIGHT_CLICK_AIR && action != Action.RIGHT_CLICK_BLOCK) {
+        boolean attack = action == Action.LEFT_CLICK_AIR || action == Action.LEFT_CLICK_BLOCK;
+        boolean use = action == Action.RIGHT_CLICK_AIR || action == Action.RIGHT_CLICK_BLOCK;
+        if (!attack && !use) {
             return;
         }
         event.setCancelled(true);
         Player player = event.getPlayer();
+        // Bedrock clients swing the arm when dropping an item or closing a menu; that is no attack
+        if (attack && System.currentTimeMillis() - lastSwingFree.getOrDefault(player.getUniqueId(), 0L) < 300) {
+            return;
+        }
         int slot = player.getInventory().getHeldItemSlot();
         if (!player.hasPermission(PERMISSION)) {
             player.sendMessage(MessageManager.getMessage(player, "rift.no-permission"));
             return;
         }
-        if (player.isSneaking()) {
+        // attack opens a rift, use opens the menu; with no destination yet, attacking opens the menu too
+        if (use || RiftItems.destination(event.getItem()) == null) {
+            if (attack) {
+                actionBar(player, MessageManager.getMessage(player, "rift.choose-destination"));
+            }
             module.menu().open(player, slot);
         } else {
             fire(player, slot);
         }
+    }
+
+    @EventHandler(ignoreCancelled = true)
+    public void on(BlockBreakEvent event) {
+        // attacking with the gun opens rifts, it never breaks blocks (creative mode breaks them instantly)
+        if (RiftItems.isGun(event.getPlayer().getInventory().getItemInMainHand())) {
+            event.setCancelled(true);
+        }
+    }
+
+    @EventHandler
+    public void on(PlayerDropItemEvent event) {
+        lastSwingFree.put(event.getPlayer().getUniqueId(), System.currentTimeMillis());
+    }
+
+    @EventHandler
+    public void on(InventoryCloseEvent event) {
+        lastSwingFree.put(event.getPlayer().getUniqueId(), System.currentTimeMillis());
     }
 
     @EventHandler
@@ -82,6 +116,7 @@ public class RiftGunListener implements Listener {
     @EventHandler
     public void on(PlayerQuitEvent event) {
         searching.remove(event.getPlayer().getUniqueId());
+        lastSwingFree.remove(event.getPlayer().getUniqueId());
         module.portals().close(event.getPlayer().getUniqueId());
     }
 
@@ -99,14 +134,15 @@ public class RiftGunListener implements Listener {
         }
         // while a rift compass attunes the gun, rifts cost no portal fluid (if enabled)
         boolean free = settings.attunedFreeRifts() && RiftItems.isAttuned(gun);
-        if (!free && RiftItems.charges(gun) <= 0) {
+        if (!free && RiftItems.charges(gun) <= 0 && !refill(player, gun)) {
             player.playSound(player, Sound.BLOCK_BUBBLE_COLUMN_BUBBLE_POP, 1f, 0.6f);
-            deny(player, "rift.tank-empty");
+            deny(player, "rift.tank-empty-no-fluid");
             return;
         }
+        player.getInventory().setItem(slot, gun);
         RiftDestination destination = RiftItems.destination(gun);
         if (destination == null) {
-            deny(player, "rift.no-destination");
+            module.menu().open(player, slot);
             return;
         }
 
@@ -212,6 +248,22 @@ public class RiftGunListener implements Listener {
                                 });
             }
         }
+    }
+
+    /**
+     * Fills an empty tank with one portal fluid from the inventory, so nobody has to open the menu for it.
+     *
+     * @return whether the tank was refilled
+     */
+    private boolean refill(Player player, ItemStack gun) {
+        if (!RiftItems.consumeFluid(player)) {
+            return false;
+        }
+        RiftItems.setCharges(gun, module.settings().riftsPerFluid(), module.settings());
+        player.playSound(player, Sound.ITEM_BOTTLE_EMPTY, 1f, 0.9f);
+        player.playSound(player, Sound.BLOCK_BREWING_STAND_BREW, 0.6f, 1.6f);
+        player.sendMessage(MessageManager.getMessage(player, "rift.tank-refilled"));
+        return true;
     }
 
     private void openStored(Player player, Location location, String missingKey, Consumer<Location> openAt) {

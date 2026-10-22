@@ -1,6 +1,9 @@
 package eu.nurkert.porticlegun.messages;
 
 import java.io.File;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -22,6 +25,7 @@ import org.bukkit.plugin.java.JavaPlugin;
  */
 public final class MessageManager {
 
+    private static final String MISSING = "Missing message: ";
     private static final Map<UUID, String> PLAYER_LANGUAGES = new HashMap<>();
     private static FileConfiguration messagesConfig;
     private static JavaPlugin plugin;
@@ -54,6 +58,12 @@ public final class MessageManager {
         }
 
         messagesConfig = YamlConfiguration.loadConfiguration(file);
+        // texts added in newer versions are missing from an older messages.yml; they come from the jar instead
+        InputStream bundled = plugin.getResource("messages.yml");
+        if (bundled != null) {
+            messagesConfig.setDefaults(
+                    YamlConfiguration.loadConfiguration(new InputStreamReader(bundled, StandardCharsets.UTF_8)));
+        }
         defaultLanguage = normalizeLanguage(messagesConfig.getString("default-language", "en"));
         if (!getAvailableLanguages().contains(defaultLanguage)) {
             Set<String> languages = getAvailableLanguages();
@@ -105,7 +115,7 @@ public final class MessageManager {
             message = messagesConfig.getString(defaultLanguage + "." + key);
         }
         if (message == null) {
-            return ChatColor.RED + "Missing message: " + key;
+            return ChatColor.RED + MISSING + key;
         }
 
         if (placeholders != null) {
@@ -117,6 +127,13 @@ public final class MessageManager {
         }
 
         return ChatColor.translateAlternateColorCodes('&', message);
+    }
+
+    /**
+     * @return whether a text (e.g. an item name) is the placeholder shown for a missing message
+     */
+    public static boolean isMissing(String text) {
+        return text != null && text.contains(MISSING);
     }
 
     public static boolean matchesConfiguredValue(String key, String value) {

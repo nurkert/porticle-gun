@@ -6,6 +6,8 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import net.md_5.bungee.api.ChatMessageType;
+import net.md_5.bungee.api.chat.TextComponent;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -60,12 +62,8 @@ public class RiftMenu implements Listener {
         }
     }
 
-    // two rows of worlds (each with a random spot and its spawn), so up to eight worlds fit
-    private static final int WORLD_ROW = 9;
     private static final int WORLDS_PER_ROW = 4;
     private static final int MAX_WORLDS = 8;
-    private static final int SPECIAL_ROW = 27;
-    private static final int HOME_ROW = 36;
 
     private final RiftModule module;
 
@@ -73,65 +71,45 @@ public class RiftMenu implements Listener {
         this.module = module;
     }
 
+    /**
+     * The main page, top to bottom: the gun with its tank between the rift compass and the portal fluid, then one row
+     * per kind of destination (worlds, journeys, homes), each led by a label. The menu only grows a second world row
+     * when there are more than four worlds.
+     */
     public void open(Player player, int slot) {
         ItemStack gun = player.getInventory().getItem(slot);
         if (!RiftItems.isGun(gun)) {
             return;
         }
-        Holder holder = new Holder(Page.MAIN, -1, slot, RiftItems.gunId(gun));
-        Inventory inventory = create(holder, 54, text(player, "rift.menu.title"));
         RiftSettings settings = module.settings();
         RiftDestination selected = RiftItems.destination(gun);
+        List<World> worlds = new ArrayList<>();
+        for (World world : Bukkit.getWorlds()) {
+            if (!settings.disabledWorlds().contains(world.getName()) && worlds.size() < MAX_WORLDS) {
+                worlds.add(world);
+            }
+        }
+        int worldRows = Math.max(1, (worlds.size() + WORLDS_PER_ROW - 1) / WORLDS_PER_ROW);
+        int journeyRow = 9 * (1 + worldRows);
+        int homeRow = journeyRow + 9;
+        int footer = homeRow + 9;
+        int size = footer + 9;
 
-        ItemStack filler = item(Material.GRAY_STAINED_GLASS_PANE, " ", List.of());
+        Holder holder = new Holder(Page.MAIN, -1, slot, RiftItems.gunId(gun));
+        Inventory inventory = create(holder, size, text(player, "rift.menu.title"));
+        ItemStack frame = pane(Material.BLACK_STAINED_GLASS_PANE);
+        ItemStack accent = pane(Material.LIME_STAINED_GLASS_PANE);
         for (int i = 0; i < 9; i++) {
-            inventory.setItem(i, filler);
-            inventory.setItem(45 + i, filler);
+            inventory.setItem(i, i == 3 || i == 5 ? accent : frame);
+            inventory.setItem(footer + i, frame);
         }
 
+        // header: rift compass, the gun itself (tank and destination in its tooltip), portal fluid
         int charges = RiftItems.charges(gun);
-        ItemStack status = gun.clone();
-        inventory.setItem(4, status);
-
-        button(
-                holder,
-                inventory,
-                8,
-                item(
-                        Material.PAPER,
-                        text(player, "rift.menu.fill.name"),
-                        lines(
-                                player,
-                                "rift.menu.fill.lore",
-                                Map.of(
-                                        "rifts",
-                                        String.valueOf(settings.riftsPerFluid()),
-                                        "charges",
-                                        String.valueOf(charges),
-                                        "capacity",
-                                        String.valueOf(settings.tankCapacity())))),
-                () -> fillTank(player, holder));
-        ItemStack fluidIcon = RiftItems.create(RiftItems.Type.PORTAL_FLUID, 1, settings);
-        decorate(
-                fluidIcon,
-                text(player, "rift.menu.fill.name"),
-                lines(
-                        player,
-                        "rift.menu.fill.lore",
-                        Map.of(
-                                "rifts",
-                                String.valueOf(settings.riftsPerFluid()),
-                                "charges",
-                                String.valueOf(charges),
-                                "capacity",
-                                String.valueOf(settings.tankCapacity()))));
-        inventory.setItem(8, fluidIcon);
-
-        // the rift compass: insert one to attune the gun, which unlocks the rift atlas
         boolean attuned = RiftItems.isAttuned(gun);
-        ItemStack compassIcon = RiftItems.create(RiftItems.Type.RIFT_COMPASS, 1, settings);
         Map<String, String> compassPlaceholders =
                 Map.of("minutes", String.valueOf(settings.compassMillis() / 60_000), "time", RiftItems.remaining(gun));
+        ItemStack compassIcon = RiftItems.create(RiftItems.Type.RIFT_COMPASS, 1, settings);
         decorate(
                 compassIcon,
                 text(player, attuned ? "rift.menu.compass-active" : "rift.menu.compass.name", compassPlaceholders),
@@ -142,31 +120,26 @@ public class RiftMenu implements Listener {
         if (attuned) {
             glow(compassIcon);
         }
-        button(holder, inventory, 0, compassIcon, () -> insertCompass(player, holder));
-        ItemStack atlasIcon = item(
-                attuned ? Material.FILLED_MAP : Material.MAP,
-                text(player, attuned ? "rift.menu.atlas.name" : "rift.menu.atlas-locked"),
-                lines(player, attuned ? "rift.menu.atlas.lore" : "rift.menu.atlas-locked-lore", Map.of()));
-        if (selected != null && selected.type() == RiftDestination.Type.STRUCTURE) {
-            glow(atlasIcon);
-        }
-        button(holder, inventory, 1, atlasIcon, () -> {
-            if (RiftItems.isAttuned(player.getInventory().getItem(holder.slot))) {
-                openAtlas(player, holder.slot);
-            } else {
-                player.playSound(player, Sound.BLOCK_NOTE_BLOCK_BASS, 1f, 0.7f);
-                player.sendMessage(text(player, "rift.not-attuned"));
-            }
-        });
+        button(holder, inventory, 2, compassIcon, () -> insertCompass(player, holder));
+        inventory.setItem(4, gun.clone());
+        ItemStack fluidIcon = RiftItems.create(RiftItems.Type.PORTAL_FLUID, 1, settings);
+        decorate(
+                fluidIcon,
+                text(player, "rift.menu.fill.name"),
+                lines(
+                        player,
+                        "rift.menu.fill.lore",
+                        Map.of(
+                                "rifts", String.valueOf(settings.riftsPerFluid()),
+                                "charges", String.valueOf(charges),
+                                "capacity", String.valueOf(settings.tankCapacity()))));
+        button(holder, inventory, 6, fluidIcon, () -> fillTank(player, holder));
 
-        // worlds: a random spot or the spawn of every world that is not disabled
-        inventory.setItem(WORLD_ROW, item(Material.FILLED_MAP, text(player, "rift.menu.worlds"), List.of()));
-        int index = 0;
-        for (World world : Bukkit.getWorlds()) {
-            if (settings.disabledWorlds().contains(world.getName()) || index >= MAX_WORLDS) {
-                continue;
-            }
-            int randomSlot = WORLD_ROW + (index / WORLDS_PER_ROW) * 9 + 1 + (index % WORLDS_PER_ROW) * 2;
+        // worlds: a random spot and the spawn of every world that is not disabled, side by side
+        inventory.setItem(9, label(Material.FILLED_MAP, text(player, "rift.menu.worlds")));
+        for (int index = 0; index < worlds.size(); index++) {
+            World world = worlds.get(index);
+            int randomSlot = 9 * (1 + index / WORLDS_PER_ROW) + 1 + (index % WORLDS_PER_ROW) * 2;
             String name = RiftNames.world(world.getName(), player);
             destinationButton(
                     player,
@@ -188,17 +161,16 @@ public class RiftMenu implements Listener {
                     lines(player, "rift.menu.world-spawn-lore", Map.of("world", name)),
                     RiftDestination.spawn(world.getName()),
                     selected);
-            index++;
         }
 
-        // back and last death
-        inventory.setItem(SPECIAL_ROW, item(Material.CLOCK, text(player, "rift.menu.special"), List.of()));
+        // journeys: back, last death and the rift atlas
+        inventory.setItem(journeyRow, label(Material.CLOCK, text(player, "rift.menu.special")));
         Location back = module.storage().back(player.getUniqueId());
         destinationButton(
                 player,
                 holder,
                 inventory,
-                SPECIAL_ROW + 1,
+                journeyRow + 1,
                 Material.RECOVERY_COMPASS,
                 text(player, "rift.destination.back"),
                 lines(player, back == null ? "rift.menu.back-empty" : "rift.menu.back-lore", coordinates(back)),
@@ -209,60 +181,86 @@ public class RiftMenu implements Listener {
                 player,
                 holder,
                 inventory,
-                SPECIAL_ROW + 2,
+                journeyRow + 2,
                 Material.SKELETON_SKULL,
                 text(player, "rift.destination.death"),
                 lines(player, death == null ? "rift.menu.death-empty" : "rift.menu.death-lore", coordinates(death)),
                 RiftDestination.death(),
                 selected);
+        ItemStack atlasIcon = item(
+                attuned ? Material.FILLED_MAP : Material.MAP,
+                text(player, attuned ? "rift.menu.atlas.name" : "rift.menu.atlas-locked"),
+                lines(player, attuned ? "rift.menu.atlas.lore" : "rift.menu.atlas-locked-lore", Map.of()));
+        if (selected != null && selected.type() == RiftDestination.Type.STRUCTURE) {
+            glow(atlasIcon);
+            addLine(
+                    atlasIcon,
+                    text(
+                            player,
+                            "rift.menu.selected-structure",
+                            Map.of("structure", RiftNames.describe(selected, player))));
+        }
+        button(holder, inventory, journeyRow + 4, atlasIcon, () -> {
+            ItemStack current = player.getInventory().getItem(holder.slot);
+            if (RiftItems.isAttuned(current)) {
+                openAtlas(player, holder.slot);
+            } else {
+                // a rift compass in the inventory unlocks the atlas right here
+                insertCompass(player, holder);
+            }
+        });
 
-        // homes: a set home opens its own page, an empty slot is set to the current position
-        inventory.setItem(HOME_ROW, item(Material.RED_BED, text(player, "rift.menu.homes"), List.of()));
+        // homes: the number shows as the stack size; a set home opens its options, an empty one is set right away
+        inventory.setItem(homeRow, label(Material.RED_BED, text(player, "rift.menu.homes")));
         for (int home = 0; home < settings.homes(); home++) {
             int number = home;
             Location location = module.storage().home(player.getUniqueId(), home);
-            int homeSlot = HOME_ROW + 1 + home;
             Map<String, String> placeholders = new HashMap<>(coordinates(location));
             placeholders.put("home", String.valueOf(home + 1));
+            ItemStack icon;
+            Runnable action;
             if (location == null) {
-                button(
-                        holder,
-                        inventory,
-                        homeSlot,
-                        item(
-                                Material.LIGHT_GRAY_DYE,
-                                text(player, "rift.menu.home-empty", placeholders),
-                                lines(player, "rift.menu.home-empty-lore", placeholders)),
-                        () -> {
-                            setHome(player, number);
-                            select(player, holder, RiftDestination.home(number));
-                        });
+                icon = item(
+                        Material.LIGHT_GRAY_DYE,
+                        text(player, "rift.menu.home-empty", placeholders),
+                        lines(player, "rift.menu.home-empty-lore", placeholders));
+                action = () -> {
+                    setHome(player, number);
+                    choose(player, holder, RiftDestination.home(number));
+                };
             } else {
-                ItemStack icon = item(
+                icon = item(
                         Material.LIME_BED,
                         text(player, "rift.menu.home", placeholders),
                         lines(player, "rift.menu.home-lore", placeholders));
                 if (RiftDestination.home(home).equals(selected)) {
                     glow(icon);
+                    addLine(icon, text(player, "rift.menu.selected"));
                 }
-                button(holder, inventory, homeSlot, icon, () -> openHome(player, holder.slot, number));
+                action = () -> openHome(player, holder.slot, number);
             }
+            icon.setAmount(home + 1);
+            button(holder, inventory, homeRow + 1 + home, icon, action);
         }
 
+        inventory.setItem(
+                footer + 3,
+                item(
+                        Material.KNOWLEDGE_BOOK,
+                        text(player, "rift.menu.help"),
+                        lines(player, "rift.menu.guide", Map.of())));
         button(
                 holder,
                 inventory,
-                49,
+                footer + 5,
                 item(Material.BARRIER, text(player, "rift.menu.close"), List.of()),
                 player::closeInventory);
-        inventory.setItem(
-                45,
-                item(Material.BOOK, text(player, "rift.menu.help"), lines(player, "rift.menu.help-lore", Map.of())));
         player.openInventory(inventory);
     }
 
     /**
-     * The rift atlas: every structure kind as a destination, unlocked while the gun is attuned.
+     * The rift atlas: every structure kind as a destination, unlocked while the gun is attuned. One row per dimension
+     * (the overworld takes two), each led by its dimension's block.
      */
     private void openAtlas(Player player, int slot) {
         ItemStack gun = player.getInventory().getItem(slot);
@@ -271,12 +269,11 @@ public class RiftMenu implements Listener {
             return;
         }
         Holder holder = new Holder(Page.ATLAS, -1, slot, RiftItems.gunId(gun));
-        Inventory inventory = create(holder, 54, text(player, "rift.menu.atlas-title"));
-        ItemStack border = item(Material.LIME_STAINED_GLASS_PANE, " ", List.of());
-        for (int i = 0; i < 54; i++) {
-            if (i < 9 || i >= 45 || i % 9 == 0 || i % 9 == 8) {
-                inventory.setItem(i, border);
-            }
+        Inventory inventory = create(holder, 45, text(player, "rift.menu.atlas-title"));
+        ItemStack frame = pane(Material.BLACK_STAINED_GLASS_PANE);
+        for (int i = 0; i < 9; i++) {
+            inventory.setItem(i, frame);
+            inventory.setItem(36 + i, frame);
         }
         inventory.setItem(
                 4,
@@ -285,11 +282,18 @@ public class RiftMenu implements Listener {
                         text(player, "rift.menu.compass-active", Map.of("time", RiftItems.remaining(gun))),
                         lines(player, "rift.menu.atlas-info", Map.of())));
         RiftDestination selected = RiftItems.destination(gun);
-        int index = 0;
+        int overworld = 0;
+        int nether = 0;
         for (RiftStructure structure : RiftStructure.values()) {
-            int row = index / 7;
-            int structureSlot = 10 + row * 9 + index % 7;
-            index++;
+            int structureSlot;
+            switch (structure.environment()) {
+                case NETHER -> structureSlot = 28 + nether++;
+                case THE_END -> structureSlot = 33;
+                default -> {
+                    structureSlot = overworld < 7 ? 10 + overworld : 19 + overworld - 7;
+                    overworld++;
+                }
+            }
             Map<String, String> placeholders = Map.of(
                     "structure", RiftNames.structure(structure.id(), player),
                     "dimension",
@@ -298,27 +302,24 @@ public class RiftMenu implements Listener {
                                     "rift.dimension."
                                             + structure.environment().name().toLowerCase()));
             RiftDestination destination = RiftDestination.structure(structure);
-            ItemStack icon = item(
+            destinationButton(
+                    player,
+                    holder,
+                    inventory,
+                    structureSlot,
                     structure.icon(),
                     text(player, "rift.menu.structure", placeholders),
-                    lines(player, "rift.menu.structure-lore", placeholders));
-            if (destination.equals(selected)) {
-                glow(icon);
-                ItemMeta meta = icon.getItemMeta();
-                List<String> lore = new ArrayList<>(meta.getLore());
-                lore.add(text(player, "rift.menu.selected"));
-                meta.setLore(lore);
-                icon.setItemMeta(meta);
-            }
-            button(holder, inventory, structureSlot, icon, () -> {
-                select(player, holder, destination);
-                openAtlas(player, holder.slot);
-            });
+                    lines(player, "rift.menu.structure-lore", placeholders),
+                    destination,
+                    selected);
         }
+        inventory.setItem(9, label(Material.GRASS_BLOCK, text(player, "rift.dimension.normal")));
+        inventory.setItem(27, label(Material.NETHERRACK, text(player, "rift.dimension.nether")));
+        inventory.setItem(32, label(Material.END_STONE, text(player, "rift.dimension.the_end")));
         button(
                 holder,
                 inventory,
-                49,
+                40,
                 item(Material.ARROW, text(player, "rift.menu.back"), List.of()),
                 () -> open(player, holder.slot));
         player.openInventory(inventory);
@@ -363,6 +364,7 @@ public class RiftMenu implements Listener {
                 new HashMap<>(coordinates(module.storage().home(player.getUniqueId(), home)));
         placeholders.put("home", String.valueOf(home + 1));
         Inventory inventory = create(holder, 27, text(player, "rift.menu.home-title", placeholders));
+        fill(inventory);
         button(
                 holder,
                 inventory,
@@ -371,10 +373,7 @@ public class RiftMenu implements Listener {
                         Material.ENDER_PEARL,
                         text(player, "rift.menu.home-select"),
                         lines(player, "rift.menu.home-select-lore", placeholders)),
-                () -> {
-                    select(player, holder, RiftDestination.home(home));
-                    open(player, holder.slot);
-                });
+                () -> choose(player, holder, RiftDestination.home(home)));
         button(
                 holder,
                 inventory,
@@ -414,6 +413,7 @@ public class RiftMenu implements Listener {
         Holder holder = new Holder(Page.DELETE_HOME, home, slot, RiftItems.gunId(gun));
         Map<String, String> placeholders = Map.of("home", String.valueOf(home + 1));
         Inventory inventory = create(holder, 27, text(player, "rift.menu.delete-title", placeholders));
+        fill(inventory);
         button(
                 holder,
                 inventory,
@@ -476,23 +476,12 @@ public class RiftMenu implements Listener {
             player.sendMessage(text(player, "rift.tank-full"));
             return;
         }
-        int fluidSlot = -1;
-        for (int i = 0; i < player.getInventory().getSize(); i++) {
-            if (RiftItems.type(player.getInventory().getItem(i)) == RiftItems.Type.PORTAL_FLUID) {
-                fluidSlot = i;
-                break;
-            }
-        }
-        if (fluidSlot < 0) {
+        if (!RiftItems.consumeFluid(player)) {
             player.playSound(player, Sound.BLOCK_NOTE_BLOCK_BASS, 1f, 0.7f);
             player.sendMessage(text(player, "rift.no-fluid"));
             return;
         }
-        ItemStack fluid = player.getInventory().getItem(fluidSlot);
-        fluid.setAmount(fluid.getAmount() - 1);
-        player.getInventory().setItem(fluidSlot, fluid.getAmount() > 0 ? fluid : null);
-        player.getInventory().addItem(new ItemStack(Material.GLASS_BOTTLE));
-        RiftItems.setCharges(gun, charges + settings.riftsPerFluid(), settings);
+        RiftItems.setCharges(gun, Math.min(settings.tankCapacity(), charges + settings.riftsPerFluid()), settings);
         player.getInventory().setItem(holder.slot, gun);
         player.playSound(player, Sound.ITEM_BOTTLE_EMPTY, 1f, 0.9f);
         player.playSound(player, Sound.BLOCK_BREWING_STAND_BREW, 0.6f, 1.6f);
@@ -505,12 +494,18 @@ public class RiftMenu implements Listener {
         player.sendMessage(text(player, "rift.home-set", Map.of("home", String.valueOf(home + 1))));
     }
 
-    private void select(Player player, Holder holder, RiftDestination destination) {
+    /**
+     * Makes the destination the gun's target and closes the menu: the next attack opens the rift.
+     */
+    private void choose(Player player, Holder holder, RiftDestination destination) {
         ItemStack gun = player.getInventory().getItem(holder.slot);
         RiftItems.setDestination(gun, destination, module.settings());
         player.getInventory().setItem(holder.slot, gun);
-        player.sendMessage(text(
-                player, "rift.destination-selected", Map.of("destination", RiftNames.describe(destination, player))));
+        player.closeInventory();
+        player.playSound(player, Sound.BLOCK_AMETHYST_BLOCK_CHIME, 1f, 1.2f);
+        String ready =
+                text(player, "rift.destination-ready", Map.of("destination", RiftNames.describe(destination, player)));
+        player.spigot().sendMessage(ChatMessageType.ACTION_BAR, new TextComponent(TextComponent.fromLegacyText(ready)));
     }
 
     private void destinationButton(
@@ -526,16 +521,11 @@ public class RiftMenu implements Listener {
         ItemStack icon = item(material, name, lore);
         if (destination.equals(selected)) {
             glow(icon);
-            ItemMeta meta = icon.getItemMeta();
-            List<String> withMarker = new ArrayList<>(meta.getLore());
-            withMarker.add(text(player, "rift.menu.selected"));
-            meta.setLore(withMarker);
-            icon.setItemMeta(meta);
+            addLine(icon, text(player, "rift.menu.selected"));
+        } else {
+            addLine(icon, text(player, "rift.menu.click-select"));
         }
-        button(holder, inventory, slot, icon, () -> {
-            select(player, holder, destination);
-            open(player, holder.slot);
-        });
+        button(holder, inventory, slot, icon, () -> choose(player, holder, destination));
     }
 
     private static Material worldIcon(World world) {
@@ -567,6 +557,35 @@ public class RiftMenu implements Listener {
         meta.addItemFlags(ItemFlag.values());
         item.setItemMeta(meta);
         return item;
+    }
+
+    private static void fill(Inventory inventory) {
+        ItemStack frame = pane(Material.BLACK_STAINED_GLASS_PANE);
+        for (int i = 0; i < inventory.getSize(); i++) {
+            inventory.setItem(i, frame);
+        }
+    }
+
+    /** A frame pane without a tooltip. */
+    private static ItemStack pane(Material material) {
+        ItemStack pane = new ItemStack(material);
+        ItemMeta meta = pane.getItemMeta();
+        meta.setHideTooltip(true);
+        pane.setItemMeta(meta);
+        return pane;
+    }
+
+    /** A row label: an icon with a name (and optionally lines) that does nothing when clicked. */
+    private static ItemStack label(Material material, String name) {
+        return item(material, name, List.of());
+    }
+
+    private static void addLine(ItemStack item, String line) {
+        ItemMeta meta = item.getItemMeta();
+        List<String> lore = meta.hasLore() ? new ArrayList<>(meta.getLore()) : new ArrayList<>();
+        lore.add(line);
+        meta.setLore(lore);
+        item.setItemMeta(meta);
     }
 
     private static void decorate(ItemStack item, String name, List<String> lore) {

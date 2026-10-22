@@ -32,6 +32,7 @@ import org.bukkit.entity.FallingBlock;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
+import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.EntityChangeBlockEvent;
 import org.bukkit.event.entity.EntityDamageEvent;
@@ -225,8 +226,11 @@ public class GravityGun implements Listener {
         Player player = event.getPlayer();
 
         if (player.hasMetadata("portalgun-drop_bypass")) {
+            long clicked = player.getMetadata("portalgun-drop_bypass").get(0).asLong();
             player.removeMetadata("portalgun-drop_bypass", PorticleGun.getInstance());
-            return;
+            if (System.currentTimeMillis() - clicked < 250) {
+                return; // dropped from the inventory, not with the drop key in hand
+            }
         }
 
         ItemStack item = event.getItemDrop().getItemStack();
@@ -325,13 +329,24 @@ public class GravityGun implements Listener {
         players.put(player, fallingblock);
     }
 
-    @EventHandler
+    /**
+     * Dropping the gun out of an open inventory (dragged out of the window, or the drop key over its slot) really drops
+     * it; only the drop key with the gun in hand grabs with the gravity gun. Geyser turns Bedrock's inventory drops
+     * into the same clicks.
+     */
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void on(InventoryClickEvent event) {
-        if (event.getCursor() != null && ItemHandler.isValidGun(event.getCursor()) != null) {
-            if (event.getRawSlot() == -999) {
-                ((Player) event.getWhoClicked())
-                        .setMetadata("portalgun-drop_bypass", new FixedMetadataValue(PorticleGun.getInstance(), ""));
-            }
+        ItemStack dropped =
+                switch (event.getAction()) {
+                    case DROP_ALL_CURSOR, DROP_ONE_CURSOR -> event.getCursor();
+                    case DROP_ALL_SLOT, DROP_ONE_SLOT -> event.getCurrentItem();
+                    default -> null;
+                };
+        if (dropped != null && ItemHandler.isValidGun(dropped) != null) {
+            event.getWhoClicked()
+                    .setMetadata(
+                            "portalgun-drop_bypass",
+                            new FixedMetadataValue(PorticleGun.getInstance(), System.currentTimeMillis()));
         }
     }
 

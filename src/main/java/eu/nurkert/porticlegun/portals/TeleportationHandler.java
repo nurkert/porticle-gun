@@ -6,7 +6,9 @@ import eu.nurkert.porticlegun.util.WorldGuardIntegration;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
@@ -15,7 +17,9 @@ import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
+import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.player.PlayerMoveEvent;
+import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.util.Vector;
 
@@ -24,10 +28,18 @@ import org.bukkit.util.Vector;
  */
 public class TeleportationHandler implements Listener {
 
-    private static final long TELEPORT_COOLDOWN_MS = 1000;
+    // short enough for portals stacked a few blocks apart, where a falling player loops through them forever
+    private static final long TELEPORT_COOLDOWN_MS = 150;
+    // fall damage is cancelled this long after a teleport, and whenever someone lands on a portal
+    private static final long FALL_PROTECTION_MS = 600;
+    // players move faster than this only when something is wrong; keeps a lag spike from flinging them away
+    private static final double MAX_SPEED = 4.0;
 
     private final Map<UUID, Long> teleportCooldown;
     private final Map<UUID, Portal> portalReentryLock;
+    // a player's movement during the last tick: the server does not know a player's real velocity
+    private final Map<UUID, Vector> playerMotion = new HashMap<>();
+    private final Set<UUID> heldMotion = new HashSet<>();
 
     private final ActivePortalsHandler activePortals;
 
@@ -47,6 +59,21 @@ public class TeleportationHandler implements Listener {
     public void on(PlayerMoveEvent event) {
         if (event.getTo() == null) {
             return;
+        }
+        if (event.getFrom().getWorld() == event.getTo().getWorld()) {
+            Vector motion = event.getTo().toVector().subtract(event.getFrom().toVector());
+            UUID id = event.getPlayer().getUniqueId();
+            Vector previous = playerMotion.get(id);
+            // landing on a floor portal cuts the last step short; for that one step the step before counts
+            boolean stopped = previous != null
+                    && !heldMotion.contains(id)
+                    && motion.lengthSquared() < previous.lengthSquared() * 0.25;
+            if (stopped) {
+                heldMotion.add(id);
+            } else {
+                heldMotion.remove(id);
+                playerMotion.put(id, motion);
+            }
         }
 
         if (event.getFrom().getBlockX() == event.getTo().getBlockX()
@@ -91,11 +118,9 @@ public class TeleportationHandler implements Listener {
 
             Collection<Entity> nearbyEntities =
                     portalLocation.getWorld().getNearbyEntities(portalLocation, 1.0, 1.5, 1.0);
+            // players too: one standing on a floor portal (after landing in the same moment) never moves into a new
+            // block, so the move event alone would leave them there
             for (Entity entity : nearbyEntities) {
-                if (entity instanceof Player) {
-                    continue;
-                }
-
                 if (!entity.isValid() || entity.isDead()) {
                     continue;
                 }
@@ -151,7 +176,7 @@ public class TeleportationHandler implements Listener {
             return false;
         }
 
-        Vector preTeleportVelocity = entity.getVelocity().clone();
+        Vector preTeleportVelocity = velocity(entity);
         Vector preTeleportLook = null;
         if (entity instanceof LivingEntity) {
             preTeleportLook =
@@ -187,10 +212,57 @@ public class TeleportationHandler implements Listener {
 
         entity.setVelocity(transformedVelocity);
         entity.setFallDistance(0F);
+        if (entity instanceof Player) {
+            playerMotion.put(entity.getUniqueId(), transformedVelocity.clone());
+            heldMotion.remove(entity.getUniqueId());
+        }
 
         setPortalLock(entity, linkedPortal);
         setCooldown(entity);
         return true;
+    }
+
+    private Vector velocity(Entity entity) {
+        Vector velocity = entity.getVelocity().clone();
+        if (entity instanceof Player) {
+            Vector motion = playerMotion.get(entity.getUniqueId());
+            if (motion != null && motion.lengthSquared() > velocity.lengthSquared()) {
+                velocity = motion.clone();
+            }
+        }
+        if (velocity.lengthSquared() > MAX_SPEED * MAX_SPEED) {
+            velocity.normalize().multiply(MAX_SPEED);
+        }
+        return velocity;
+    }
+
+    /**
+     * No fall damage right after coming out of a portal, or when landing on a portal (falling through a floor portal
+     * must never hurt, even when the landing is a moment faster than the teleport).
+     */
+    @EventHandler(ignoreCancelled = true)
+    public void on(EntityDamageEvent event) {
+        if (event.getCause() != EntityDamageEvent.DamageCause.FALL) {
+            return;
+        }
+        Entity entity = event.getEntity();
+        Long lastTeleport = teleportCooldown.get(entity.getUniqueId());
+        if (lastTeleport != null && System.currentTimeMillis() - lastTeleport < FALL_PROTECTION_MS) {
+            event.setCancelled(true);
+            return;
+        }
+        for (Portal portal : activePortals.getAllPortal()) {
+            if (portal.getLinkedPortal() != null && isEntityInPortal(portal, entity.getLocation())) {
+                event.setCancelled(true);
+                return;
+            }
+        }
+    }
+
+    @EventHandler
+    public void on(PlayerQuitEvent event) {
+        playerMotion.remove(event.getPlayer().getUniqueId());
+        heldMotion.remove(event.getPlayer().getUniqueId());
     }
 
     private boolean isOnCooldown(Entity entity) {
