@@ -53,7 +53,7 @@ interdimensional-gun:
   # and after portal-seconds at the latest
   close-distance: 7
   portal-seconds: 30
-  # home slots per player (0-7)
+  # home slots per gun (0-7); homes are stored on the gun item
   homes: 5
   # random destinations: radius around the world spawn (overworld and other worlds), the nether and the end
   random-radius: 3000

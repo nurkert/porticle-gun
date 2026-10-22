@@ -46,7 +46,9 @@ The current destination glows.
   blocks above, no lava next to it, and in the nether it is below the bedrock roof. In the end only islands count; the
   main island is the fallback. If nothing is found within `search-attempts`, the player is told and nothing is used up.
 - **World spawn** of any world.
-- **Homes**: `homes` slots per player. An empty slot is set to the current position with one click; a set home opens
+- **Homes**: `homes` slots per gun, stored on the gun item itself: every gun has its own homes, and they go with it
+  when it changes hands. Guns from older versions take over the homes their player had (kept per player before) the
+  first time the player opens the menu or opens a rift to a home with them. An empty slot is set to the current position with one click; a set home opens
   a page to travel there, move it to the current position or delete it (with confirmation).
 - **Back**: where the player last stepped into a rift.
 - **Last death**.
@@ -134,5 +136,5 @@ pack. Rifts are made of particles, so they look exactly like on Java.
 
 ## Data
 
-Homes, back and death locations are stored per player in `plugins/PorticleGun/rift.yml`, written asynchronously like
-`portals.yml`. Tank and selected destination are stored on the gun item itself.
+Back and death locations are stored per player in `plugins/PorticleGun/rift.yml`, written asynchronously like
+`portals.yml`. Tank, selected destination and homes are stored on the gun item itself.

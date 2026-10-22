@@ -5,6 +5,13 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+## [1.6.7] - 2026-10-22
+
+### Changed
+- **Homes belong to the gun**: the interdimensional gun's homes are stored on the gun item instead of per player.
+  Every gun has its own homes, and they go with the gun when it changes hands. Existing guns keep working: the first
+  gun a player uses (opening its menu or a rift to a home) takes over the homes that player had, so none are lost.
+
 ## [1.6.6] - 2026-10-22
 
 ### Added

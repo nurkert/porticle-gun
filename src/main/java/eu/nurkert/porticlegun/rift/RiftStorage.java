@@ -7,8 +7,9 @@ import org.bukkit.Location;
 import org.bukkit.World;
 
 /**
- * Per player data of the interdimensional gun in rift.yml: homes, the spot before the last rift (back) and the last
- * death location.
+ * Per player data of the interdimensional gun in rift.yml: the spot before the last rift (back) and the last death
+ * location. Homes used to be kept here per player too; they now live on the gun item, and the homes still found here
+ * are handed over to the first gun the player uses ({@link RiftItems#claimPlayerHomes}).
  */
 public class RiftStorage {
 
@@ -18,6 +19,7 @@ public class RiftStorage {
         this.file = file;
     }
 
+    /** A home from before homes were stored on the gun. */
     public Location home(UUID player, int index) {
         return location(path(player) + ".homes." + index);
     }

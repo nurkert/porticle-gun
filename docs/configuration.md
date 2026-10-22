@@ -39,7 +39,7 @@ with a colour that no longer exists, it falls back to the default colour and a w
 | `interdimensional-gun.cooldown-seconds` | `3` | Seconds between two rifts. |
 | `interdimensional-gun.close-distance` | `7` | A rift pair closes when its opener is farther than this from both portals for three seconds. |
 | `interdimensional-gun.portal-seconds` | `30` | A rift pair closes after this many seconds at the latest. |
-| `interdimensional-gun.homes` | `5` | Home slots per player (0-7). |
+| `interdimensional-gun.homes` | `5` | Home slots per gun (0-7). |
 | `interdimensional-gun.random-radius` | `3000` | Radius around the world spawn for random destinations (overworld and other worlds). |
 | `interdimensional-gun.nether-radius` | `1000` | The same for the nether. |
 | `interdimensional-gun.end-radius` | `1500` | The same for the end (around 0, 0); the main island is the fallback. |
@@ -93,7 +93,8 @@ Details in [bedrock.md](bedrock.md).
 
 ## Data files
 
-- `rift.yml` stores the interdimensional gun's homes, back and death locations per player.
+- `rift.yml` stores the back and death locations of the interdimensional gun per player. Homes are stored on each gun
+  item; homes from older versions stay here until the player's first gun takes them over.
 - `portals.yml` stores every gun's portals, colours and shape. It is written shortly after changes and on shutdown;
   edit it only while the server is stopped.
 - `messages.yml` holds all texts, see [localization.md](localization.md).
