@@ -218,11 +218,10 @@ classic title instead, and for Bedrock players the overlay can be switched on on
   <img src="images/change_settings.gif" alt="Changing the gun's settings" width="640">
 </p>
 
-With the resource pack the settings menu has its own look: the two portals with their mouse buttons left and right,
-coloured frames for the colour columns. The rift gun's tank chest gets the same treatment.
+With the resource pack the settings menu shows its banners flat, without pole, and the rift gun's tank chest is drawn
+in the vanilla style:
 
 <p align="center">
-  <img src="images/settings_menu.png" alt="The drawn settings menu" width="352">
   <img src="images/tank_menu.png" alt="The drawn tank menu" width="352">
 </p>
 

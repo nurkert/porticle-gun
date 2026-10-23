@@ -1,0 +1,25 @@
+{
+  "gui_light": "front",
+  "textures": {
+    "particle": "minecraft:block/oak_planks"
+  },
+  "display": {
+    "gui": {
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "translation": [
+        0,
+        4.447,
+        0
+      ],
+      "scale": [
+        0.58,
+        0.58,
+        0.58
+      ]
+    }
+  }
+}

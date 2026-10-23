@@ -649,6 +649,12 @@ def java_pack_mcmeta():
                     "max_format": 64,
                 },
                 {
+                    "directory": FLAT_BANNERS_OVERLAY,
+                    "formats": {"min_inclusive": FLAT_BANNERS_FORMAT, "max_inclusive": 99},
+                    "min_format": FLAT_BANNERS_FORMAT,
+                    "max_format": 99,
+                },
+                {
                     "directory": FREE_ROTATION_OVERLAY,
                     "formats": {"min_inclusive": 75, "max_inclusive": 99},
                     "min_format": 75,
@@ -948,7 +954,6 @@ def java_font():
             {"type": "space", "advances": {HUD_GAP: HUD_GAP_ADVANCE, HUD_LEAD: 1}},
         ]
         + tank_font_providers()
-        + settings_font_providers()
     }
 
 
@@ -975,7 +980,7 @@ TANK_GUI_WIDTH, TANK_GUI_HEIGHT = 176, 72
 TANK_GUI = ""
 TANK_GAUGE_LEVELS = 12
 TANK_GAUGE_GLYPHS = [chr(0xE9B1 + level) for level in range(TANK_GAUGE_LEVELS + 1)]
-TANK_GAUGE_X, TANK_GAUGE_Y, TANK_GAUGE_W, TANK_GAUGE_H = 153, 20, 12, 47
+TANK_GAUGE_X, TANK_GAUGE_Y, TANK_GAUGE_W, TANK_GAUGE_H = 154, 19, 12, 50
 # titles start 8 pixels right of the window; one glyph advances by its width plus one pixel
 TANK_SHIFT_START = ""  # to the window's left edge
 TANK_SHIFT_GAUGE = ""  # from behind the background to the gauge
@@ -992,6 +997,8 @@ VANILLA_BLACK = (0, 0, 0, 255)
 VANILLA_WHITE = (255, 255, 255, 255)
 VANILLA_FACE = (198, 198, 198, 255)
 VANILLA_SHADOW = (85, 85, 85, 255)
+VANILLA_DARK = (55, 55, 55, 255)
+VANILLA_SLOT = (139, 139, 139, 255)
 
 
 def rgba(value, alpha=255):
@@ -1002,78 +1009,48 @@ def mix(a, b, t):
     return tuple(round(a[i] + (b[i] - a[i]) * t) for i in range(3)) + (255,)
 
 
+def vanilla_slot(px, x0, y0, rim=None, bottom=None):
+    """A vanilla slot (dark top left, white bottom right, grey inside); a rim colours its edges instead."""
+    dark, light = VANILLA_DARK, VANILLA_WHITE
+    if rim is not None:
+        dark, light = rgba(rim), mix(rgba(rim), VANILLA_WHITE, 0.55)
+    y1 = y0 + 17 if bottom is None else bottom
+    for y in range(y0, y1 + 1):
+        for x in range(x0, x0 + 18):
+            px[y][x] = VANILLA_SLOT
+    for x in range(x0, x0 + 17):
+        px[y0][x] = dark
+    for y in range(y0, y1):
+        px[y][x0] = dark
+    for x in range(x0 + 1, x0 + 18):
+        px[y1][x] = light
+    for y in range(y0 + 1, y1 + 1):
+        px[y][x0 + 17] = light
+
+
+def draw_art(px, x0, y0, art, colour):
+    for dy, line in enumerate(art):
+        for dx, ch in enumerate(line):
+            if ch == "#":
+                px[y0 + dy][x0 + dx] = colour
+
+
 def tank_gui_background():
     w, h = TANK_GUI_WIDTH, TANK_GUI_HEIGHT
     px = [[(0, 0, 0, 0)] * w for _ in range(h)]
+    vanilla_rim(px)
 
     def rect(x0, y0, x1, y1, colour):
         for y in range(max(0, y0), min(h, y1 + 1)):
             for x in range(max(0, x0), min(w, x1 + 1)):
                 px[y][x] = colour
 
-    # vanilla window rim with its rounded top corners
-    for y in range(h):
-        if y == 0:
-            rect(2, 0, 172, 0, VANILLA_BLACK)
-        elif y == 1:
-            px[1][1] = VANILLA_BLACK
-            rect(2, 1, 172, 1, VANILLA_WHITE)
-            px[1][173] = VANILLA_BLACK
-        elif y == 2:
-            px[2][0] = VANILLA_BLACK
-            rect(1, 2, 172, 2, VANILLA_WHITE)
-            px[2][173] = VANILLA_FACE
-            px[2][174] = VANILLA_BLACK
-        else:
-            px[y][0] = VANILLA_BLACK
-            rect(1, y, 3 if y == 3 else 2, y, VANILLA_WHITE)
-            rect(4 if y == 3 else 3, y, 172, y, VANILLA_FACE)
-            rect(173, y, 174, y, VANILLA_SHADOW)
-            px[y][175] = VANILLA_BLACK
-
-    # the machine: a dark recessed panel over the three chest rows, lit from the top left like vanilla slots
-    top, bottom, left, right = 16, 70, 7, 168
-    dark_top, dark_bottom = rgba(0x1E252D), rgba(0x10141A)
-    for y in range(top, bottom + 1):
-        shade = mix(dark_top, dark_bottom, (y - top) / (bottom - top))
-        for x in range(left, right + 1):
-            # a faint diagonal brushed-metal grain
-            grain = 3 if (x * 7 + y * 3) % 11 == 0 else 0
-            px[y][x] = tuple(min(255, c + grain) for c in shade[:3]) + (255,)
-    rect(left, top, right, top, rgba(0x373737))
-    rect(left, top, left, bottom, rgba(0x373737))
-    rect(left, bottom, right, bottom, VANILLA_WHITE)
-    rect(right, top, right, bottom, VANILLA_WHITE)
-
-    def slot(col, row, rim=None):
-        """A recessed slot; a rim colours its own border (light top left, deeper bottom right) instead of a ring."""
-        x0, y0 = 7 + col * 18, 17 + row * 18
-        light, deep = (rgba(0x05070A), rgba(0x3B4550)) if rim is None else (rgba(rim), mix(rgba(rim), rgba(0x0E1216), 0.45))
-        yb = min(y0 + 17, TANK_GUI_HEIGHT - 3)  # the bottom row ends on the panel's own edge
-        rect(x0, y0, x0 + 17, yb, rgba(0x0E1216))
-        rect(x0, y0, x0 + 17, y0, light)
-        rect(x0, y0, x0, yb, light)
-        if yb == y0 + 17:
-            rect(x0, yb, x0 + 17, yb, deep)
-        rect(x0 + 17, y0, x0 + 17, yb, deep)
-        if rim is not None:
-            # a soft inner glow along the border
-            glow = mix(rgba(rim), rgba(0x0E1216), 0.8)
-            rect(x0 + 1, y0 + 1, x0 + 16, y0 + 1, glow)
-            rect(x0 + 1, y0 + 1, x0 + 1, y0 + 16, glow)
-        return x0, y0
-
-    def ghost(x0, y0, art, colour):
-        for dy, line in enumerate(art):
-            for dx, ch in enumerate(line):
-                if ch == "#":
-                    px[y0 + dy][x0 + dx] = colour
-
     green = RIFT_GREEN
-    # input: a glowing slot with faint outlines of what goes in (a bottle and a compass)
-    ix, iy = slot(1, 1, rim=green)
-    faint = mix(rgba(0x0E1216), rgba(green), 0.22)
-    ghost(ix + 2, iy + 2, [
+    # input: a slot with a green rim and faint outlines of what goes in (a bottle and a compass)
+    ix, iy = 7 + 1 * 18, 17 + 1 * 18
+    vanilla_slot(px, ix, iy, rim=0x2BBF4A)
+    faint = rgba(0x7A7A7A)
+    draw_art(px, ix + 2, iy + 2, [
         "...##....",
         "...##....",
         "..####...",
@@ -1083,20 +1060,14 @@ def tank_gui_background():
         "#......#.",
         ".######..",
     ], faint)
-    ghost(ix + 9, iy + 9, [
-        ".###.",
-        "#...#",
-        "#.#.#",
-        "#...#",
-        ".###.",
-    ], faint)
+    draw_art(px, ix + 9, iy + 9, [".###.", "#...#", "#.#.#", "#...#", ".###."], faint)
 
     # glass pipes carrying the fluid from the input to the button and on to the gun
     def pipe(x0, x1, y):
-        rect(x0, y - 3, x1, y - 3, rgba(0x5E6A76))
-        rect(x0, y + 3, x1, y + 3, rgba(0x2A3138))
-        rect(x0, y - 2, x1, y + 2, rgba(0x15281E))
-        rect(x0, y - 1, x1, y - 1, mix(rgba(green), rgba(0x15281E), 0.55))
+        rect(x0, y - 3, x1, y - 3, VANILLA_DARK)
+        rect(x0, y + 3, x1, y + 3, VANILLA_WHITE)
+        rect(x0, y - 2, x1, y + 2, rgba(0x1F5A2E))
+        rect(x0, y - 1, x1, y - 1, mix(rgba(green), rgba(0x1F5A2E), 0.5))
         rect(x0, y, x1, y, rgba(green))
         for x in range(x0 + 2, x1, 5):
             px[y - 2][x] = rgba(0xBFFFD0)
@@ -1104,19 +1075,18 @@ def tank_gui_background():
     pipe(43, 60, 43)
     pipe(97, 114, 43)
 
-    # the load button over two slots: raised, green, with an arrow pointing to the gun
+    # the load button over two slots: raised and green, with an arrow pointing to the gun
     bx0, by0, bx1, by1 = 61, 35, 96, 52
     for y in range(by0, by1 + 1):
-        shade = mix(rgba(0x3FD86A), rgba(0x168A3C), (y - by0) / (by1 - by0))
-        rect(bx0, y, bx1, y, shade)
+        rect(bx0, y, bx1, y, mix(rgba(0x3FD86A), rgba(0x168A3C), (y - by0) / (by1 - by0)))
     rect(bx0, by0, bx1, by0, rgba(0xB6FFC9))
     rect(bx0, by0, bx0, by1, rgba(0xB6FFC9))
     rect(bx0, by1, bx1, by1, rgba(0x0B4A20))
     rect(bx1, by0, bx1, by1, rgba(0x0B4A20))
-    rect(bx0 - 1, by0 - 1, bx1 + 1, by0 - 1, rgba(0x05070A))
-    rect(bx0 - 1, by1 + 1, bx1 + 1, by1 + 1, rgba(0x05070A))
-    rect(bx0 - 1, by0, bx0 - 1, by1, rgba(0x05070A))
-    rect(bx1 + 1, by0, bx1 + 1, by1, rgba(0x05070A))
+    rect(bx0 - 1, by0 - 1, bx1 + 1, by0 - 1, VANILLA_BLACK)
+    rect(bx0 - 1, by1 + 1, bx1 + 1, by1 + 1, VANILLA_BLACK)
+    rect(bx0 - 1, by0, bx0 - 1, by1, VANILLA_BLACK)
+    rect(bx1 + 1, by0, bx1 + 1, by1, VANILLA_BLACK)
     arrow = [
         "..........##......",
         "..........###.....",
@@ -1129,64 +1099,39 @@ def tank_gui_background():
         "..........##......",
     ]
     ax, ay = bx0 + (bx1 - bx0 + 1 - len(arrow[0])) // 2, by0 + (by1 - by0 + 1 - len(arrow)) // 2
-    for dy, line in enumerate(arrow):
-        for dx, ch in enumerate(line):
-            if ch == "#":
-                px[ay + dy + 1][ax + dx + 1] = rgba(0x0B4A20)  # shadow
-    for dy, line in enumerate(arrow):
-        for dx, ch in enumerate(line):
-            if ch == "#":
-                px[ay + dy][ax + dx] = rgba(0xFFFFFF)
+    draw_art(px, ax + 1, ay + 1, arrow, rgba(0x0B4A20))
+    draw_art(px, ax, ay, arrow, rgba(0xFFFFFF))
 
-    # the gun on a lit pedestal, its compass status below
-    slot(6, 1, rim=0x36C2FF)
-    slot(6, 2)
-    # back: a small raised grey button in the top left corner, inset so it never touches the panel's edge
+    # the gun in a slot with a portal blue rim, its compass status below (the bottom row ends on the rim's face)
+    vanilla_slot(px, 7 + 6 * 18, 17 + 1 * 18, rim=0x2E9BD6)
+    vanilla_slot(px, 7 + 6 * 18, 17 + 2 * 18)
+
+    # back: a small raised button in the top left corner, like a vanilla button
     kx0, ky0, kx1, ky1 = 9, 19, 22, 32
-    rect(kx0 - 1, ky0 - 1, kx1 + 1, ky1 + 1, rgba(0x05070A))
-    rect(kx0, ky0, kx1, ky1, rgba(0x39424C))
-    rect(kx0, ky0, kx1, ky0, rgba(0x6B7782))
-    rect(kx0, ky0, kx0, ky1, rgba(0x6B7782))
-    rect(kx0, ky1, kx1, ky1, rgba(0x1E242B))
-    rect(kx1, ky0, kx1, ky1, rgba(0x1E242B))
-    back_arrow = [
-        "...#....",
-        "..##....",
-        ".#######",
-        "########",
-        ".#######",
-        "..##....",
-        "...#....",
-    ]
-    ghost(kx0 + (kx1 - kx0 + 1 - 8) // 2, ky0 + (ky1 - ky0 + 1 - 7) // 2, back_arrow, rgba(0xE8ECEF))
+    rect(kx0 - 1, ky0 - 1, kx1 + 1, ky1 + 1, VANILLA_BLACK)
+    rect(kx0, ky0, kx1, ky1, rgba(0x8B8B8B))
+    rect(kx0, ky0, kx1, ky0, rgba(0xDADADA))
+    rect(kx0, ky0, kx0, ky1, rgba(0xDADADA))
+    rect(kx0, ky1, kx1, ky1, VANILLA_SHADOW)
+    rect(kx1, ky0, kx1, ky1, VANILLA_SHADOW)
+    back_arrow = ["...#....", "..##....", ".#######", "########", ".#######", "..##....", "...#...."]
+    bxa, bya = kx0 + (kx1 - kx0 + 1 - 8) // 2, ky0 + (ky1 - ky0 + 1 - 7) // 2
+    draw_art(px, bxa + 1, bya + 1, back_arrow, VANILLA_SHADOW)
+    draw_art(px, bxa, bya, back_arrow, rgba(0xFFFFFF))
 
-    # the tank gauge: a tall glass tube with ticks, the fill is a separate glyph. It sits in the panel like a slot
-    # column: dark edge, metal frame, inner border, glass; the same margin above and below the glass
-    gx0, gy0, gx1, gy1 = TANK_GAUGE_X - 3, TANK_GAUGE_Y - 2, TANK_GAUGE_X + TANK_GAUGE_W + 1, TANK_GAUGE_Y + TANK_GAUGE_H + 1
-    rect(gx0, gy0, gx1, gy1, rgba(0x05070A))
-    rect(gx0 + 1, gy0, gx1, gy1, rgba(0x5E6A76))
-    rect(gx1, gy0, gx1, gy1, rgba(0x3B4550))
-    rect(gx0 + 1, gy1, gx1, gy1, rgba(0x3B4550))
-    rect(TANK_GAUGE_X - 1, TANK_GAUGE_Y - 1, TANK_GAUGE_X + TANK_GAUGE_W, TANK_GAUGE_Y + TANK_GAUGE_H, rgba(0x2A3138))
-    rect(TANK_GAUGE_X, TANK_GAUGE_Y, TANK_GAUGE_X + TANK_GAUGE_W - 1, TANK_GAUGE_Y + TANK_GAUGE_H - 1, rgba(0x0A120E))
+    # the tank gauge: a recessed glass tube with ticks, like a tall slot; the fill is a separate glyph
+    gx0, gy0 = TANK_GAUGE_X - 2, TANK_GAUGE_Y - 2
+    gx1, gy1 = TANK_GAUGE_X + TANK_GAUGE_W + 1, TANK_GAUGE_Y + TANK_GAUGE_H + 1
+    rect(gx0, gy0, gx1, gy1, VANILLA_SLOT)
+    rect(gx0, gy0, gx1 - 1, gy0, VANILLA_DARK)
+    rect(gx0, gy0, gx0, gy1 - 1, VANILLA_DARK)
+    rect(gx0 + 1, gy1, gx1, gy1, VANILLA_WHITE)
+    rect(gx1, gy0 + 1, gx1, gy1, VANILLA_WHITE)
+    rect(TANK_GAUGE_X, TANK_GAUGE_Y, TANK_GAUGE_X + TANK_GAUGE_W - 1, TANK_GAUGE_Y + TANK_GAUGE_H - 1, rgba(0x2B2F2C))
     for i in range(1, 4):
         y = TANK_GAUGE_Y + TANK_GAUGE_H * i // 4
-        rect(TANK_GAUGE_X, y, TANK_GAUGE_X + 2, y, rgba(0x3B4550))
-    # a glass glint down the left side
-    rect(TANK_GAUGE_X + 1, TANK_GAUGE_Y + 2, TANK_GAUGE_X + 1, TANK_GAUGE_Y + TANK_GAUGE_H - 3, rgba(0x2C3A33))
-
-    # a rift tearing through the empty top row, the gun's signature
-    crack = [(38, 26), (44, 23), (52, 27), (60, 22), (69, 26), (77, 21), (86, 27), (94, 23), (103, 26), (111, 22),
-             (120, 25), (128, 22), (136, 26), (143, 24)]
-    for (xa, ya), (xb, yb) in zip(crack, crack[1:]):
-        steps = max(abs(xb - xa), abs(yb - ya))
-        for i in range(steps + 1):
-            x = round(xa + (xb - xa) * i / steps)
-            y = round(ya + (yb - ya) * i / steps)
-            for dy, colour in ((-1, mix(rgba(green), rgba(0x10141A), 0.7)), (1, mix(rgba(green), rgba(0x10141A), 0.7)),
-                               (0, rgba(0xC8FFD6))):
-                if px[y + dy][x][:3] != (200, 255, 214):
-                    px[y + dy][x] = colour
+        rect(TANK_GAUGE_X, y, TANK_GAUGE_X + 2, y, rgba(0x6B6B6B))
+    rect(TANK_GAUGE_X + 1, TANK_GAUGE_Y + 2, TANK_GAUGE_X + 1, TANK_GAUGE_Y + TANK_GAUGE_H - 3, rgba(0x3A403C))
     return px
 
 
@@ -1239,16 +1184,6 @@ def tank_font_providers():
     ]
 
 
-# --- settings menu (custom dropper background) ----------------------------------------------------------------------
-# The PorticleGun's settings menu is a dropper; with the pack its title draws this background behind the unchanged
-# 3x3 grid: the primary portal and the left mouse button on the left, the secondary ones on the right, coloured
-# frames for the two colour columns and the gun's emblem in the top middle slot. Keep in sync with SettingsHandler.
-SETTINGS_GUI_HEIGHT = 71
-SETTINGS_GUI = ""
-SETTINGS_SHIFT_TEXT = ""  # from behind the background back to where the title text starts
-PRIMARY_ORANGE, SECONDARY_BLUE = 0xFF9A1F, 0x36C2FF
-
-
 def vanilla_rim(px):
     """The vanilla window rim with rounded top corners, as in the chest and dispenser textures."""
     w = len(px[0])
@@ -1277,118 +1212,53 @@ def vanilla_rim(px):
             px[y][175] = VANILLA_BLACK
 
 
-def settings_gui_background():
-    w, h = TANK_GUI_WIDTH, SETTINGS_GUI_HEIGHT
-    px = [[(0, 0, 0, 0)] * w for _ in range(h)]
-    vanilla_rim(px)
 
-    def rect(x0, y0, x1, y1, colour):
-        for y in range(max(0, y0), min(h, y1 + 1)):
-            for x in range(max(0, x0), min(w, x1 + 1)):
-                px[y][x] = colour
-
-    top, bottom, left, right = 15, 70, 7, 168
-    for y in range(top, bottom + 1):
-        shade = mix(rgba(0x1E252D), rgba(0x10141A), (y - top) / (bottom - top))
-        for x in range(left, right + 1):
-            grain = 3 if (x * 7 + y * 3) % 11 == 0 else 0
-            px[y][x] = tuple(min(255, c + grain) for c in shade[:3]) + (255,)
-    rect(left, top, right, top, rgba(0x373737))
-    rect(left, top, left, bottom, rgba(0x373737))
-    rect(left, bottom, right, bottom, VANILLA_WHITE)
-    rect(right, top, right, bottom, VANILLA_WHITE)
-
-    def slot(col, row, rim=None):
-        x0, y0 = 61 + col * 18, 16 + row * 18
-        light, deep = (rgba(0x05070A), rgba(0x3B4550)) if rim is None else (rgba(rim), mix(rgba(rim), rgba(0x0E1216), 0.45))
-        rect(x0, y0, x0 + 17, y0 + 17, rgba(0x0E1216))
-        rect(x0, y0, x0 + 17, y0, light)
-        rect(x0, y0, x0, y0 + 17, light)
-        rect(x0, y0 + 17, x0 + 17, y0 + 17, deep)
-        rect(x0 + 17, y0, x0 + 17, y0 + 17, deep)
-        if rim is not None:
-            glow = mix(rgba(rim), rgba(0x0E1216), 0.8)
-            rect(x0 + 1, y0 + 1, x0 + 16, y0 + 1, glow)
-            rect(x0 + 1, y0 + 1, x0 + 1, y0 + 16, glow)
-        return x0, y0
-
-    for row in range(3):
-        slot(0, row, rim=PRIMARY_ORANGE)
-        slot(2, row, rim=SECONDARY_BLUE)
-    slot(1, 1, rim=0xE0484B)  # close portals
-    slot(1, 2)  # portal shape
-
-    # the emblem in the top middle slot (an invisible item lies there): a portal pair, orange left, blue right
-    ex, ey = 79 + 1, 16 + 1
-    for y in range(16):
-        for x in range(16):
-            for cx, colour in ((5.0, PRIMARY_ORANGE), (10.0, SECONDARY_BLUE)):
-                d = ((x + 0.5 - cx) / 2.6) ** 2 + ((y + 0.5 - 8.0) / 6.2) ** 2
-                if 0.55 <= d <= 1.0:
-                    px[ey + y][ex + x] = rgba(colour)
-                elif d < 0.55:
-                    px[ey + y][ex + x] = mix(rgba(colour), rgba(0x10141A), 0.75)
-
-    def portal(cx, cy, colour):
-        """A big oval portal: a glowing ring in the portal colour around a dark, swirling inside."""
-        rx, ry = 14.0, 20.0
-        for y in range(top + 1, bottom):
-            for x in range(left + 1, right):
-                d = ((x + 0.5 - cx) / rx) ** 2 + ((y + 0.5 - cy) / ry) ** 2
-                if d < 0.62:
-                    swirl = (math.atan2(y + 0.5 - cy, (x + 0.5 - cx) * ry / rx) * 3 + d * 9) % (2 * math.pi)
-                    t = 0.82 if swirl < 1.0 else 0.9
-                    px[y][x] = mix(rgba(colour), rgba(0x0A0D11), t + 0.08 * d)
-                elif d <= 0.8:
-                    inner = (d - 0.62) / 0.18
-                    px[y][x] = mix(rgba(0xFFFFFF), rgba(colour), min(1.0, 0.35 + inner))
-                elif d <= 1.0:
-                    px[y][x] = mix(rgba(colour), mix(rgba(colour), rgba(0x10141A), 0.5), (d - 0.8) / 0.2)
-                elif d <= 1.35:
-                    base = px[y][x]
-                    px[y][x] = mix(base, rgba(colour), 0.28 * (1.35 - d) / 0.35)
-
-    portal(33.0, 37.0, PRIMARY_ORANGE)
-    portal(143.0, 37.0, SECONDARY_BLUE)
-
-    def mouse(x0, y0, button, colour):
-        art = [
-            ".#####.",
-            "#LL#RR#",
-            "#LL#RR#",
-            "#######",
-            "#.....#",
-            "#.....#",
-            "#.....#",
-            ".#####.",
-        ]
-        for dy, line in enumerate(art):
-            for dx, ch in enumerate(line):
-                if ch == "#":
-                    px[y0 + dy][x0 + dx] = rgba(0xC9D1D9)
-                elif ch in "LR":
-                    lit = (ch == "L") == (button == "left")
-                    px[y0 + dy][x0 + dx] = rgba(colour) if lit else rgba(0x2A3138)
-                elif ch == ".":
-                    if 0 < dx < 6 and 0 < dy < 7:
-                        px[y0 + dy][x0 + dx] = rgba(0x39424C)
-
-    mouse(30, 60, "left", PRIMARY_ORANGE)
-    mouse(140, 60, "right", SECONDARY_BLUE)
-    return px
+# --- flat banners in the settings menu --------------------------------------------------------------------------------
+# The settings menu shows its banners (colours, arrows, close, shape) flat and from the front, without pole: like a
+# wall banner, filling the slot. The plugin points those banners (only there, only for players with the pack) at
+# porticlegun:gui_banner_<colour>. "attachment": "wall" is read by 26.3+ clients (pack format 97), so the flat look
+# comes from an overlay; older clients get the vanilla banner from the same item definitions in the base pack.
+# The wall banner spans y -20.5..19.5 model pixels around x 0 (BannerModel/BannerFlagModel), scaled by 2/3 and moved
+# like vanilla's banner items; the display centres it in the slot.
+FLAT_BANNERS_OVERLAY = "flat_banners"
+FLAT_BANNERS_FORMAT = 97
+DYE_COLOURS = ["white", "orange", "magenta", "light_blue", "yellow", "lime", "pink", "gray", "light_gray", "cyan",
+               "purple", "blue", "brown", "green", "red", "black"]
+BANNER_ITEM_TRANSFORMATION = {
+    "left_rotation": [0.0, 0.0, 0.0, 1.0],
+    "right_rotation": [0.0, 0.0, 0.0, 1.0],
+    "scale": [2 / 3, -2 / 3, -2 / 3],
+    "translation": [0.5, 0.0, 0.5],
+}
+FLAT_BANNER_SCALE = 0.58
 
 
-def settings_font_providers():
-    return [
-        {
-            "type": "bitmap",
-            "file": f"{NAMESPACE}:font/settings_gui.png",
-            "ascent": TANK_TITLE_BASELINE,
-            "height": SETTINGS_GUI_HEIGHT,
-            "chars": [SETTINGS_GUI],
+def gui_banner_definition(colour, flat):
+    banner = {"type": "minecraft:banner", "color": colour}
+    if flat:
+        banner["attachment"] = "wall"
+    return {
+        "model": {
+            "type": "minecraft:special",
+            "base": f"{NAMESPACE}:item/gui_banner" if flat else "minecraft:item/template_banner",
+            "model": banner,
+            "transformation": BANNER_ITEM_TRANSFORMATION,
+        }
+    }
+
+
+def flat_banner_model():
+    # the wall banner's middle, in the item's space (the transformation flips the model vertically); the display
+    # lifts it from there to the slot's centre
+    centre = ((-20.5 / 16) + (19.5 / 16)) / 2 * -(2 / 3)
+    lift = round((0.5 - centre) * 16 * FLAT_BANNER_SCALE, 3)
+    return {
+        "gui_light": "front",
+        "textures": {"particle": "minecraft:block/oak_planks"},
+        "display": {
+            "gui": {"rotation": [0, 0, 0], "translation": [0, lift, 0], "scale": [FLAT_BANNER_SCALE] * 3},
         },
-        {"type": "space", "advances": {SETTINGS_SHIFT_TEXT: 8 - (TANK_GUI_WIDTH + 1)}},
-    ]
+    }
 
 
 # --- flat items and the rift portal ---------------------------------------------------------------------------------
@@ -1903,7 +1773,12 @@ def main():
     write_png(os.path.join(java_assets, "textures", "font", "portal_hud.png"), hud_glyph_strip())
     write_png(os.path.join(java_assets, "textures", "font", "tank_gui.png"), tank_gui_background())
     write_png(os.path.join(java_assets, "textures", "font", "tank_gauge.png"), tank_gauge_strip())
-    write_png(os.path.join(java_assets, "textures", "font", "settings_gui.png"), settings_gui_background())
+    for colour in DYE_COLOURS:
+        write_json(os.path.join(java_assets, "items", f"gui_banner_{colour}.json"), gui_banner_definition(colour, False))
+        write_json(os.path.join(java, FLAT_BANNERS_OVERLAY, "assets", NAMESPACE, "items", f"gui_banner_{colour}.json"),
+                   gui_banner_definition(colour, True))
+    write_json(os.path.join(java, FLAT_BANNERS_OVERLAY, "assets", NAMESPACE, "models", "item", "gui_banner.json"),
+               flat_banner_model())
     # buttons and frame slots of the tank menu: items that draw nothing, so only the background shows
     write_json(os.path.join(java_assets, "items", "gui_blank.json"), {"model": {"type": "minecraft:empty"}})
 

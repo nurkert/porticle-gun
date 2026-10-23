@@ -14,6 +14,7 @@ import eu.nurkert.porticlegun.visualization.PortalColor;
 import eu.nurkert.porticlegun.visualization.concrete.PortalVisualizationType;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.Locale;
 import java.util.Map;
 import java.util.function.Predicate;
 import org.bukkit.Bukkit;
@@ -43,11 +44,6 @@ public class SettingsHandler implements Listener {
     private final GunColorHandler gunColors;
     private final PersistentHandler persistence;
     private final Predicate<Player> resourcePack;
-
-    // the drawn menu for Java players with the resource pack: glyphs in the title paint the background behind the
-    // unchanged grid (see the "settings menu" section of scripts/generate_resourcepack.py)
-    private static final String DRAWN_PREFIX = "§f\ue9c0\ue9d0";
-    private static final char DRAWN_END = '\ue9d1';
 
     public SettingsHandler(
             ActivePortalsHandler activePortals,
@@ -204,15 +200,20 @@ public class SettingsHandler implements Listener {
         PatternType half = fromBelow ? PatternType.HALF_HORIZONTAL_BOTTOM : PatternType.HALF_HORIZONTAL;
         PatternType rest = fromBelow ? PatternType.STRIPE_TOP : PatternType.STRIPE_BOTTOM;
         ItemStack[] banners = {
-            fill(oldDye, new Pattern(newDye, edge), name),
-            fill(oldDye, new Pattern(newDye, half), name),
-            fill(newDye, new Pattern(oldDye, rest), name),
-            getColorPreview(after, player)
+            flat(fill(oldDye, new Pattern(newDye, edge), name), player),
+            flat(fill(oldDye, new Pattern(newDye, half), name), player),
+            flat(fill(newDye, new Pattern(oldDye, rest), name), player),
+            flat(getColorPreview(after, player), player)
         };
         PortalColor next = after.next();
         PortalColor previousColour = after.previous();
-        ItemStack[] upArrows = {arrowSlidingIn(next, true, player), arrow(next, true, player)};
-        ItemStack[] downArrows = {arrowSlidingIn(previousColour, false, player), arrow(previousColour, false, player)};
+        ItemStack[] upArrows = {
+            flat(arrowSlidingIn(next, true, player), player), flat(arrow(next, true, player), player)
+        };
+        ItemStack[] downArrows = {
+            flat(arrowSlidingIn(previousColour, false, player), player),
+            flat(arrow(previousColour, false, player), player)
+        };
         running.put(
                 slot,
                 new BukkitRunnable() {
@@ -239,6 +240,23 @@ public class SettingsHandler implements Listener {
                         frame++;
                     }
                 }.runTaskTimer(PorticleGun.getInstance(), 0L, 2L));
+    }
+
+    /**
+     * For Java players with the resource pack the menu's banners show flat and from the front, without pole
+     * ({@code porticlegun:gui_banner_<colour>}, a wall banner filling the slot); everyone else sees vanilla banners.
+     */
+    private ItemStack flat(ItemStack banner, Player player) {
+        String material = banner.getType().name();
+        if (!material.endsWith("_BANNER") || BedrockSupport.isBedrock(player) || !resourcePack.test(player)) {
+            return banner;
+        }
+        String colour =
+                material.substring(0, material.length() - "_BANNER".length()).toLowerCase(Locale.ROOT);
+        ItemMeta meta = banner.getItemMeta();
+        meta.setItemModel(new NamespacedKey(PorticleGun.getInstance(), "gui_banner_" + colour));
+        banner.setItemMeta(meta);
+        return banner;
     }
 
     private static ItemStack fill(DyeColor base, Pattern pattern, String name) {
@@ -272,32 +290,23 @@ public class SettingsHandler implements Listener {
      * @return
      */
     public Inventory getCurrentSettings(String gunID, Player player) {
-        boolean drawn = !BedrockSupport.isBedrock(player) && resourcePack.test(player);
-        String title = MessageManager.getMessage(player, "menus.settings.title");
         Inventory inv = Bukkit.createInventory(
-                null, InventoryType.DROPPER, drawn ? DRAWN_PREFIX + DRAWN_END + "§r" + title : title);
+                null, InventoryType.DROPPER, MessageManager.getMessage(player, "menus.settings.title"));
         GunColors colors = gunColors.getColors(gunID);
-        inv.setItem(0, arrow(colors.getPrimary().next(), true, player));
-        inv.setItem(2, arrow(colors.getSecondary().next(), true, player));
-        inv.setItem(6, arrow(colors.getPrimary().previous(), false, player));
-        inv.setItem(8, arrow(colors.getSecondary().previous(), false, player));
+        inv.setItem(0, flat(arrow(colors.getPrimary().next(), true, player), player));
+        inv.setItem(2, flat(arrow(colors.getSecondary().next(), true, player), player));
+        inv.setItem(6, flat(arrow(colors.getPrimary().previous(), false, player), player));
+        inv.setItem(8, flat(arrow(colors.getSecondary().previous(), false, player), player));
 
-        inv.setItem(3, getColorPreview(colors.getPrimary(), player));
-        inv.setItem(5, getColorPreview(colors.getSecondary(), player));
+        inv.setItem(3, flat(getColorPreview(colors.getPrimary(), player), player));
+        inv.setItem(5, flat(getColorPreview(colors.getSecondary(), player), player));
 
         ItemStack background = new ItemBuilder(Material.GRAY_STAINED_GLASS_PANE)
                 .setName(ItemHandler.vanishID(gunID))
                 .build();
-        if (drawn) {
-            // the background draws the gun's emblem there; the pane only carries the gun id
-            ItemMeta backgroundMeta = background.getItemMeta();
-            backgroundMeta.setItemModel(new NamespacedKey(PorticleGun.getInstance(), "gui_blank"));
-            backgroundMeta.setHideTooltip(true);
-            background.setItemMeta(backgroundMeta);
-        }
         for (int i = 1; i <= 3; i++) inv.setItem((i * 3) - 2, background);
 
-        inv.setItem(4, createResetItem(player));
+        inv.setItem(4, flat(createResetItem(player), player));
 
         PortalVisualizationType visualizationType = PortalVisualizationType.fromString(
                 persistence.get("porticleguns." + ItemHandler.saveable(gunID) + ".shape"));
@@ -311,17 +320,22 @@ public class SettingsHandler implements Listener {
 
         inv.setItem(
                 7,
-                new BannerBuilder()
-                        .setBaseColor(DyeColor.WHITE)
-                        .setPatterns(
-                                new Pattern(ellpitic ? DyeColor.GRAY : DyeColor.RED, PatternType.HALF_HORIZONTAL),
-                                new Pattern(
-                                        ellpitic ? DyeColor.GREEN : DyeColor.GRAY, PatternType.HALF_HORIZONTAL_BOTTOM),
-                                new Pattern(ellpitic ? DyeColor.GREEN : DyeColor.RED, PatternType.STRIPE_MIDDLE),
-                                new Pattern(DyeColor.LIGHT_GRAY, PatternType.BORDER))
-                        .hideItemFlags()
-                        .setName(roundLabel)
-                        .build());
+                flat(
+                        new BannerBuilder()
+                                .setBaseColor(DyeColor.WHITE)
+                                .setPatterns(
+                                        new Pattern(
+                                                ellpitic ? DyeColor.GRAY : DyeColor.RED, PatternType.HALF_HORIZONTAL),
+                                        new Pattern(
+                                                ellpitic ? DyeColor.GREEN : DyeColor.GRAY,
+                                                PatternType.HALF_HORIZONTAL_BOTTOM),
+                                        new Pattern(
+                                                ellpitic ? DyeColor.GREEN : DyeColor.RED, PatternType.STRIPE_MIDDLE),
+                                        new Pattern(DyeColor.LIGHT_GRAY, PatternType.BORDER))
+                                .hideItemFlags()
+                                .setName(roundLabel)
+                                .build(),
+                        player));
 
         return inv;
     }
@@ -360,13 +374,6 @@ public class SettingsHandler implements Listener {
      */
     private String isPorticleSettingsInv(InventoryView view) {
         String title = view.getTitle();
-        int drawnEnd = title.startsWith(DRAWN_PREFIX) ? title.indexOf(DRAWN_END) : -1;
-        if (drawnEnd >= 0) {
-            title = title.substring(drawnEnd + 1);
-            if (title.startsWith("§r")) {
-                title = title.substring(2);
-            }
-        }
         if (MessageManager.matchesConfiguredValue("menus.settings.title", title)) {
             Inventory inv = view.getTopInventory();
             ItemStack slot = inv.getItem(1);

@@ -22,3 +22,6 @@ run/
 # Python
 __pycache__/
 .impeccable/review/
+
+# Logs of local tools
+logs/

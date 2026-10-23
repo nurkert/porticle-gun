@@ -68,5 +68,6 @@ These need testing with a real Bedrock client (`scripts/dev-server.sh` starts a 
   `scripts/generate_resourcepack.py`)
 - particle colours, block displays of carried chests and teleport smoothness
 
-The settings menu is an inventory menu for everyone. Java players with the resource pack see it with a drawn
-background; Bedrock players get the version with glass panes and banners, as for the rift gun's tank chest.
+The settings menu is the same inventory menu for everyone; Java players with the resource pack see its banners flat,
+Bedrock players as vanilla banners. The rift gun's tank chest is drawn for Java players with the pack only; Bedrock
+gets it with glass panes.
