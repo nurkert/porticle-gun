@@ -27,10 +27,10 @@ import org.bukkit.plugin.java.JavaPlugin;
 final class PaperDialogs implements ScreenRenderer {
 
     private static final LegacyComponentSerializer LEGACY = LegacyComponentSerializer.legacySection();
-    // a dialog button works once; the dialog is replaced right after a click anyway
-    private static final ClickCallback.Options ONCE = ClickCallback.Options.builder()
-            .uses(1)
-            .lifetime(Duration.ofMinutes(30))
+    // a click may come twice before the next window arrives; the action checks the gun again anyway
+    private static final ClickCallback.Options CLICKS = ClickCallback.Options.builder()
+            .uses(ClickCallback.UNLIMITED_USES)
+            .lifetime(Duration.ofMinutes(10))
             .build();
     private static final int WIDE = 310;
     private static final int NARROW = 150;
@@ -64,8 +64,9 @@ final class PaperDialogs implements ScreenRenderer {
         DialogBase base = DialogBase.builder(LEGACY.deserialize(screen.title()))
                 .canCloseWithEscape(true)
                 .pause(false)
-                // the next screen (or closing) is always sent by the server, so nothing flickers in between
-                .afterAction(DialogBase.DialogAfterAction.WAIT_FOR_RESPONSE)
+                // the window stays until the server replaces or closes it right away: no flicker, and no "waiting for
+                // response" screen, which closing a dialog does not end
+                .afterAction(DialogBase.DialogAfterAction.NONE)
                 .body(body)
                 .build();
         var type = DialogType.multiAction(buttons).columns(Math.max(1, screen.columns()));
@@ -93,7 +94,7 @@ final class PaperDialogs implements ScreenRenderer {
         }
         ActionButton.Builder builder = ActionButton.builder(label)
                 .width(width)
-                .action(DialogAction.customClick((response, audience) -> run(player, button.action()), ONCE));
+                .action(DialogAction.customClick((response, audience) -> run(player, button.action()), CLICKS));
         if (!tooltip.isEmpty()) {
             builder.tooltip(lines(tooltip));
         }

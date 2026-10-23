@@ -637,9 +637,17 @@ def java_pack_mcmeta():
             "min_format": 46,
             "max_format": 99,
         },
-        # 1.21.11+ (pack format 75) allows any rotation angle; it gets the models with exact angles from here
+        # 1.21.11+ (pack format 75) allows any rotation angle; it gets the models with exact angles from here.
+        # Clients from 1.21.9 (65) on reject "formats" in overlays unless some overlay also covers formats below 65,
+        # while older clients need it: the empty "legacy" overlay for 46-64 keeps "formats" valid for both.
         "overlays": {
             "entries": [
+                {
+                    "directory": "legacy",
+                    "formats": {"min_inclusive": 46, "max_inclusive": 64},
+                    "min_format": 46,
+                    "max_format": 64,
+                },
                 {
                     "directory": FREE_ROTATION_OVERLAY,
                     "formats": {"min_inclusive": 75, "max_inclusive": 99},
