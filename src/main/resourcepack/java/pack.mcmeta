@@ -21,6 +21,15 @@
         "max_format": 64
       },
       {
+        "directory": "flat_banners",
+        "formats": {
+          "min_inclusive": 97,
+          "max_inclusive": 99
+        },
+        "min_format": 97,
+        "max_format": 99
+      },
+      {
         "directory": "free_rotation",
         "formats": {
           "min_inclusive": 75,

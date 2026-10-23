@@ -5,6 +5,17 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+## [1.6.12] - 2026-10-23
+
+### Changed
+- **Settings menu back to vanilla**: the drawn background of 1.6.11 is gone (the dropper centres its title, which
+  pushed the drawing to the right). With the resource pack on 26.3+ its banners now show flat and from the front,
+  without pole, like a wall banner filling the slot; nothing hints at portal colours.
+- **Tank menu in the vanilla style**: light grey with vanilla slots and rim instead of a dark panel, green accents.
+
+### Fixed
+- Log files of a local check had slipped into the repository with 1.6.9 to 1.6.11; they are removed and ignored.
+
 ## [1.6.11] - 2026-10-23
 
 ### Added

@@ -228,7 +228,6 @@ def check_hud():
 
     sources = {
         "TankGui.java": ("rift", "TankGui.java"),
-        "SettingsHandler.java": ("portals", "SettingsHandler.java"),
     }
     for name, parts in sources.items():
         with open(os.path.join(ROOT, "src", "main", "java", "eu", "nurkert", "porticlegun", *parts),
