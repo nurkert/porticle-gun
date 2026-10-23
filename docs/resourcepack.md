@@ -50,6 +50,22 @@ text. The overlay is only sent to players whose client reported the pack as load
 title. The glyphs are defined in `HUD_GLYPHS` in `scripts/generate_resourcepack.py`; the validator checks that they
 match `PortalHud.java`.
 
+## Drawn menus
+
+Two chest menus get their own look for Java players with the pack: the PorticleGun's settings menu and the rift
+gun's "Fill tank" chest. Their title starts with glyphs that draw a background over the window's top half (the
+player inventory below stays vanilla) and repeat the vanilla rim, so the drawing joins the vanilla window seamlessly.
+Only these two titles contain the glyphs, so no other menu changes. Buttons and frame slots are items with the empty
+model `porticlegun:gui_blank`, the tank gauge is a second glyph picked by the fill level. Bedrock players and players
+without the pack get the same menus with glass panes and banners. The drawings are made in the "tank menu" and
+"settings menu" sections of `scripts/generate_resourcepack.py`; the validator checks that every glyph the plugin uses
+exists in the font.
+
+<p align="center">
+  <img src="../images/settings_menu.png" alt="The drawn settings menu" width="380">
+  <img src="../images/tank_menu.png" alt="The drawn tank menu" width="380">
+</p>
+
 ## Bedrock players
 
 See [bedrock.md](bedrock.md). The Bedrock pack contains the same model as an attachable and a 2D icon.

@@ -5,6 +5,20 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+## [1.6.11] - 2026-10-23
+
+### Added
+- **Drawn settings menu**: with the resource pack, the PorticleGun's settings menu gets its own background behind the
+  unchanged grid: the primary portal and the left mouse button on the left, the secondary ones on the right, coloured
+  frames for the colour columns and the gun's emblem in the top middle. Bedrock and players without the pack keep the
+  current look. Images of both drawn menus are in the README and docs/resourcepack.md.
+
+### Changed
+- Tank menu: the back button sits inset in the top left corner, slot frames no longer reach into their neighbours,
+  and the gauge has the same margin above and below.
+- Java dialogs show no pictographs (arrows, ticks, house and skull signs) and no grey text anymore, also not in the
+  rename window; the current destination is marked in bold green. Bedrock forms show no grey either.
+
 ## [1.6.10] - 2026-10-23
 
 ### Added

@@ -20,7 +20,7 @@ final class TankGui {
     static final int LOAD = 12;
     static final int LOAD_RIGHT = 13;
     static final int GUN = 15;
-    static final int BACK = 18;
+    static final int BACK = 0;
     static final int COMPASS = 24;
     static final int[] GAUGE = {8, 17, 26};
 

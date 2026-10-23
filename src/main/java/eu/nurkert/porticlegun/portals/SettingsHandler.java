@@ -7,6 +7,7 @@ import eu.nurkert.porticlegun.builders.ItemBuilder;
 import eu.nurkert.porticlegun.item.ItemHandler;
 import eu.nurkert.porticlegun.messages.MessageManager;
 import eu.nurkert.porticlegun.persistence.PersistentHandler;
+import eu.nurkert.porticlegun.util.BedrockSupport;
 import eu.nurkert.porticlegun.visualization.GunColorHandler;
 import eu.nurkert.porticlegun.visualization.GunColors;
 import eu.nurkert.porticlegun.visualization.PortalColor;
@@ -14,9 +15,11 @@ import eu.nurkert.porticlegun.visualization.concrete.PortalVisualizationType;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.function.Predicate;
 import org.bukkit.Bukkit;
 import org.bukkit.DyeColor;
 import org.bukkit.Material;
+import org.bukkit.NamespacedKey;
 import org.bukkit.block.banner.Pattern;
 import org.bukkit.block.banner.PatternType;
 import org.bukkit.entity.Player;
@@ -39,12 +42,22 @@ public class SettingsHandler implements Listener {
     private final ActivePortalsHandler activePortals;
     private final GunColorHandler gunColors;
     private final PersistentHandler persistence;
+    private final Predicate<Player> resourcePack;
+
+    // the drawn menu for Java players with the resource pack: glyphs in the title paint the background behind the
+    // unchanged grid (see the "settings menu" section of scripts/generate_resourcepack.py)
+    private static final String DRAWN_PREFIX = "§f\ue9c0\ue9d0";
+    private static final char DRAWN_END = '\ue9d1';
 
     public SettingsHandler(
-            ActivePortalsHandler activePortals, GunColorHandler gunColors, PersistentHandler persistence) {
+            ActivePortalsHandler activePortals,
+            GunColorHandler gunColors,
+            PersistentHandler persistence,
+            Predicate<Player> resourcePack) {
         this.activePortals = activePortals;
         this.gunColors = gunColors;
         this.persistence = persistence;
+        this.resourcePack = resourcePack;
     }
 
     final ItemStack resetTemplate = new BannerBuilder()
@@ -259,8 +272,10 @@ public class SettingsHandler implements Listener {
      * @return
      */
     public Inventory getCurrentSettings(String gunID, Player player) {
+        boolean drawn = !BedrockSupport.isBedrock(player) && resourcePack.test(player);
+        String title = MessageManager.getMessage(player, "menus.settings.title");
         Inventory inv = Bukkit.createInventory(
-                null, InventoryType.DROPPER, MessageManager.getMessage(player, "menus.settings.title"));
+                null, InventoryType.DROPPER, drawn ? DRAWN_PREFIX + DRAWN_END + "§r" + title : title);
         GunColors colors = gunColors.getColors(gunID);
         inv.setItem(0, arrow(colors.getPrimary().next(), true, player));
         inv.setItem(2, arrow(colors.getSecondary().next(), true, player));
@@ -273,6 +288,13 @@ public class SettingsHandler implements Listener {
         ItemStack background = new ItemBuilder(Material.GRAY_STAINED_GLASS_PANE)
                 .setName(ItemHandler.vanishID(gunID))
                 .build();
+        if (drawn) {
+            // the background draws the gun's emblem there; the pane only carries the gun id
+            ItemMeta backgroundMeta = background.getItemMeta();
+            backgroundMeta.setItemModel(new NamespacedKey(PorticleGun.getInstance(), "gui_blank"));
+            backgroundMeta.setHideTooltip(true);
+            background.setItemMeta(backgroundMeta);
+        }
         for (int i = 1; i <= 3; i++) inv.setItem((i * 3) - 2, background);
 
         inv.setItem(4, createResetItem(player));
@@ -338,6 +360,13 @@ public class SettingsHandler implements Listener {
      */
     private String isPorticleSettingsInv(InventoryView view) {
         String title = view.getTitle();
+        int drawnEnd = title.startsWith(DRAWN_PREFIX) ? title.indexOf(DRAWN_END) : -1;
+        if (drawnEnd >= 0) {
+            title = title.substring(drawnEnd + 1);
+            if (title.startsWith("§r")) {
+                title = title.substring(2);
+            }
+        }
         if (MessageManager.matchesConfiguredValue("menus.settings.title", title)) {
             Inventory inv = view.getTopInventory();
             ItemStack slot = inv.getItem(1);

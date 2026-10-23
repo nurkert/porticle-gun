@@ -226,15 +226,19 @@ def check_hud():
     if missing:
         error("PortalHud.java uses glyphs missing from the font: " + ", ".join(f"U+{ord(c):04X}" for c in missing))
 
-    tank_source = os.path.join(ROOT, "src", "main", "java", "eu", "nurkert", "porticlegun", "rift", "TankGui.java")
-    with open(tank_source, encoding="utf-8") as file:
-        tank = {chr(int(code, 16)) for code in re.findall(r"static final char \w+ = '\\u([0-9A-Fa-f]{4})';",
-                                                          file.read())}
-    if not tank:
-        error("found no glyph constants in TankGui.java")
-    missing = tank - set(glyphs) - space_glyphs
-    if missing:
-        error("TankGui.java uses glyphs missing from the font: " + ", ".join(f"U+{ord(c):04X}" for c in missing))
+    sources = {
+        "TankGui.java": ("rift", "TankGui.java"),
+        "SettingsHandler.java": ("portals", "SettingsHandler.java"),
+    }
+    for name, parts in sources.items():
+        with open(os.path.join(ROOT, "src", "main", "java", "eu", "nurkert", "porticlegun", *parts),
+                  encoding="utf-8") as file:
+            menu = {chr(int(code, 16)) for code in re.findall(r"\\u(e9[b-d][0-9a-f])", file.read(), re.IGNORECASE)}
+        if not menu:
+            error(f"found no glyphs in {name}")
+        missing = menu - set(glyphs) - space_glyphs
+        if missing:
+            error(f"{name} uses glyphs missing from the font: " + ", ".join(f"U+{ord(c):04X}" for c in missing))
 
 
 def check_schemas(schema_root):

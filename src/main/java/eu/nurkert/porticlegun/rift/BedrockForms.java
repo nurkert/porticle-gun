@@ -74,15 +74,16 @@ final class BedrockForms implements ScreenRenderer {
      * way to it, the colours that read on any background (the tank bar, green, aqua, yellow, red) stay.
      */
     private static String content(List<String> lines) {
-        return String.join("\n", lines).replace("§7", "§r").replace("§f", "§r");
+        return String.join("\n", lines).replace("§7", "§r").replace("§8", "§r").replace("§f", "§r");
     }
 
     private static void add(SimpleForm.Builder form, RiftScreen.Button button) {
         // the form's own text colour on the light buttons; only the current destination stands out in dark green
         String label = ChatColor.stripColor(button.label());
-        String text = button.selected() ? "§2§l✔ §r§2" + label : label;
+        // the label bold, the second line plain in the same colour: no grey
+        String text = button.selected() ? "§2§l✔ " + label : "§l" + label;
         if (button.detail() != null) {
-            text += "\n§8" + ChatColor.stripColor(button.detail());
+            text += "\n§r" + (button.selected() ? "§2" : "") + ChatColor.stripColor(button.detail());
         }
         if (button.icon() != null) {
             form.button(text, FormImage.Type.PATH, button.icon().bedrockPath());

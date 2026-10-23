@@ -14,6 +14,8 @@ import net.kyori.adventure.audience.Audience;
 import net.kyori.adventure.key.Key;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.event.ClickCallback;
+import net.kyori.adventure.text.format.NamedTextColor;
+import net.kyori.adventure.text.format.TextDecoration;
 import net.kyori.adventure.text.object.ObjectContents;
 import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 import org.bukkit.Bukkit;
@@ -89,13 +91,13 @@ final class PaperDialogs implements ScreenRenderer {
                 .pause(false)
                 .afterAction(DialogBase.DialogAfterAction.NONE)
                 .body(body)
-                .inputs(List.of(DialogInput.text("text", LEGACY.deserialize(prompt.label()))
+                .inputs(List.of(DialogInput.text("text", plain(prompt.label()))
                         .initial(prompt.initial())
                         .maxLength(prompt.maxLength())
                         .width(WIDE)
                         .build()))
                 .build();
-        ActionButton confirm = ActionButton.builder(LEGACY.deserialize(prompt.confirm()))
+        ActionButton confirm = ActionButton.builder(plain(prompt.confirm()))
                 .width(NARROW)
                 .action(DialogAction.customClick(
                         (response, audience) -> {
@@ -104,7 +106,7 @@ final class PaperDialogs implements ScreenRenderer {
                         },
                         CLICKS))
                 .build();
-        ActionButton cancel = ActionButton.builder(LEGACY.deserialize(prompt.cancel()))
+        ActionButton cancel = ActionButton.builder(plain(prompt.cancel()))
                 .width(NARROW)
                 .action(DialogAction.customClick((response, audience) -> run(player, prompt.cancelled()), CLICKS))
                 .build();
@@ -120,14 +122,15 @@ final class PaperDialogs implements ScreenRenderer {
 
     private ActionButton button(Player player, RiftScreen.Button button, int width) {
         // white on the grey buttons like every vanilla button; only the current destination stands out in green
-        String plain = ChatColor.stripColor(button.label());
-        Component label = LEGACY.deserialize(button.selected() ? "§a§l✔ §a" + plain : plain);
+        Component label = button.selected()
+                ? plain(button.label()).color(NamedTextColor.GREEN).decorate(TextDecoration.BOLD)
+                : plain(button.label());
         if (sprites && button.icon() != null) {
             label = icon(button.icon()).append(Component.text(" ")).append(label);
         }
         List<String> tooltip = new ArrayList<>(button.tooltip());
         if (button.detail() != null && tooltip.isEmpty()) {
-            tooltip.add("§7" + button.detail());
+            tooltip.add(button.detail());
         }
         ActionButton.Builder builder = ActionButton.builder(label)
                 .width(width)
@@ -152,14 +155,48 @@ final class PaperDialogs implements ScreenRenderer {
                 Key.key(Key.MINECRAFT_NAMESPACE, icon.javaSprite())));
     }
 
-    /** Body text: light grey reads poorly on the dialog background, so the secondary text is white as in vanilla. */
+    /** Body and tooltip text: no grey (it reads poorly and looks off next to vanilla), white instead. */
     private static Component lines(List<String> lines) {
-        return LEGACY.deserialize(String.join("\n", lines).replace("§7", "§f"));
+        return LEGACY.deserialize(
+                withoutSymbols(String.join("\n", lines)).replace("§7", "§f").replace("§8", "§f"));
     }
 
     /** Titles are plain white, like the titles of vanilla screens. */
     private static Component title(String title) {
-        return Component.text(ChatColor.stripColor(title));
+        return plain(title);
+    }
+
+    private static Component plain(String text) {
+        return Component.text(withoutSymbols(ChatColor.stripColor(text)));
+    }
+
+    /**
+     * Drops pictographs (arrows, ticks, house and skull signs, the tank bar's squares) from dialog texts: next to
+     * vanilla's plain buttons they look cheap, and the buttons have real item icons anyway.
+     */
+    static String withoutSymbols(String text) {
+        StringBuilder result = new StringBuilder();
+        boolean dropSpace = false; // the space after a dropped symbol goes with it
+        boolean colourCode = false;
+        for (int i = 0; i < text.length(); ) {
+            int codePoint = text.codePointAt(i);
+            i += Character.charCount(codePoint);
+            int type = Character.getType(codePoint);
+            if (codePoint > 0x7F && (type == Character.OTHER_SYMBOL || type == Character.MATH_SYMBOL)) {
+                dropSpace = true;
+                continue;
+            }
+            if (codePoint == ' ' && dropSpace) {
+                dropSpace = false;
+                continue;
+            }
+            if (!colourCode && codePoint != '§') {
+                dropSpace = false;
+            }
+            colourCode = codePoint == '§';
+            result.appendCodePoint(codePoint);
+        }
+        return result.toString().strip();
     }
 
     private static Audience audience(Player player) {
