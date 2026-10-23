@@ -24,12 +24,12 @@ final class TankGui {
     static final int COMPASS = 24;
     static final int[] GAUGE = {8, 17, 26};
 
-    private static final char BACKGROUND = '';
-    private static final char GAUGE_EMPTY = '';
+    private static final char BACKGROUND = '\ue9b0';
+    private static final char GAUGE_EMPTY = '\ue9b1';
     private static final int GAUGE_LEVELS = 12;
-    private static final char SHIFT_START = '';
-    private static final char SHIFT_GAUGE = '';
-    private static final char SHIFT_TEXT = '';
+    private static final char SHIFT_START = '\ue9c0';
+    private static final char SHIFT_GAUGE = '\ue9c1';
+    private static final char SHIFT_TEXT = '\ue9c2';
 
     private TankGui() {}
 
