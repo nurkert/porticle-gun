@@ -12,6 +12,15 @@
   "overlays": {
     "entries": [
       {
+        "directory": "legacy",
+        "formats": {
+          "min_inclusive": 46,
+          "max_inclusive": 64
+        },
+        "min_format": 46,
+        "max_format": 64
+      },
+      {
         "directory": "free_rotation",
         "formats": {
           "min_inclusive": 75,

@@ -1,0 +1,7 @@
+[22:14:29] [main/INFO]: [STDOUT]: pack: Optional[PackMetadataSection[description=literal{PorticleGun: 3D portal gun}, supportedFormats=[46.0, 99.*]]]
+[22:14:29] [main/INFO]: [STDOUT]: format 46 overlays: [legacy]
+[22:14:29] [main/INFO]: [STDOUT]: format 55 overlays: [legacy]
+[22:14:29] [main/INFO]: [STDOUT]: format 64 overlays: [legacy]
+[22:14:29] [main/INFO]: [STDOUT]: format 65 overlays: []
+[22:14:29] [main/INFO]: [STDOUT]: format 75 overlays: [free_rotation]
+[22:14:29] [main/INFO]: [STDOUT]: format 97 overlays: [free_rotation]

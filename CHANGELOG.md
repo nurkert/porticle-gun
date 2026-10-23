@@ -5,6 +5,18 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+## [1.6.9] - 2026-10-23
+
+### Fixed
+- The Java resource pack of 1.6.8 was rejected by 1.21.9+ clients (its overlay declaration is not allowed there), so
+  every gun showed as a purple and black cube. The pack loads again on old and new clients.
+- Choosing something in the native rift menu no longer shows "waiting for response" for several seconds: the window
+  stays until the next one replaces it or it closes.
+
+### Changed
+- The native rift menu is no longer one long list: the main window has five entries (worlds, journeys, rift atlas,
+  homes, fill tank), each opening its own small window.
+
 ## [1.6.8] - 2026-10-23
 
 ### Added

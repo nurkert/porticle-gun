@@ -102,8 +102,8 @@ final class RiftScreens {
     }
 
     /**
-     * The main window: the gun with destination, tank and compass at the top, then a random spot and the spawn of
-     * every world side by side, back and last death, the atlas and the homes, and the tank.
+     * The main window: the gun with destination, tank and compass at the top, below a few big entries that each open
+     * their own window (worlds, journeys, atlas, homes) and the tank.
      */
     private void main(Context context) {
         Player player = context.player();
@@ -135,47 +135,8 @@ final class RiftScreens {
         body.add(text(player, "rift.screen.hint"));
 
         List<RiftScreen.Button> buttons = new ArrayList<>();
-        for (World world : Bukkit.getWorlds()) {
-            if (settings.disabledWorlds().contains(world.getName())) {
-                continue;
-            }
-            String name = RiftNames.world(world.getName(), player);
-            Map<String, String> placeholders = Map.of("world", name);
-            buttons.add(destination(
-                    context,
-                    text(player, "rift.menu.world-random", placeholders),
-                    text(player, "rift.screen.random-detail"),
-                    lines(player, "rift.menu.world-random-lore", placeholders),
-                    RiftIcon.world(world.getEnvironment()),
-                    RiftDestination.world(world.getName()),
-                    selected));
-            buttons.add(destination(
-                    context,
-                    text(player, "rift.menu.world-spawn", placeholders),
-                    text(player, "rift.screen.spawn-detail"),
-                    lines(player, "rift.menu.world-spawn-lore", placeholders),
-                    RiftIcon.SPAWN,
-                    RiftDestination.spawn(world.getName()),
-                    selected));
-        }
-        Location back = module.storage().back(player.getUniqueId());
-        buttons.add(destination(
-                context,
-                text(player, "rift.screen.previous"),
-                place(player, back),
-                lines(player, back == null ? "rift.menu.back-empty" : "rift.menu.back-lore", coordinates(back)),
-                RiftIcon.BACK,
-                RiftDestination.back(),
-                selected));
-        Location death = module.storage().death(player.getUniqueId());
-        buttons.add(destination(
-                context,
-                text(player, "rift.screen.death"),
-                place(player, death),
-                lines(player, death == null ? "rift.menu.death-empty" : "rift.menu.death-lore", coordinates(death)),
-                RiftIcon.DEATH,
-                RiftDestination.death(),
-                selected));
+        buttons.add(worldsButton(context, selected));
+        buttons.add(journeysButton(context, selected));
         buttons.add(atlasButton(context, gun, selected));
         if (settings.homes() > 0) {
             buttons.add(homesButton(context, gun, selected));
@@ -207,6 +168,110 @@ final class RiftScreens {
                                         null,
                                         act(context, current -> context.renderer()
                                                 .close(player)))));
+    }
+
+    private RiftScreen.Button worldsButton(Context context, RiftDestination selected) {
+        Player player = context.player();
+        boolean world = selected != null
+                && (selected.type() == RiftDestination.Type.WORLD || selected.type() == RiftDestination.Type.SPAWN);
+        return new RiftScreen.Button(
+                text(player, "rift.screen.worlds"),
+                world ? RiftNames.describe(selected, player) : text(player, "rift.screen.worlds-detail"),
+                List.of(),
+                RiftIcon.OVERWORLD,
+                world,
+                act(context, gun -> worlds(context)));
+    }
+
+    private RiftScreen.Button journeysButton(Context context, RiftDestination selected) {
+        Player player = context.player();
+        boolean journey = selected != null
+                && (selected.type() == RiftDestination.Type.BACK || selected.type() == RiftDestination.Type.DEATH);
+        return new RiftScreen.Button(
+                text(player, "rift.screen.journeys"),
+                journey ? RiftNames.describe(selected, player) : text(player, "rift.screen.journeys-detail"),
+                List.of(),
+                RiftIcon.BACK,
+                journey,
+                act(context, gun -> journeys(context)));
+    }
+
+    /** A random spot and the spawn of every world that is not disabled, side by side. */
+    private void worlds(Context context) {
+        Player player = context.player();
+        RiftDestination selected = RiftItems.destination(context.gun());
+        List<RiftScreen.Button> buttons = new ArrayList<>();
+        for (World world : Bukkit.getWorlds()) {
+            if (module.settings().disabledWorlds().contains(world.getName())) {
+                continue;
+            }
+            String name = RiftNames.world(world.getName(), player);
+            Map<String, String> placeholders = Map.of("world", name);
+            buttons.add(destination(
+                    context,
+                    text(player, "rift.menu.world-random", placeholders),
+                    text(player, "rift.screen.random-detail"),
+                    lines(player, "rift.menu.world-random-lore", placeholders),
+                    RiftIcon.world(world.getEnvironment()),
+                    RiftDestination.world(world.getName()),
+                    selected));
+            buttons.add(destination(
+                    context,
+                    text(player, "rift.menu.world-spawn", placeholders),
+                    text(player, "rift.screen.spawn-detail"),
+                    lines(player, "rift.menu.world-spawn-lore", placeholders),
+                    RiftIcon.SPAWN,
+                    RiftDestination.spawn(world.getName()),
+                    selected));
+        }
+        context.renderer()
+                .show(
+                        player,
+                        new RiftScreen(
+                                text(player, "rift.screen.worlds-title"),
+                                null,
+                                List.of(text(player, "rift.screen.worlds-info")),
+                                buttons,
+                                2,
+                                backTo(context, () -> main(context))));
+    }
+
+    /** Back to the previous spot or to the last death. */
+    private void journeys(Context context) {
+        Player player = context.player();
+        RiftDestination selected = RiftItems.destination(context.gun());
+        Location back = module.storage().back(player.getUniqueId());
+        Location death = module.storage().death(player.getUniqueId());
+        List<RiftScreen.Button> buttons = List.of(
+                destination(
+                        context,
+                        text(player, "rift.screen.previous"),
+                        place(player, back),
+                        lines(player, back == null ? "rift.menu.back-empty" : "rift.menu.back-lore", coordinates(back)),
+                        RiftIcon.BACK,
+                        RiftDestination.back(),
+                        selected),
+                destination(
+                        context,
+                        text(player, "rift.screen.death"),
+                        place(player, death),
+                        lines(
+                                player,
+                                death == null ? "rift.menu.death-empty" : "rift.menu.death-lore",
+                                coordinates(death)),
+                        RiftIcon.DEATH,
+                        RiftDestination.death(),
+                        selected));
+        context.renderer()
+                .show(
+                        player,
+                        new RiftScreen(
+                                text(player, "rift.screen.journeys-title"),
+                                null,
+                                List.of(),
+                                buttons,
+                                1,
+                                backTo(context, () -> main(context))));
     }
 
     private RiftScreen.Button atlasButton(Context context, ItemStack gun, RiftDestination selected) {

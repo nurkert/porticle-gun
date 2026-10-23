@@ -21,9 +21,10 @@ go. Attacking with the gun never breaks blocks, also not in creative mode.
 The menu is a native window wherever the server allows it:
 
 - **Java on Paper 1.21.6+**: a dialog. At the top the gun (hover it for its tooltip) with destination, tank and
-  rift compass, below the destinations as buttons, two per row: a random spot and the spawn of every world side by
-  side, the previous spot and the last death, the rift atlas and the homes, and "Fill tank". On 26.x servers every
-  button shows its icon (vanilla textures, so it works without the resource pack). Hovering a button shows the details.
+  rift compass, below five entries: "Worlds" (a random spot and the spawn of every world side by side), "Journeys"
+  (previous spot and last death), "Rift atlas", "Homes" and "Fill tank". Each opens its own small window, so nothing
+  needs scrolling. On 26.x servers every button shows its icon (vanilla textures, so it works without the resource
+  pack). Hovering a button shows the details; an entry that contains the current destination says so.
 - **Bedrock with Floodgate**: a form with large buttons, each with an icon and a second line (coordinates, world
   spawn, time left, ...), made for touch screens and controllers.
 
