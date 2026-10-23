@@ -196,14 +196,17 @@ def check_hud():
             continue
         chars = "".join(provider["chars"])
         width, height = png_size(texture) or (0, 0)
-        if len(chars) == 0 or width % len(chars) or not 0 <= provider["ascent"] <= provider["height"]:
+        # Minecraft only requires ascent <= height; a negative ascent moves a glyph down (the tank gauge)
+        if len(chars) == 0 or width % len(chars) or provider["ascent"] > provider["height"]:
             error(f"Java font provider for {provider['file']} does not match its texture")
         glyphs += chars
     for char in glyphs:
         if not 0xE000 <= ord(char) <= 0xF8FF or 0xE000 <= ord(char) <= 0xE1FF:
             error(f"overlay glyph U+{ord(char):04X} must be in the Private Use Area outside Bedrock's E0xx/E1xx icons")
 
-    sheets = {ord(char) >> 8 for char in glyphs}
+    # Bedrock only needs the HUD glyphs; the tank menu's are drawn for Java players with the pack only
+    hud_glyphs = "".join(font["providers"][0]["chars"])
+    sheets = {ord(char) >> 8 for char in hud_glyphs}
     for high in sheets:
         sheet = os.path.join(PACK, "font", f"glyph_{high:02X}.png")
         if not os.path.isfile(sheet):
@@ -222,6 +225,16 @@ def check_hud():
     missing = used - set(glyphs) - space_glyphs
     if missing:
         error("PortalHud.java uses glyphs missing from the font: " + ", ".join(f"U+{ord(c):04X}" for c in missing))
+
+    tank_source = os.path.join(ROOT, "src", "main", "java", "eu", "nurkert", "porticlegun", "rift", "TankGui.java")
+    with open(tank_source, encoding="utf-8") as file:
+        tank = {chr(int(code, 16)) for code in re.findall(r"static final char \w+ = '\\u([0-9A-Fa-f]{4})';",
+                                                          file.read())}
+    if not tank:
+        error("found no glyph constants in TankGui.java")
+    missing = tank - set(glyphs) - space_glyphs
+    if missing:
+        error("TankGui.java uses glyphs missing from the font: " + ", ".join(f"U+{ord(c):04X}" for c in missing))
 
 
 def check_schemas(schema_root):
