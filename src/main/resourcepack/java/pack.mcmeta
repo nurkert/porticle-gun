@@ -8,5 +8,18 @@
     },
     "min_format": 46,
     "max_format": 99
+  },
+  "overlays": {
+    "entries": [
+      {
+        "directory": "free_rotation",
+        "formats": {
+          "min_inclusive": 75,
+          "max_inclusive": 99
+        },
+        "min_format": 75,
+        "max_format": 99
+      }
+    ]
   }
 }

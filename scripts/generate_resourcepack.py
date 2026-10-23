@@ -137,7 +137,8 @@ def paint_atlas():
 
 
 def box(name, material, start, end, rotation=None):
-    """A box of the model. rotation: optional (axis, angle, origin); Java allows -45, -22.5, 0, 22.5 and 45 degrees."""
+    """A box of the model. rotation: optional (axis, angle, origin); Java before 1.21.11 allows only -45, -22.5, 0,
+    22.5 and 45 degrees (models with other angles need a legacy variant, see PORTAL_GUN_LEGACY_ELEMENTS)."""
     element = {"name": name, "material": material, "from": list(start), "to": list(end)}
     if rotation:
         axis, angle, origin = rotation
@@ -163,73 +164,93 @@ def rotated(point, rotation, offset):
     return [x + origin[0], y + origin[1], z + origin[2]]
 
 
-# PorticleGun. Materials: white, dark, glow0 (primary portal colour), glow1 (secondary portal colour).
-PORTAL_GUN_ELEMENTS = [
-    # rear pod: a voxel ball, widest in the middle and stepping in towards both ends. The boxes never overlap, so no
-    # two outer faces lie on top of each other (that would flicker in game).
-    *[
-        part
-        for x0, x1 in ((2, 8),)
-        for part in (
-            box("pod_mid_core", "white", (x0, 4, 4), (x1, 12, 12)),
-            box("pod_mid_up", "white", (x0, 12, 4), (x1, 13, 12)),
-            box("pod_mid_down", "white", (x0, 3, 4), (x1, 4, 12)),
-            box("pod_mid_left", "white", (x0, 4, 3), (x1, 12, 4)),
-            box("pod_mid_right", "white", (x0, 4, 12), (x1, 12, 13)),
-            box("pod_mid_top", "white", (x0, 13, 5), (x1, 14, 11)),
-            box("pod_mid_bottom", "white", (x0, 2, 5), (x1, 3, 11)),
-            box("pod_mid_far_left", "white", (x0, 5, 2), (x1, 11, 3)),
-            box("pod_mid_far_right", "white", (x0, 5, 13), (x1, 11, 14)),
-        )
-    ],
-    *[
-        part
-        for name, x0, x1 in (("back", 1, 2), ("front", 8, 9))
-        for part in (
-            box(f"pod_{name}_ring", "white", (x0, 4, 4), (x1, 12, 12)),
-            box(f"pod_{name}_ring_up", "white", (x0, 12, 5), (x1, 13, 11)),
-            box(f"pod_{name}_ring_down", "white", (x0, 3, 5), (x1, 4, 11)),
-            box(f"pod_{name}_ring_left", "white", (x0, 5, 3), (x1, 11, 4)),
-            box(f"pod_{name}_ring_right", "white", (x0, 5, 12), (x1, 11, 13)),
-        )
-    ],
-    box("pod_back_end", "white", (0, 5, 5), (1, 11, 11)),
-    box("pod_front_end", "white", (9, 5, 5), (10, 11, 11)),
-    box("pod_window", "glow1", (3.5, 14, 6.5), (6.5, 14.4, 9.5)),
-    box("pod_rear_plug", "dark", (-0.4, 6.5, 6.5), (0, 9.5, 9.5)),
-    box("collar", "dark", (10, 4.5, 4.5), (12, 11.5, 11.5)),
-    # barrel with a glowing side window and a hump on top
-    box("barrel", "dark", (12, 5, 5), (19, 11, 11)),
-    box("barrel_window", "glow1", (13, 6, 4.6), (18, 10, 11.4)),
-    box("hump_low", "dark", (15, 11, 5.5), (21, 12.5, 10.5)),
-    box("hump_high", "dark", (16.5, 12.5, 6.5), (19.5, 13.5, 9.5)),
-    # front head with framed emitter, side windows and white side plates
-    box("head", "dark", (19, 4, 4), (25, 12, 12)),
-    box("head_window_left", "glow1", (20, 6.5, 3.6), (23, 9.5, 4)),
-    box("head_window_right", "glow1", (20, 6.5, 12), (23, 9.5, 12.4)),
-    box("emitter", "glow1", (25, 5.5, 5.5), (25.5, 10.5, 10.5)),
-    box("emitter_frame_bottom", "dark", (25, 4, 4), (26, 5.5, 12)),
-    box("emitter_frame_top", "dark", (25, 10.5, 4), (26, 12, 12)),
-    box("emitter_frame_left", "dark", (25, 5.5, 4), (26, 10.5, 5.5)),
-    box("emitter_frame_right", "dark", (25, 5.5, 10.5), (26, 10.5, 12)),
-    box("plate_left", "white", (17, 2.5, 3), (21, 6, 5)),
-    box("plate_right", "white", (17, 2.5, 11), (21, 6, 13)),
-    # upper claw, stepping up from the hump and curling forward
-    box("claw_top_1", "dark", (17, 13.5, 7), (19, 16.5, 9)),
-    box("claw_top_2", "dark", (18, 16.5, 7), (22, 18.5, 9)),
-    box("claw_top_3", "white", (21.5, 17.5, 6.5), (24.5, 19.5, 9.5)),
-    box("claw_top_4", "dark", (24, 16.5, 7), (27, 18.5, 9)),
-    box("claw_top_5", "dark", (27, 14, 7), (29, 17, 9)),
-    box("claw_top_tip", "glow0", (29, 13.5, 7), (30.5, 15.5, 9)),
-    # lower claw, the mirror image hanging below the head
-    box("claw_bottom_1", "dark", (19, -0.5, 7), (21, 4, 9)),
-    box("claw_bottom_2", "dark", (19.5, -2.5, 7), (23.5, -0.5, 9)),
-    box("claw_bottom_3", "white", (23, -3.5, 6.5), (26, -1.5, 9.5)),
-    box("claw_bottom_4", "dark", (25.5, -2.5, 7), (28.5, -0.5, 9)),
-    box("claw_bottom_5", "dark", (28.5, -1, 7), (30.5, 2, 9)),
-    box("claw_bottom_tip", "glow0", (30.5, 0.5, 7), (32, 2.5, 9)),
+# The three claws in front sit 120 degrees apart around the barrel axis (y = z = 8), one on top and two below at
+# 30 degrees under the horizontal, so they form a perfect triangle seen from the front. Each claw is designed once in
+# its own plane: x along the barrel, r away from the axis, w half its thickness. It curls up from a mount on the barrel,
+# forward and back in towards the emitter. Free rotation angles need Java 1.21.11 (pack format 75); older clients get
+# the same claws at 22.5 degrees (see PORTAL_GUN_LEGACY_ELEMENTS and the overlay in java_pack_mcmeta).
+CLAW_PARTS = [
+    # name, material, x from, x to, r from, r to, half width
+    ("mount_low", "dark", 15, 21, 3, 4.5, 2.5),
+    ("mount_high", "dark", 16.5, 19.5, 4.5, 5.5, 1.5),
+    ("1", "dark", 17, 19, 5.5, 8.5, 1),
+    ("2", "dark", 18, 22, 8.5, 10.5, 1),
+    ("3", "white", 21.5, 24.5, 9.5, 11.5, 1.5),
+    ("4", "dark", 24, 27, 8.5, 10.5, 1),
+    ("5", "dark", 27, 29, 6, 9, 1),
+    ("tip", "glow0", 29, 30.5, 5.5, 7.5, 1),
 ]
+CLAW_ANGLE = 30
+CLAW_LEGACY_ANGLE = 22.5
 
+
+def claws(angle):
+    """The top claw as plain boxes, the two lower ones built pointing sideways (+z and -z) and turned down by the angle
+    around the barrel axis: exact copies of the top claw turned by 120 degrees when the angle is 30."""
+    parts = []
+    for name, material, x0, x1, r0, r1, w in CLAW_PARTS:
+        parts.append(box(f"claw_top_{name}", material, (x0, 8 + r0, 8 - w), (x1, 8 + r1, 8 + w)))
+        parts.append(box(f"claw_left_{name}", material, (x0, 8 - w, 8 + r0), (x1, 8 + w, 8 + r1),
+                         ("x", angle, (16, 8, 8))))
+        parts.append(box(f"claw_right_{name}", material, (x0, 8 - w, 8 - r1), (x1, 8 + w, 8 - r0),
+                         ("x", -angle, (16, 8, 8))))
+    return parts
+
+
+# PorticleGun. Materials: white, dark, glow0 (primary portal colour), glow1 (secondary portal colour).
+def portal_gun_elements(claw_angle):
+    return [
+        # rear pod: a voxel ball, widest in the middle and stepping in towards both ends, open at the back for the hand.
+        # The boxes never overlap, so no two outer faces lie on top of each other (that would flicker in game).
+        box("pod_mid_up", "white", (2, 12, 4), (8, 13, 12)),
+        box("pod_mid_down", "white", (2, 3, 4), (8, 4, 12)),
+        box("pod_mid_left", "white", (2, 4, 3), (8, 12, 4)),
+        box("pod_mid_right", "white", (2, 4, 12), (8, 12, 13)),
+        box("pod_mid_top", "white", (2, 13, 5), (8, 14, 11)),
+        box("pod_mid_bottom", "white", (2, 2, 5), (8, 3, 11)),
+        box("pod_mid_far_left", "white", (2, 5, 2), (8, 11, 3)),
+        box("pod_mid_far_right", "white", (2, 5, 13), (8, 11, 14)),
+        # the hand opening: a dark lined cavity from the back to a glowing plate
+        box("pod_cavity_top", "dark", (2, 11, 4), (8, 12, 12)),
+        box("pod_cavity_bottom", "dark", (2, 4, 4), (8, 5, 12)),
+        box("pod_cavity_left", "dark", (2, 5, 4), (8, 11, 5)),
+        box("pod_cavity_right", "dark", (2, 5, 11), (8, 11, 12)),
+        box("pod_cavity_end", "glow1", (7, 5, 5), (8, 11, 11)),
+        # back ring: a white frame around the opening
+        box("pod_back_frame_top", "white", (1, 11, 4), (2, 12, 12)),
+        box("pod_back_frame_bottom", "white", (1, 4, 4), (2, 5, 12)),
+        box("pod_back_frame_left", "white", (1, 5, 4), (2, 11, 5)),
+        box("pod_back_frame_right", "white", (1, 5, 11), (2, 11, 12)),
+        box("pod_back_ring_up", "white", (1, 12, 5), (2, 13, 11)),
+        box("pod_back_ring_down", "white", (1, 3, 5), (2, 4, 11)),
+        box("pod_back_ring_left", "white", (1, 5, 3), (2, 11, 4)),
+        box("pod_back_ring_right", "white", (1, 5, 12), (2, 11, 13)),
+        box("pod_front_ring", "white", (8, 4, 4), (9, 12, 12)),
+        box("pod_front_ring_up", "white", (8, 12, 5), (9, 13, 11)),
+        box("pod_front_ring_down", "white", (8, 3, 5), (9, 4, 11)),
+        box("pod_front_ring_left", "white", (8, 5, 3), (9, 11, 4)),
+        box("pod_front_ring_right", "white", (8, 5, 12), (9, 11, 13)),
+        box("pod_front_end", "white", (9, 5, 5), (10, 11, 11)),
+        box("pod_window", "glow1", (3.5, 14, 6.5), (6.5, 14.4, 9.5)),
+        box("collar", "dark", (10, 4.5, 4.5), (12, 11.5, 11.5)),
+        # barrel with a glowing side window
+        box("barrel", "dark", (12, 5, 5), (19, 11, 11)),
+        box("barrel_window", "glow1", (13, 6, 4.6), (18, 10, 11.4)),
+        # front head with framed emitter and side windows
+        box("head", "dark", (19, 4, 4), (25, 12, 12)),
+        box("head_window_left", "glow1", (20, 6.5, 3.6), (23, 9.5, 4)),
+        box("head_window_right", "glow1", (20, 6.5, 12), (23, 9.5, 12.4)),
+        box("emitter", "glow1", (25, 5.5, 5.5), (25.5, 10.5, 10.5)),
+        box("emitter_frame_bottom", "dark", (25, 4, 4), (26, 5.5, 12)),
+        box("emitter_frame_top", "dark", (25, 10.5, 4), (26, 12, 12)),
+        box("emitter_frame_left", "dark", (25, 5.5, 4), (26, 10.5, 5.5)),
+        box("emitter_frame_right", "dark", (25, 5.5, 10.5), (26, 10.5, 12)),
+        *claws(claw_angle),
+    ]
+
+
+PORTAL_GUN_ELEMENTS = portal_gun_elements(CLAW_ANGLE)
+PORTAL_GUN_LEGACY_ELEMENTS = portal_gun_elements(CLAW_LEGACY_ANGLE)
 
 
 def rift_gun_elements(level):
@@ -385,6 +406,8 @@ PORTAL_GUN = {
     "name": "PorticleGun",
     "base": "minecraft:brewing_stand",
     "elements": PORTAL_GUN_ELEMENTS,
+    # written to the base pack for clients before free rotation angles; the overlay has the exact model
+    "legacy_elements": PORTAL_GUN_LEGACY_ELEMENTS,
     "offset": (-7.8, 0, 0),
     "display": PORTAL_GUN_DISPLAY,
     "tints": DEFAULT_TINTS,
@@ -601,6 +624,9 @@ def java_item_definition(model):
     return {"model": definition}
 
 
+FREE_ROTATION_OVERLAY = "free_rotation"
+
+
 def java_pack_mcmeta():
     return {
         "pack": {
@@ -610,7 +636,18 @@ def java_pack_mcmeta():
             "supported_formats": {"min_inclusive": 46, "max_inclusive": 99},
             "min_format": 46,
             "max_format": 99,
-        }
+        },
+        # 1.21.11+ (pack format 75) allows any rotation angle; it gets the models with exact angles from here
+        "overlays": {
+            "entries": [
+                {
+                    "directory": FREE_ROTATION_OVERLAY,
+                    "formats": {"min_inclusive": 75, "max_inclusive": 99},
+                    "min_format": 75,
+                    "max_format": 99,
+                }
+            ]
+        },
     }
 
 
@@ -1398,8 +1435,9 @@ def main():
     parser.add_argument("--showcase", action="store_true", help="also render the README images in images/")
     args = parser.parse_args()
     for model in MODELS:
-        for elements in model.get("variants", [model["elements"]]):
-            check_model({**model, "elements": elements})
+        for elements in model.get("variants", [model["elements"]]) + [model.get("legacy_elements")]:
+            if elements:
+                check_model({**model, "elements": elements})
 
     java = os.path.join(OUT, "java")
     java_assets = os.path.join(java, "assets", NAMESPACE)
@@ -1412,6 +1450,11 @@ def main():
             for level, elements in enumerate(model["variants"]):
                 write_json(os.path.join(java_assets, "models", "item", f"{item}_{level}.json"),
                            java_model(model, elements))
+        elif "legacy_elements" in model:
+            write_json(os.path.join(java_assets, "models", "item", f"{item}.json"),
+                       java_model(model, model["legacy_elements"]))
+            write_json(os.path.join(java, FREE_ROTATION_OVERLAY, "assets", NAMESPACE, "models", "item", f"{item}.json"),
+                       java_model(model))
         else:
             write_json(os.path.join(java_assets, "models", "item", f"{item}.json"), java_model(model))
     for entry in FLAT_ITEMS:
