@@ -3,9 +3,13 @@
 ![The PorticleGun 3D model](../images/animations/portal_gun.gif)
 
 Guns use the item model `porticlegun:portal_gun`. Players with the PorticleGun resource pack see a 3D voxel portal gun
-(white rear pod, black barrel, two curved claws) whose lights glow in the gun's portal colours: the claw tips in the
-primary colour, the windows and the emitter in the secondary colour. Players without it see a
-brewing stand, nothing breaks.
+(white rear pod open at the back for the hand, black barrel, three curved claws 120° apart) whose lights glow in the
+gun's portal colours: the claw tips in the primary colour, the windows, the emitter and the inside of the pod in the
+secondary colour. Players without it see a brewing stand, nothing breaks.
+
+The two lower claws are turned by 30° around the barrel, an angle Java models only allow since 1.21.11. The pack
+therefore has an overlay (`free_rotation/`) with the exact model for 1.21.11 and newer; older clients get the same
+claws turned by 22.5°.
 
 ## Java players
 

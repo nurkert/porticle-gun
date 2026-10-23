@@ -5,6 +5,13 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+### Changed
+- **New PorticleGun model**: the rear pod is open at the back, a dark lined opening for the hand with a glow in the
+  secondary colour inside. The front now has three identical curved claws 120° apart around the barrel, one on top
+  and two below, so they form a perfect triangle seen from the front. Java 1.21.11 and newer get the exact angles
+  through a pack overlay, older clients the same claws at 22.5°; Bedrock always gets the exact model. All renders of
+  the gun (README, website, recipes, turntable) are updated.
+
 ## [1.6.7] - 2026-10-22
 
 ### Changed
