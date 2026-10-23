@@ -18,21 +18,35 @@ go. Attacking with the gun never breaks blocks, also not in creative mode.
 
 ## The menu
 
-Every menu action is a single click, so it works the same with a mouse, a controller or a touch screen; shift and
-right clicks do the same as a left click.
+The menu is a native window wherever the server allows it:
 
-- **Top row**: whether the gun is attuned, the gun itself with its tank and destination, the menu's only free slot
-  and the load button. Put portal fluid or a rift compass into the slot and click the button to load one: a single
-  bottle turns into an empty bottle in the slot, from a stack the empty bottle goes to the inventory (or drops when
-  it is full). Anything left in the slot goes back to the inventory when the menu closes.
+- **Java on Paper 1.21.6+**: a dialog. At the top the gun (hover it for its tooltip) with destination, tank and
+  rift compass, below the destinations as buttons, two per row: a random spot and the spawn of every world side by
+  side, the previous spot and the last death, the rift atlas and the homes, and "Fill tank". On 26.x servers every
+  button shows its icon (vanilla textures, so it works without the resource pack). Hovering a button shows the details.
+- **Bedrock with Floodgate**: a form with large buttons, each with an icon and a second line (coordinates, world
+  spawn, time left, ...), made for touch screens and controllers.
+
+The current destination is marked with a green tick. Choosing a destination closes the window; the action bar confirms
+it, and the next attack opens the rift. "Homes" opens the gun's homes (an empty one is set to the current position and
+chosen with one click, a set one offers travel there, move here and delete with confirmation), "Rift atlas" the
+structures. With the atlas still locked, clicking it inserts a rift compass from the inventory.
+
+**Fill tank** opens a small chest, the only part that needs a slot: the gun between its compass status and the free
+slot. Put portal fluid or a rift compass into the slot and click the load button to load one: a single bottle turns
+into an empty bottle in the slot, from a stack the empty bottle goes to the inventory (or drops when it is full).
+Anything left in the slot goes back to the inventory when the chest closes; "Back" returns to the window.
+
+On Spigot, on older servers and with `native-menus: false` everything is one chest menu instead. Every action there is
+a single click, so it works the same with a mouse, a controller or a touch screen:
+
+- **Top row**: the current destination, whether the gun is attuned, the gun itself, the free slot and the load button.
 - **Worlds**: a random spot and the spawn of every world, side by side. A second row appears with more than four
   worlds.
-- **Journeys**: back, last death and the rift atlas. Clicking the locked atlas with a rift compass in the inventory
-  inserts it.
+- **Journeys**: back, last death and the rift atlas.
 - **Homes**: numbered by their stack size. An empty home is set with one click.
 
-Clicking a destination selects it and closes the menu; the action bar confirms it, and the next attack opens the rift.
-The current destination glows.
+Bedrock players on servers with Geyser but without Floodgate get the Java dialog, which Geyser shows as a form.
 
 ## Destinations
 
@@ -54,7 +68,8 @@ The current destination glows.
 - **Last death**.
 
 Worlds listed in `disabled-worlds` never show up. The other worlds, also ones added later, appear automatically; the
-menu has room for eight, so on servers with more worlds list the ones nobody should travel to in `disabled-worlds`.
+chest menu has room for eight, so on servers with more worlds list the ones nobody should travel to in
+`disabled-worlds`.
 
 ## Where rifts appear
 

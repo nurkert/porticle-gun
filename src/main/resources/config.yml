@@ -55,6 +55,9 @@ interdimensional-gun:
   portal-seconds: 30
   # home slots per gun (0-7); homes are stored on the gun item
   homes: 5
+  # true: the gun's menu is a native window, a dialog on Java (Paper 1.21.6+) and a form on Bedrock (Floodgate);
+  # only filling the tank stays a chest. false, Spigot and older servers use the chest menu for everything
+  native-menus: true
   # random destinations: radius around the world spawn (overworld and other worlds), the nether and the end
   random-radius: 3000
   nether-radius: 1000

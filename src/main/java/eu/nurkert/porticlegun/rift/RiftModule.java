@@ -6,7 +6,7 @@ import java.util.function.Consumer;
 import org.bukkit.event.Listener;
 
 /**
- * Everything of the interdimensional gun: items, recipes, drops, menu, rifts and the rift.yml data.
+ * Everything of the interdimensional gun: items, recipes, drops, menus, rifts and the rift.yml data.
  */
 public class RiftModule {
 
@@ -17,6 +17,7 @@ public class RiftModule {
     private final StructureLocator structures;
     private final RiftPortalManager portals;
     private final RiftMenu menu;
+    private final RiftScreens screens;
     private final RiftGunListener gunListener;
     private final RiftRecipes recipes;
     private RiftSettings settings;
@@ -30,6 +31,7 @@ public class RiftModule {
         this.structures = new StructureLocator(plugin);
         this.portals = new RiftPortalManager(plugin, storage);
         this.menu = new RiftMenu(this);
+        this.screens = new RiftScreens(this);
         this.gunListener = new RiftGunListener(this);
         this.recipes = new RiftRecipes(this);
         recipes.register();
@@ -77,6 +79,14 @@ public class RiftModule {
 
     RiftMenu menu() {
         return menu;
+    }
+
+    RiftScreens screens() {
+        return screens;
+    }
+
+    RiftGunListener gunListener() {
+        return gunListener;
     }
 
     public void reload() {

@@ -86,7 +86,7 @@ public class RiftGunListener implements Listener {
             if (attack) {
                 actionBar(player, MessageManager.getMessage(player, "rift.choose-destination"));
             }
-            module.menu().open(player, slot);
+            module.screens().open(player, slot);
         } else {
             fire(player, slot);
         }
@@ -98,6 +98,11 @@ public class RiftGunListener implements Listener {
         if (RiftItems.isGun(event.getPlayer().getInventory().getItemInMainHand())) {
             event.setCancelled(true);
         }
+    }
+
+    /** The next arm swing of the player is no attack: Bedrock clients swing after a menu or form closes. */
+    void swingFree(Player player) {
+        lastSwingFree.put(player.getUniqueId(), System.currentTimeMillis());
     }
 
     @EventHandler
@@ -145,7 +150,7 @@ public class RiftGunListener implements Listener {
         player.getInventory().setItem(slot, gun);
         RiftDestination destination = RiftItems.destination(gun);
         if (destination == null) {
-            module.menu().open(player, slot);
+            module.screens().open(player, slot);
             return;
         }
 

@@ -40,6 +40,7 @@ with a colour that no longer exists, it falls back to the default colour and a w
 | `interdimensional-gun.close-distance` | `7` | A rift pair closes when its opener is farther than this from both portals for three seconds. |
 | `interdimensional-gun.portal-seconds` | `30` | A rift pair closes after this many seconds at the latest. |
 | `interdimensional-gun.homes` | `5` | Home slots per gun (0-7). |
+| `interdimensional-gun.native-menus` | `true` | The gun's menu as a native window: a dialog on Java (Paper 1.21.6+), a form on Bedrock (Floodgate); only filling the tank is a chest. `false` keeps the chest menu for everything (always the case on Spigot and older servers). |
 | `interdimensional-gun.random-radius` | `3000` | Radius around the world spawn for random destinations (overworld and other worlds). |
 | `interdimensional-gun.nether-radius` | `1000` | The same for the nether. |
 | `interdimensional-gun.end-radius` | `1500` | The same for the end (around 0, 0); the main island is the fallback. |

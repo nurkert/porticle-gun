@@ -5,6 +5,14 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+### Added
+- **Native rift menu**: the interdimensional gun's menu is a real window now instead of a chest. Java players on
+  Paper 1.21.6+ get a dialog with the gun, its destination, tank and compass at the top and the destinations as
+  buttons (with icons on 26.x servers); Bedrock players with Floodgate get a form with big icon buttons made for
+  touch and controllers. Homes, delete confirmation and the rift atlas are windows too. Only filling the tank stays a
+  small chest, because only a chest has a slot to put items in. `native-menus: false` brings back the chest menu,
+  which Spigot and older servers keep using.
+
 ## [1.6.7] - 2026-10-22
 
 ### Changed

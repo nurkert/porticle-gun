@@ -41,6 +41,7 @@ public class RiftMenu implements Listener {
 
     enum Page {
         MAIN,
+        TANK,
         HOME,
         DELETE_HOME,
         ATLAS
@@ -55,6 +56,11 @@ public class RiftMenu implements Listener {
         final Map<Integer, Runnable> actions = new HashMap<>();
         Inventory inventory;
         int atlasSlot = -1;
+        // the free slot with its load button, and where the compass status and the gun are shown (-1: none)
+        int inputSlot = -1;
+        int loadSlot = -1;
+        int compassSlot = -1;
+        int gunSlot = -1;
 
         Holder(Page page, int home, int slot, String gunId) {
             this.page = page;
@@ -72,6 +78,9 @@ public class RiftMenu implements Listener {
     // the only free slot of the main page, where portal fluid or a rift compass is put, and its load button
     static final int INPUT_SLOT = 6;
     private static final int LOAD_SLOT = 7;
+    // the same on the tank page the native menus open
+    private static final int TANK_INPUT_SLOT = 15;
+    private static final int TANK_LOAD_SLOT = 16;
     private static final int WORLDS_PER_ROW = 4;
     private static final int MAX_WORLDS = 8;
 
@@ -109,6 +118,10 @@ public class RiftMenu implements Listener {
         int size = footer + 9;
 
         Holder holder = new Holder(Page.MAIN, -1, slot, RiftItems.gunId(gun));
+        holder.inputSlot = INPUT_SLOT;
+        holder.loadSlot = LOAD_SLOT;
+        holder.compassSlot = 2;
+        holder.gunSlot = 4;
         Inventory inventory = create(holder, size, text(player, "rift.menu.title"));
         ItemStack frame = pane(Material.BLACK_STAINED_GLASS_PANE);
         ItemStack accent = pane(Material.LIME_STAINED_GLASS_PANE);
@@ -184,7 +197,9 @@ public class RiftMenu implements Listener {
                 openAtlas(player, holder.slot);
             } else {
                 // a rift compass in the inventory unlocks the atlas right here
-                insertCompass(player, holder);
+                if (attuneFromInventory(player, holder.slot)) {
+                    openAtlas(player, holder.slot);
+                }
             }
         });
 
@@ -292,9 +307,44 @@ public class RiftMenu implements Listener {
         player.openInventory(inventory);
     }
 
-    private void insertCompass(Player player, Holder holder) {
+    /**
+     * The tank page of the native menus: the gun between its compass status and the free slot with the load button.
+     * Back returns to the native menu.
+     */
+    void openTank(Player player, int slot, Runnable back) {
+        ItemStack gun = player.getInventory().getItem(slot);
+        if (!RiftItems.isGun(gun)) {
+            return;
+        }
+        Holder holder = new Holder(Page.TANK, -1, slot, RiftItems.gunId(gun));
+        holder.inputSlot = TANK_INPUT_SLOT;
+        holder.loadSlot = TANK_LOAD_SLOT;
+        holder.compassSlot = 11;
+        holder.gunSlot = 13;
+        Inventory inventory = create(holder, 27, text(player, "rift.screen.tank-title"));
+        fill(inventory);
+        ItemStack accent = pane(Material.LIME_STAINED_GLASS_PANE);
+        inventory.setItem(12, accent);
+        inventory.setItem(14, accent);
+        inventory.setItem(holder.compassSlot, compassStatus(player, gun));
+        inventory.setItem(holder.gunSlot, gun.clone());
+        inventory.setItem(holder.inputSlot, null);
+        button(holder, inventory, holder.loadSlot, loadButton(player, gun), () -> load(player, holder));
+        button(holder, inventory, 22, backBanner(text(player, "rift.menu.back")), () -> {
+            player.closeInventory(); // hands back what waits in the free slot
+            back.run();
+        });
+        player.openInventory(inventory);
+    }
+
+    /**
+     * Attunes the gun in the given slot with a rift compass from the inventory.
+     *
+     * @return whether there was a compass
+     */
+    boolean attuneFromInventory(Player player, int slot) {
         RiftSettings settings = module.settings();
-        ItemStack gun = player.getInventory().getItem(holder.slot);
+        ItemStack gun = player.getInventory().getItem(slot);
         int compassSlot = -1;
         for (int i = 0; i < player.getInventory().getSize(); i++) {
             if (RiftItems.type(player.getInventory().getItem(i)) == RiftItems.Type.RIFT_COMPASS) {
@@ -302,10 +352,10 @@ public class RiftMenu implements Listener {
                 break;
             }
         }
-        if (compassSlot < 0) {
+        if (compassSlot < 0 || !RiftItems.isGun(gun)) {
             player.playSound(player, Sound.BLOCK_NOTE_BLOCK_BASS, 1f, 0.7f);
             player.sendMessage(text(player, "rift.no-compass"));
-            return;
+            return false;
         }
         ItemStack compass = player.getInventory().getItem(compassSlot);
         compass.setAmount(compass.getAmount() - 1);
@@ -313,11 +363,11 @@ public class RiftMenu implements Listener {
         // a second compass adds to the remaining time
         long start = Math.max(System.currentTimeMillis(), RiftItems.attunedUntil(gun));
         RiftItems.attune(gun, start + settings.compassMillis(), settings);
-        player.getInventory().setItem(holder.slot, gun);
+        player.getInventory().setItem(slot, gun);
         player.playSound(player, Sound.ITEM_LODESTONE_COMPASS_LOCK, 1f, 1f);
         player.playSound(player, Sound.BLOCK_BEACON_POWER_SELECT, 0.6f, 1.6f);
         player.sendMessage(text(player, "rift.attuned", Map.of("time", RiftItems.remaining(gun))));
-        openAtlas(player, holder.slot);
+        return true;
     }
 
     private void openHome(Player player, int slot, int home) {
@@ -413,7 +463,7 @@ public class RiftMenu implements Listener {
         }
         int raw = event.getRawSlot();
         int size = event.getInventory().getSize();
-        if (holder.page == Page.MAIN && mayMoveItems(event, raw, size)) {
+        if (holder.inputSlot >= 0 && mayMoveItems(event, holder.inputSlot, raw, size)) {
             return; // putting things into the free slot, taking them out, or tidying up the own inventory
         }
         // nothing else moves in or out of the menu, whatever kind of click it is
@@ -437,12 +487,12 @@ public class RiftMenu implements Listener {
      * @return whether a click on the main page may move items: in the free slot only portal fluid and rift compasses
      *     go in (anything there may be taken out), in the own inventory everything works as usual
      */
-    private static boolean mayMoveItems(InventoryClickEvent event, int raw, int size) {
+    private static boolean mayMoveItems(InventoryClickEvent event, int inputSlot, int raw, int size) {
         InventoryAction action = event.getAction();
         if (action == InventoryAction.COLLECT_TO_CURSOR || action == InventoryAction.UNKNOWN) {
             return false; // would pull matching items out of the menu
         }
-        if (raw == INPUT_SLOT) {
+        if (raw == inputSlot) {
             ItemStack incoming = action == InventoryAction.HOTBAR_SWAP
                     ? event.getWhoClicked().getInventory().getItem(event.getHotbarButton())
                     : event.getCursor();
@@ -452,7 +502,7 @@ public class RiftMenu implements Listener {
             if (action == InventoryAction.MOVE_TO_OTHER_INVENTORY) {
                 // shift click: it can only land in the free slot
                 ItemStack moving = event.getCurrentItem();
-                ItemStack waiting = event.getInventory().getItem(INPUT_SLOT);
+                ItemStack waiting = event.getInventory().getItem(inputSlot);
                 return isLoadable(moving) && (isEmpty(waiting) || waiting.isSimilar(moving));
             }
             return true;
@@ -475,9 +525,9 @@ public class RiftMenu implements Listener {
             return;
         }
         int size = event.getInventory().getSize();
-        boolean allowed = holder.page == Page.MAIN;
+        boolean allowed = holder.inputSlot >= 0;
         for (int raw : event.getRawSlots()) {
-            if (raw < size && (raw != INPUT_SLOT || !isLoadable(event.getOldCursor()))) {
+            if (raw < size && (raw != holder.inputSlot || !isLoadable(event.getOldCursor()))) {
                 allowed = false;
             }
         }
@@ -490,10 +540,10 @@ public class RiftMenu implements Listener {
     @EventHandler
     public void on(InventoryCloseEvent event) {
         if (event.getInventory().getHolder() instanceof Holder holder
-                && holder.page == Page.MAIN
+                && holder.inputSlot >= 0
                 && event.getPlayer() instanceof Player player) {
-            ItemStack left = event.getInventory().getItem(INPUT_SLOT);
-            event.getInventory().setItem(INPUT_SLOT, null);
+            ItemStack left = event.getInventory().getItem(holder.inputSlot);
+            event.getInventory().setItem(holder.inputSlot, null);
             give(player, left);
         }
     }
@@ -502,9 +552,9 @@ public class RiftMenu implements Listener {
     void shutdown() {
         for (Player player : Bukkit.getOnlinePlayers()) {
             Inventory top = player.getOpenInventory().getTopInventory();
-            if (top.getHolder() instanceof Holder holder && holder.page == Page.MAIN) {
-                give(player, top.getItem(INPUT_SLOT));
-                top.setItem(INPUT_SLOT, null);
+            if (top.getHolder() instanceof Holder holder && holder.inputSlot >= 0) {
+                give(player, top.getItem(holder.inputSlot));
+                top.setItem(holder.inputSlot, null);
                 player.closeInventory();
             }
         }
@@ -527,7 +577,7 @@ public class RiftMenu implements Listener {
     private void load(Player player, Holder holder) {
         RiftSettings settings = module.settings();
         Inventory inventory = holder.inventory;
-        ItemStack input = inventory.getItem(INPUT_SLOT);
+        ItemStack input = inventory.getItem(holder.inputSlot);
         ItemStack gun = player.getInventory().getItem(holder.slot);
         RiftItems.Type type = RiftItems.type(input);
         if (type == RiftItems.Type.PORTAL_FLUID) {
@@ -539,10 +589,10 @@ public class RiftMenu implements Listener {
             }
             RiftItems.setCharges(gun, Math.min(settings.tankCapacity(), charges + settings.riftsPerFluid()), settings);
             if (input.getAmount() == 1) {
-                inventory.setItem(INPUT_SLOT, new ItemStack(Material.GLASS_BOTTLE));
+                inventory.setItem(holder.inputSlot, new ItemStack(Material.GLASS_BOTTLE));
             } else {
                 input.setAmount(input.getAmount() - 1);
-                inventory.setItem(INPUT_SLOT, input);
+                inventory.setItem(holder.inputSlot, input);
                 give(player, new ItemStack(Material.GLASS_BOTTLE));
             }
             player.playSound(player, Sound.ITEM_BOTTLE_EMPTY, 1f, 0.9f);
@@ -552,7 +602,7 @@ public class RiftMenu implements Listener {
             long start = Math.max(System.currentTimeMillis(), RiftItems.attunedUntil(gun));
             RiftItems.attune(gun, start + settings.compassMillis(), settings);
             input.setAmount(input.getAmount() - 1);
-            inventory.setItem(INPUT_SLOT, input.getAmount() > 0 ? input : null);
+            inventory.setItem(holder.inputSlot, input.getAmount() > 0 ? input : null);
             player.playSound(player, Sound.ITEM_LODESTONE_COMPASS_LOCK, 1f, 1f);
             player.playSound(player, Sound.BLOCK_BEACON_POWER_SELECT, 0.6f, 1.6f);
             player.sendMessage(text(player, "rift.attuned", Map.of("time", RiftItems.remaining(gun))));
@@ -563,16 +613,16 @@ public class RiftMenu implements Listener {
         }
         player.getInventory().setItem(holder.slot, gun);
         // refresh the header in place; reopening would hand back what is still waiting in the slot
-        inventory.setItem(2, compassStatus(player, gun));
-        inventory.setItem(4, gun.clone());
-        inventory.setItem(LOAD_SLOT, loadButton(player, gun));
+        inventory.setItem(holder.compassSlot, compassStatus(player, gun));
+        inventory.setItem(holder.gunSlot, gun.clone());
+        inventory.setItem(holder.loadSlot, loadButton(player, gun));
         if (type == RiftItems.Type.RIFT_COMPASS) {
             refreshAtlasButton(player, holder, gun);
         }
     }
 
     /** Sets a home of the gun in the given slot to where the player stands. */
-    private void setHome(Player player, int slot, int home) {
+    void setHome(Player player, int slot, int home) {
         ItemStack gun = player.getInventory().getItem(slot);
         if (!RiftItems.isGun(gun)) {
             return;
