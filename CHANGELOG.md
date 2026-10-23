@@ -5,6 +5,8 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+## [1.6.8] - 2026-10-23
+
 ### Added
 - **Native rift menu**: the interdimensional gun's menu is a real window now instead of a chest. Java players on
   Paper 1.21.6+ get a dialog with the gun, its destination, tank and compass at the top and the destinations as
