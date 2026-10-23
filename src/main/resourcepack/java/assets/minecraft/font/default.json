@@ -29,7 +29,7 @@
       "type": "bitmap",
       "file": "porticlegun:font/tank_gauge.png",
       "ascent": -7,
-      "height": 48,
+      "height": 47,
       "chars": [
         "\ue9b1\ue9b2\ue9b3\ue9b4\ue9b5\ue9b6\ue9b7\ue9b8\ue9b9\ue9ba\ue9bb\ue9bc\ue9bd"
       ]
@@ -38,8 +38,23 @@
       "type": "space",
       "advances": {
         "\ue9c0": -8,
-        "\ue9c1": -23,
-        "\ue9c2": -159
+        "\ue9c1": -24,
+        "\ue9c2": -158
+      }
+    },
+    {
+      "type": "bitmap",
+      "file": "porticlegun:font/settings_gui.png",
+      "ascent": 13,
+      "height": 71,
+      "chars": [
+        "\ue9d0"
+      ]
+    },
+    {
+      "type": "space",
+      "advances": {
+        "\ue9d1": -169
       }
     }
   ]

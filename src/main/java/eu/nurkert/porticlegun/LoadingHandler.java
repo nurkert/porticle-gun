@@ -72,7 +72,7 @@ public class LoadingHandler implements Listener {
         register(porticleGunCommand.getMenu());
         register(new VisualizationHandler(activePortals, gunColors));
         register(new TeleportationHandler(activePortals));
-        register(new SettingsHandler(activePortals, gunColors, persistence));
+        register(new SettingsHandler(activePortals, gunColors, persistence, resourcePackHandler::isLoaded));
         register(new TitleHandler());
         portalHud = new PortalHud(plugin, resourcePackHandler);
         register(portalHud);
