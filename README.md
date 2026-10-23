@@ -81,7 +81,8 @@ Players without it simply see a brewing stand. More in [docs/resourcepack.md](do
 
 The big brother of the PorticleGun. Instead of two portals on walls it tears **green rifts** right into the air: one in
 front of you, one at the destination, both wobbling and walkable in both directions, so friends can follow you before
-they close. Left click opens a rift, right click opens the menu to choose where to go:
+they close. Left click opens a rift, right click opens the menu to choose where to go. The menu is a native window:
+a dialog on Java (Paper 1.21.6+) and a form with big icon buttons on Bedrock, only filling the tank is a small chest:
 
 | Destination | |
 |---|---|

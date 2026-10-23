@@ -5,6 +5,14 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+### Added
+- **Native rift menu**: the interdimensional gun's menu is a real window now instead of a chest. Java players on
+  Paper 1.21.6+ get a dialog with the gun, its destination, tank and compass at the top and the destinations as
+  buttons (with icons on 26.x servers); Bedrock players with Floodgate get a form with big icon buttons made for
+  touch and controllers. Homes, delete confirmation and the rift atlas are windows too. Only filling the tank stays a
+  small chest, because only a chest has a slot to put items in. `native-menus: false` brings back the chest menu,
+  which Spigot and older servers keep using.
+
 ### Changed
 - **New PorticleGun model**: the rear pod is open at the back, a dark lined opening for the hand with a glow in the
   secondary colour inside. The front now has three identical curved claws 120° apart around the barrel, one on top
