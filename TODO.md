@@ -3,7 +3,7 @@
 Befunde aus dem Code-Review. Status: `[ ]` offen · `[~]` in Arbeit · `[x]` erledigt · `[!]` gesperrt, nur nach Rücksprache.
 
 > **Regel:** Das Einstellungs-GUI (`SettingsHandler`, Dropper-Menü) nur nach Absprache ändern. Zuletzt auf Wunsch des Users umgebaut (1.6.3: Pfeile in Zielfarbe, gefüllte Banner, Animation); Layout, Slots und Bedienung sind gleich geblieben.
-> **Release:** [`v1.6.9`](https://github.com/nurkert/porticle-gun/releases/tag/v1.6.9) (2026-10-23). Damit werden die offenen „Du:“-Punkte (PG-14, PG-15, PG-16, PG-22, PG-23, PG-24, PG-25, PG-26) auf dem Server getestet.
+> **Release:** [`v1.6.10`](https://github.com/nurkert/porticle-gun/releases/tag/v1.6.10) (2026-10-23). Damit werden die offenen „Du:“-Punkte (PG-14, PG-15, PG-16, PG-22, PG-23, PG-24, PG-25, PG-26) auf dem Server getestet.
 
 Reihenfolge = Priorität. Unter jedem Punkt: Problem, Lösungsansatz, Notizen beim Abarbeiten.
 
@@ -175,9 +175,11 @@ Reihenfolge = Priorität. Unter jedem Punkt: Problem, Lösungsansatz, Notizen be
   - [x] Natives Riss-Menü: Java-Dialog (Paper 1.21.6+, Icons auf 26.x), Bedrock-Form (Floodgate), nur Tank füllen als Truhe; `native-menus: false` für das alte Truhen-Menü
   - [x] PorticleGun-Modell: hinten offen für die Hand, drei gleiche Klauen im 120°-Dreieck (exakt ab Java 1.21.11 per Overlay, davor 22,5°)
   - [x] 1.6.9: Pack-Overlay-Fix (1.6.8 wurde von 1.21.9+-Clients abgelehnt → lila-schwarze Würfel), kein „Warte auf Antwort“ mehr, Riss-Menü mit Untermenüs
+  - [x] 1.6.10: gezeichnetes Tank-Menü (Java mit Pack; Rückfall Glasscheiben), Homes umbenennen (Dialog/Form/Chat), Vanilla-Farben in Fenstern
+  - [ ] **Du:** Tank-Menü (Java mit Pack, Bedrock) und Homes umbenennen testen
   - [ ] **Du:** Neues Riss-Menü auf Java und Bedrock testen (Ziele, Homes, Atlas, Tank füllen und zurück)
   - [ ] **Du:** Neues Gun-Modell im Spiel ansehen (Java, Bedrock; wenn möglich auch ein 1.21.11-Client)
-  - [ ] **Du:** Auf eurem Server prüfen, ob nach dem Update auf 1.6.9 (u. a. ob die alten Homes auf der Gun landen) Portale und Menüs wieder gehen; sonst `logs/latest.log` schicken
+  - [ ] **Du:** Auf eurem Server prüfen, ob nach dem Update auf 1.6.10 (u. a. ob die alten Homes auf der Gun landen) Portale und Menüs wieder gehen; sonst `logs/latest.log` schicken
   - [ ] **Du:** Riss-Gun auf Java und Bedrock: Links-/Rechtsklick, neues Menü, Partikel, kein Lag beim Zufallsziel
   - [ ] **Du:** Portal-Loop (Boden + Decke) und Gun aus dem Inventar werfen, Java und Bedrock
   - Notizen: Lag auf dem lokalen Testserver kam vor allem vom Mac: Prozesse aus Claude Code laufen mit Hintergrund-Priorität (PRI 4), dazu Speicherdruck (llama-server, Client, Photoshop). Testserver jetzt über Terminal starten (`start-server.command` im Scratchpad bzw. `scripts/dev-server.sh` im eigenen Terminal). Die Struktursuche des Riss-Atlas läuft weiter im Hauptthread (die Server-API bietet keine asynchrone Variante); bei Rucklern den `structure-search-radius` senken.

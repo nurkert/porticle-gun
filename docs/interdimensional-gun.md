@@ -30,11 +30,14 @@ The menu is a native window wherever the server allows it:
 
 The current destination is marked with a green tick. Choosing a destination closes the window; the action bar confirms
 it, and the next attack opens the rift. "Homes" opens the gun's homes (an empty one is set to the current position and
-chosen with one click, a set one offers travel there, move here and delete with confirmation), "Rift atlas" the
+chosen with one click, a set one offers travel there, move here, rename and delete with confirmation), "Rift atlas" the
 structures. With the atlas still locked, clicking it inserts a rift compass from the inventory.
 
-**Fill tank** opens a small chest, the only part that needs a slot: the gun between its compass status and the free
-slot. Put portal fluid or a rift compass into the slot and click the load button to load one: a single bottle turns
+**Fill tank** opens a small chest, the only part that needs a slot. Java players with the resource pack get a drawn
+machine instead of glass panes: the input slot (with faint outlines of a bottle and a compass), a pipe into a big
+green load button, the gun on a lit pedestal with its compass status below, and a glass tube on the right that fills
+with the tank. Only this chest's title carries the drawing, so no other menu changes; Bedrock players and players
+without the pack get the chest with glass panes. In both, the gun sits next to the free slot. Put portal fluid or a rift compass into the slot and click the load button to load one: a single bottle turns
 into an empty bottle in the slot, from a stack the empty bottle goes to the inventory (or drops when it is full).
 Anything left in the slot goes back to the inventory when the chest closes; "Back" returns to the window.
 
@@ -61,10 +64,12 @@ Bedrock players on servers with Geyser but without Floodgate get the Java dialog
   blocks above, no lava next to it, and in the nether it is below the bedrock roof. In the end only islands count; the
   main island is the fallback. If nothing is found within `search-attempts`, the player is told and nothing is used up.
 - **World spawn** of any world.
-- **Homes**: `homes` slots per gun, stored on the gun item itself: every gun has its own homes, and they go with it
+- **Homes**: `homes` slots per gun, stored on the gun item itself (names included): every gun has its own homes, and they go with it
   when it changes hands. Guns from older versions take over the homes their player had (kept per player before) the
   first time the player opens the menu or opens a rift to a home with them. An empty slot is set to the current position with one click; a set home opens
-  a page to travel there, move it to the current position or delete it (with confirmation).
+  a page to travel there, move it to the current position, rename it or delete it (with confirmation). A name is up to
+  24 characters: typed into a text field on Java (dialog) and Bedrock (form), in chat in the chest menu; an empty name
+  brings back "Home 2" and the like. The name shows in the menus, the action bar and the gun's tooltip.
 - **Back**: where the player last stepped into a rift.
 - **Last death**.
 

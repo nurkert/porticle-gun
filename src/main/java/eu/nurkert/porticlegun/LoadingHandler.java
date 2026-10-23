@@ -77,7 +77,7 @@ public class LoadingHandler implements Listener {
         portalHud = new PortalHud(plugin, resourcePackHandler);
         register(portalHud);
         if (plugin.getConfig().getBoolean("interdimensional-gun.enabled", true)) {
-            riftModule = new RiftModule(plugin, this::register);
+            riftModule = new RiftModule(plugin, this::register, resourcePackHandler::isLoaded);
         }
         updateGravityGunRegistration();
     }

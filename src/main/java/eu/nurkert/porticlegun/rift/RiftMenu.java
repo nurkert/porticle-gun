@@ -3,13 +3,18 @@ package eu.nurkert.porticlegun.rift;
 import eu.nurkert.porticlegun.builders.BannerBuilder;
 import eu.nurkert.porticlegun.builders.ItemBuilder;
 import eu.nurkert.porticlegun.messages.MessageManager;
+import eu.nurkert.porticlegun.util.BedrockSupport;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Consumer;
 import net.md_5.bungee.api.ChatMessageType;
 import net.md_5.bungee.api.chat.TextComponent;
 import org.bukkit.Bukkit;
+import org.bukkit.ChatColor;
 import org.bukkit.DyeColor;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -19,11 +24,14 @@ import org.bukkit.block.banner.Pattern;
 import org.bukkit.block.banner.PatternType;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
+import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.inventory.InventoryAction;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.inventory.InventoryCloseEvent;
 import org.bukkit.event.inventory.InventoryDragEvent;
+import org.bukkit.event.player.AsyncPlayerChatEvent;
+import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.InventoryHolder;
 import org.bukkit.inventory.ItemFlag;
@@ -61,6 +69,8 @@ public class RiftMenu implements Listener {
         int loadSlot = -1;
         int compassSlot = -1;
         int gunSlot = -1;
+        // the tank page drawn by the resource pack
+        boolean drawn;
 
         Holder(Page page, int home, int slot, String gunId) {
             this.page = page;
@@ -84,7 +94,11 @@ public class RiftMenu implements Listener {
     private static final int WORLDS_PER_ROW = 4;
     private static final int MAX_WORLDS = 8;
 
+    static final int MAX_HOME_NAME = 24;
+
     private final RiftModule module;
+    // players whose next chat line names a home
+    private final Map<UUID, Consumer<String>> namePrompts = new ConcurrentHashMap<>();
 
     public RiftMenu(RiftModule module) {
         this.module = module;
@@ -224,7 +238,7 @@ public class RiftMenu implements Listener {
             } else {
                 icon = item(
                         Material.LIME_BED,
-                        text(player, "rift.menu.home", placeholders),
+                        text(player, "rift.screen.home-label", Map.of("name", RiftNames.home(gun, number, player))),
                         lines(player, "rift.menu.home-lore", placeholders));
                 if (RiftDestination.home(home).equals(selected)) {
                     markSelected(player, icon);
@@ -309,7 +323,8 @@ public class RiftMenu implements Listener {
 
     /**
      * The tank page of the native menus: the gun between its compass status and the free slot with the load button.
-     * Back returns to the native menu.
+     * Java players with the resource pack get the drawn version ({@link TankGui}), everyone else panes. Back returns
+     * to the native menu.
      */
     void openTank(Player player, int slot, Runnable back) {
         ItemStack gun = player.getInventory().getItem(slot);
@@ -317,24 +332,82 @@ public class RiftMenu implements Listener {
             return;
         }
         Holder holder = new Holder(Page.TANK, -1, slot, RiftItems.gunId(gun));
-        holder.inputSlot = TANK_INPUT_SLOT;
-        holder.loadSlot = TANK_LOAD_SLOT;
-        holder.compassSlot = 11;
-        holder.gunSlot = 13;
-        Inventory inventory = create(holder, 27, text(player, "rift.screen.tank-title"));
-        fill(inventory);
-        ItemStack accent = pane(Material.LIME_STAINED_GLASS_PANE);
-        inventory.setItem(12, accent);
-        inventory.setItem(14, accent);
-        inventory.setItem(holder.compassSlot, compassStatus(player, gun));
-        inventory.setItem(holder.gunSlot, gun.clone());
-        inventory.setItem(holder.inputSlot, null);
-        button(holder, inventory, holder.loadSlot, loadButton(player, gun), () -> load(player, holder));
-        button(holder, inventory, 22, backBanner(text(player, "rift.menu.back")), () -> {
+        holder.drawn = !BedrockSupport.isBedrock(player) && module.hasResourcePack(player);
+        Runnable backAction = () -> {
             player.closeInventory(); // hands back what waits in the free slot
             back.run();
-        });
+        };
+        Inventory inventory;
+        if (holder.drawn) {
+            holder.inputSlot = TankGui.INPUT;
+            holder.loadSlot = TankGui.LOAD;
+            holder.compassSlot = TankGui.COMPASS;
+            holder.gunSlot = TankGui.GUN;
+            inventory = create(holder, 27, tankTitle(player, gun));
+            ItemStack frame = TankGui.blank(null, List.of());
+            for (int i = 0; i < 27; i++) {
+                inventory.setItem(i, frame);
+            }
+            button(
+                    holder,
+                    inventory,
+                    TankGui.BACK,
+                    TankGui.blank(text(player, "rift.menu.back"), List.of()),
+                    backAction);
+            holder.actions.put(TankGui.LOAD_RIGHT, () -> load(player, holder));
+        } else {
+            holder.inputSlot = TANK_INPUT_SLOT;
+            holder.loadSlot = TANK_LOAD_SLOT;
+            holder.compassSlot = 11;
+            holder.gunSlot = 13;
+            inventory = create(holder, 27, text(player, "rift.screen.tank-title"));
+            fill(inventory);
+            ItemStack accent = pane(Material.LIME_STAINED_GLASS_PANE);
+            inventory.setItem(12, accent);
+            inventory.setItem(14, accent);
+            button(holder, inventory, 22, backBanner(text(player, "rift.menu.back")), backAction);
+        }
+        inventory.setItem(holder.inputSlot, null);
+        holder.actions.put(holder.loadSlot, () -> load(player, holder));
+        refreshTank(player, holder, gun);
         player.openInventory(inventory);
+    }
+
+    /** Shows the gun's current state on the tank page: compass, gun, load button and (drawn) the gauge. */
+    private void refreshTank(Player player, Holder holder, ItemStack gun) {
+        Inventory inventory = holder.inventory;
+        inventory.setItem(holder.compassSlot, compassStatus(player, gun));
+        inventory.setItem(holder.gunSlot, gun.clone());
+        ItemStack load = loadButton(player, gun);
+        if (!holder.drawn) {
+            inventory.setItem(holder.loadSlot, load);
+            return;
+        }
+        ItemMeta meta = load.getItemMeta();
+        ItemStack button = TankGui.blank(meta.getDisplayName(), meta.hasLore() ? meta.getLore() : List.of());
+        inventory.setItem(TankGui.LOAD, button);
+        inventory.setItem(TankGui.LOAD_RIGHT, button);
+        RiftSettings settings = module.settings();
+        int charges = RiftItems.charges(gun);
+        ItemStack gauge = TankGui.blank(
+                text(
+                        player,
+                        "rift.screen.tank",
+                        Map.of(
+                                "bar", RiftItems.tankBar(charges, settings.tankCapacity()),
+                                "charges", String.valueOf(charges),
+                                "capacity", String.valueOf(settings.tankCapacity()))),
+                List.of());
+        for (int gaugeSlot : TankGui.GAUGE) {
+            inventory.setItem(gaugeSlot, gauge);
+        }
+    }
+
+    private String tankTitle(Player player, ItemStack gun) {
+        return TankGui.title(
+                text(player, "rift.screen.tank-title"),
+                RiftItems.charges(gun),
+                module.settings().tankCapacity());
     }
 
     /**
@@ -379,7 +452,10 @@ public class RiftMenu implements Listener {
         Holder holder = new Holder(Page.HOME, home, slot, RiftItems.gunId(gun));
         Map<String, String> placeholders = new HashMap<>(coordinates(RiftItems.home(gun, home)));
         placeholders.put("home", String.valueOf(home + 1));
-        Inventory inventory = create(holder, 27, text(player, "rift.menu.home-title", placeholders));
+        Inventory inventory = create(
+                holder,
+                27,
+                text(player, "rift.menu.home-title-named", Map.of("name", RiftNames.home(gun, home, player))));
         fill(inventory);
         button(
                 holder,
@@ -393,7 +469,7 @@ public class RiftMenu implements Listener {
         button(
                 holder,
                 inventory,
-                13,
+                12,
                 item(
                         Material.COMPASS,
                         text(player, "rift.menu.home-set"),
@@ -402,6 +478,15 @@ public class RiftMenu implements Listener {
                     setHome(player, holder.slot, home);
                     openHome(player, holder.slot, home);
                 });
+        button(
+                holder,
+                inventory,
+                14,
+                item(
+                        Material.NAME_TAG,
+                        text(player, "rift.menu.home-rename"),
+                        lines(player, "rift.menu.home-rename-lore", placeholders)),
+                () -> askName(player, holder.slot, home));
         button(
                 holder,
                 inventory,
@@ -612,13 +697,86 @@ public class RiftMenu implements Listener {
             return;
         }
         player.getInventory().setItem(holder.slot, gun);
-        // refresh the header in place; reopening would hand back what is still waiting in the slot
-        inventory.setItem(holder.compassSlot, compassStatus(player, gun));
-        inventory.setItem(holder.gunSlot, gun.clone());
-        inventory.setItem(holder.loadSlot, loadButton(player, gun));
+        // refresh in place; reopening would hand back what is still waiting in the slot
+        if (holder.page == Page.TANK) {
+            refreshTank(player, holder, gun);
+            if (holder.drawn && player.getOpenInventory().getTopInventory() == inventory) {
+                player.getOpenInventory().setTitle(tankTitle(player, gun)); // the gauge lives in the title
+            }
+        } else {
+            inventory.setItem(holder.compassSlot, compassStatus(player, gun));
+            inventory.setItem(holder.gunSlot, gun.clone());
+            inventory.setItem(holder.loadSlot, loadButton(player, gun));
+        }
         if (type == RiftItems.Type.RIFT_COMPASS) {
             refreshAtlasButton(player, holder, gun);
         }
+    }
+
+    /**
+     * Names a home of the gun in the given slot: colour codes are dropped and the name is cut to
+     * {@link #MAX_HOME_NAME} characters; an empty name brings back the default one.
+     */
+    void renameHome(Player player, int slot, int home, String entered) {
+        ItemStack gun = player.getInventory().getItem(slot);
+        if (!RiftItems.isGun(gun) || RiftItems.home(gun, home) == null) {
+            return;
+        }
+        String name = ChatColor.stripColor(ChatColor.translateAlternateColorCodes('&', entered))
+                .strip();
+        if (name.codePointCount(0, name.length()) > MAX_HOME_NAME) {
+            name = name.substring(0, name.offsetByCodePoints(0, MAX_HOME_NAME)).strip();
+        }
+        RiftItems.setHomeName(gun, home, name.isEmpty() ? null : name);
+        player.getInventory().setItem(slot, gun);
+        if (name.isEmpty()) {
+            player.sendMessage(text(player, "rift.home-name-reset", Map.of("home", String.valueOf(home + 1))));
+        } else {
+            player.playSound(player, Sound.ENTITY_VILLAGER_WORK_CARTOGRAPHER, 0.7f, 1.2f);
+            player.sendMessage(text(player, "rift.home-renamed", Map.of("name", name)));
+        }
+    }
+
+    /** The chest menu asks for a home's name in chat; the next chat line of the player is the name. */
+    private void askName(Player player, int slot, int home) {
+        ItemStack gun = player.getInventory().getItem(slot);
+        namePrompts.put(player.getUniqueId(), entered -> {
+            renameHome(player, slot, home, entered);
+            openHome(player, slot, home);
+        });
+        player.closeInventory();
+        player.sendMessage(text(
+                player,
+                "rift.rename-chat",
+                Map.of("name", RiftNames.home(gun, home, player), "max", String.valueOf(MAX_HOME_NAME))));
+    }
+
+    @EventHandler(priority = EventPriority.LOWEST)
+    @SuppressWarnings("deprecation") // the event that exists on Spigot and Paper alike
+    public void on(AsyncPlayerChatEvent event) {
+        Consumer<String> prompt = namePrompts.remove(event.getPlayer().getUniqueId());
+        if (prompt == null) {
+            return;
+        }
+        event.setCancelled(true);
+        String message = event.getMessage().strip();
+        Player player = event.getPlayer();
+        Bukkit.getScheduler().runTask(module.plugin(), () -> {
+            if (!player.isOnline()) {
+                return;
+            }
+            if (message.equalsIgnoreCase("cancel")
+                    || message.equalsIgnoreCase(text(player, "rift.rename-cancel-word"))) {
+                player.sendMessage(text(player, "rift.rename-cancelled"));
+                return;
+            }
+            prompt.accept(message);
+        });
+    }
+
+    @EventHandler
+    public void on(PlayerQuitEvent event) {
+        namePrompts.remove(event.getPlayer().getUniqueId());
     }
 
     /** Sets a home of the gun in the given slot to where the player stands. */
@@ -642,8 +800,8 @@ public class RiftMenu implements Listener {
         player.getInventory().setItem(holder.slot, gun);
         player.closeInventory();
         player.playSound(player, Sound.BLOCK_AMETHYST_BLOCK_CHIME, 1f, 1.2f);
-        String ready =
-                text(player, "rift.destination-ready", Map.of("destination", RiftNames.describe(destination, player)));
+        String ready = text(
+                player, "rift.destination-ready", Map.of("destination", RiftNames.describe(destination, player, gun)));
         player.spigot().sendMessage(ChatMessageType.ACTION_BAR, new TextComponent(TextComponent.fromLegacyText(ready)));
     }
 
@@ -722,7 +880,10 @@ public class RiftMenu implements Listener {
         }
         ItemStack icon = item(
                 destinationIcon(destination),
-                text(player, "rift.menu.current-name", Map.of("destination", RiftNames.describe(destination, player))),
+                text(
+                        player,
+                        "rift.menu.current-name",
+                        Map.of("destination", RiftNames.describe(destination, player, gun))),
                 List.of());
         glow(icon);
         return icon;

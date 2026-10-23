@@ -3,6 +3,8 @@ package eu.nurkert.porticlegun.rift;
 import eu.nurkert.porticlegun.PorticleGun;
 import eu.nurkert.porticlegun.persistence.PersistentHandler;
 import java.util.function.Consumer;
+import java.util.function.Predicate;
+import org.bukkit.entity.Player;
 import org.bukkit.event.Listener;
 
 /**
@@ -20,10 +22,12 @@ public class RiftModule {
     private final RiftScreens screens;
     private final RiftGunListener gunListener;
     private final RiftRecipes recipes;
+    private final Predicate<Player> resourcePack;
     private RiftSettings settings;
 
-    public RiftModule(PorticleGun plugin, Consumer<Listener> register) {
+    public RiftModule(PorticleGun plugin, Consumer<Listener> register, Predicate<Player> resourcePack) {
         this.plugin = plugin;
+        this.resourcePack = resourcePack;
         this.settings = RiftSettings.load(plugin.getConfig());
         this.storage = new RiftStorage(new PersistentHandler(plugin, "rift.yml"));
         this.finder = new SafeLocationFinder(plugin);
@@ -79,6 +83,11 @@ public class RiftModule {
 
     RiftMenu menu() {
         return menu;
+    }
+
+    /** @return whether the player's client has loaded the PorticleGun resource pack */
+    boolean hasResourcePack(Player player) {
+        return resourcePack.test(player);
     }
 
     RiftScreens screens() {

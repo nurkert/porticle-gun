@@ -360,7 +360,7 @@ public class RiftGunListener implements Listener {
                                     "destination",
                                             destination == null
                                                     ? MessageManager.getMessage(player, "rift.destination.none")
-                                                    : RiftNames.describe(destination, player),
+                                                    : RiftNames.describe(destination, player, gun),
                                     "bar", RiftItems.tankBar(charges, settings.tankCapacity()),
                                     "charges", String.valueOf(charges),
                                     "capacity", String.valueOf(settings.tankCapacity()))));
