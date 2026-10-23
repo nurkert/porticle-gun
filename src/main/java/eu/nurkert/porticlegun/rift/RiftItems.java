@@ -89,6 +89,10 @@ public final class RiftItems {
         return key("home_" + index);
     }
 
+    private static NamespacedKey homeNameKey(int index) {
+        return key("home_name_" + index);
+    }
+
     private static NamespacedKey homesKey() {
         return key("homes");
     }
@@ -197,10 +201,31 @@ public final class RiftItems {
         PersistentDataContainer data = meta.getPersistentDataContainer();
         if (location == null) {
             data.remove(homeKey(index));
+            data.remove(homeNameKey(index));
         } else {
             data.set(homeKey(index), PersistentDataType.STRING, RiftStorage.serialize(location));
         }
         data.set(homesKey(), PersistentDataType.BYTE, (byte) 1);
+        gun.setItemMeta(meta);
+    }
+
+    /** @return the name a player gave the home, or {@code null} for the default name */
+    static String homeName(ItemStack gun, int index) {
+        if (gun == null || !gun.hasItemMeta()) {
+            return null;
+        }
+        return gun.getItemMeta().getPersistentDataContainer().get(homeNameKey(index), PersistentDataType.STRING);
+    }
+
+    /** Names a home of the gun; {@code null} or a blank name brings back the default name. */
+    static void setHomeName(ItemStack gun, int index, String name) {
+        ItemMeta meta = gun.getItemMeta();
+        PersistentDataContainer data = meta.getPersistentDataContainer();
+        if (name == null || name.isBlank()) {
+            data.remove(homeNameKey(index));
+        } else {
+            data.set(homeNameKey(index), PersistentDataType.STRING, name);
+        }
         gun.setItemMeta(meta);
     }
 
@@ -317,7 +342,7 @@ public final class RiftItems {
                         "destination",
                         destination == null
                                 ? MessageManager.getMessage("rift.destination.none")
-                                : RiftNames.describe(destination, null))));
+                                : RiftNames.describe(destination, null, gun))));
         if (isAttuned(gun)) {
             lore.add(MessageManager.getMessage("items.interdimensional-gun.attuned", Map.of("time", remaining(gun))));
         }

@@ -8,6 +8,9 @@ interface ScreenRenderer {
     /** Shows the screen; button actions arrive on the main thread. */
     void show(Player player, RiftScreen screen);
 
+    /** Asks for a line of text. */
+    void prompt(Player player, RiftPrompt prompt);
+
     /** Closes whatever screen of this kind the player has open. */
     void close(Player player);
 }

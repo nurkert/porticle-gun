@@ -5,6 +5,7 @@ import io.papermc.paper.registry.data.dialog.ActionButton;
 import io.papermc.paper.registry.data.dialog.DialogBase;
 import io.papermc.paper.registry.data.dialog.action.DialogAction;
 import io.papermc.paper.registry.data.dialog.body.DialogBody;
+import io.papermc.paper.registry.data.dialog.input.DialogInput;
 import io.papermc.paper.registry.data.dialog.type.DialogType;
 import java.time.Duration;
 import java.util.ArrayList;
@@ -16,6 +17,7 @@ import net.kyori.adventure.text.event.ClickCallback;
 import net.kyori.adventure.text.object.ObjectContents;
 import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 import org.bukkit.Bukkit;
+import org.bukkit.ChatColor;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;
 
@@ -61,7 +63,7 @@ final class PaperDialogs implements ScreenRenderer {
         for (RiftScreen.Button button : screen.buttons()) {
             buttons.add(button(player, button, width));
         }
-        DialogBase base = DialogBase.builder(LEGACY.deserialize(screen.title()))
+        DialogBase base = DialogBase.builder(title(screen.title()))
                 .canCloseWithEscape(true)
                 .pause(false)
                 // the window stays until the server replaces or closes it right away: no flicker, and no "waiting for
@@ -79,12 +81,47 @@ final class PaperDialogs implements ScreenRenderer {
     }
 
     @Override
+    public void prompt(Player player, RiftPrompt prompt) {
+        List<DialogBody> body =
+                prompt.body().isEmpty() ? List.of() : List.of(DialogBody.plainMessage(lines(prompt.body()), WIDE));
+        DialogBase base = DialogBase.builder(title(prompt.title()))
+                .canCloseWithEscape(true)
+                .pause(false)
+                .afterAction(DialogBase.DialogAfterAction.NONE)
+                .body(body)
+                .inputs(List.of(DialogInput.text("text", LEGACY.deserialize(prompt.label()))
+                        .initial(prompt.initial())
+                        .maxLength(prompt.maxLength())
+                        .width(WIDE)
+                        .build()))
+                .build();
+        ActionButton confirm = ActionButton.builder(LEGACY.deserialize(prompt.confirm()))
+                .width(NARROW)
+                .action(DialogAction.customClick(
+                        (response, audience) -> {
+                            String text = response.getText("text");
+                            run(player, () -> prompt.submit().accept(text == null ? "" : text));
+                        },
+                        CLICKS))
+                .build();
+        ActionButton cancel = ActionButton.builder(LEGACY.deserialize(prompt.cancel()))
+                .width(NARROW)
+                .action(DialogAction.customClick((response, audience) -> run(player, prompt.cancelled()), CLICKS))
+                .build();
+        DialogType type = DialogType.confirmation(confirm, cancel);
+        audience(player)
+                .showDialog(Dialog.create(factory -> factory.empty().base(base).type(type)));
+    }
+
+    @Override
     public void close(Player player) {
         audience(player).closeDialog();
     }
 
     private ActionButton button(Player player, RiftScreen.Button button, int width) {
-        Component label = LEGACY.deserialize((button.selected() ? "§a§l✔ §r" : "") + button.label());
+        // white on the grey buttons like every vanilla button; only the current destination stands out in green
+        String plain = ChatColor.stripColor(button.label());
+        Component label = LEGACY.deserialize(button.selected() ? "§a§l✔ §a" + plain : plain);
         if (sprites && button.icon() != null) {
             label = icon(button.icon()).append(Component.text(" ")).append(label);
         }
@@ -115,8 +152,14 @@ final class PaperDialogs implements ScreenRenderer {
                 Key.key(Key.MINECRAFT_NAMESPACE, icon.javaSprite())));
     }
 
+    /** Body text: light grey reads poorly on the dialog background, so the secondary text is white as in vanilla. */
     private static Component lines(List<String> lines) {
-        return LEGACY.deserialize(String.join("\n", lines));
+        return LEGACY.deserialize(String.join("\n", lines).replace("§7", "§f"));
+    }
+
+    /** Titles are plain white, like the titles of vanilla screens. */
+    private static Component title(String title) {
+        return Component.text(ChatColor.stripColor(title));
     }
 
     private static Audience audience(Player player) {

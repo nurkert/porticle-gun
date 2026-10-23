@@ -5,6 +5,20 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+## [1.6.10] - 2026-10-23
+
+### Added
+- **Named homes**: every home of the interdimensional gun can be renamed, in a text field on Java (dialog) and
+  Bedrock (form), in chat in the chest menu. Names are stored on the gun and show in the menus, the action bar and
+  the gun's tooltip.
+- **Drawn tank menu**: with the resource pack, "Fill tank" is a drawn machine instead of a chest with glass panes:
+  input slot, load button, the gun on a pedestal and a glass tube that fills with the tank. Only this chest changes;
+  Bedrock and players without the pack keep the pane version.
+
+### Changed
+- The native windows use vanilla colours: white titles and button labels (the current destination in green), and on
+  Bedrock the form's own text colour instead of light grey.
+
 ## [1.6.9] - 2026-10-23
 
 ### Fixed

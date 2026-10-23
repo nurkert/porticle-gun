@@ -947,6 +947,7 @@ def java_font():
             },
             {"type": "space", "advances": {HUD_GAP: HUD_GAP_ADVANCE, HUD_LEAD: 1}},
         ]
+        + tank_font_providers()
     }
 
 
@@ -962,6 +963,270 @@ def bedrock_glyph_sheet():
             for x in range(HUD_GLYPH_WIDTH):
                 pixels[cy + y][cx + x] = strip[y][index * HUD_GLYPH_WIDTH + x]
     return pixels
+
+
+# --- tank menu (custom chest background) ----------------------------------------------------------------------------
+# The rift gun's "fill tank" chest draws its own background: a glyph in the chest title, shifted to the window's top
+# left corner, covers the title bar and the three chest rows; the player inventory below stays vanilla. Its outer rim
+# repeats the vanilla window rim, so it joins the vanilla part seamlessly. A second glyph draws the tank gauge's fill.
+# Only this chest's title contains the glyphs, so no other menu changes. Keep in sync with TankGui.java.
+TANK_GUI_WIDTH, TANK_GUI_HEIGHT = 176, 72
+TANK_GUI = ""
+TANK_GAUGE_LEVELS = 12
+TANK_GAUGE_GLYPHS = [chr(0xE9B1 + level) for level in range(TANK_GAUGE_LEVELS + 1)]
+TANK_GAUGE_X, TANK_GAUGE_Y, TANK_GAUGE_W, TANK_GAUGE_H = 154, 20, 12, 48
+# titles start 8 pixels right of the window; one glyph advances by its width plus one pixel
+TANK_SHIFT_START = ""  # to the window's left edge
+TANK_SHIFT_GAUGE = ""  # from behind the background to the gauge
+TANK_SHIFT_TEXT = ""  # from behind the gauge back to where the title text starts
+TANK_SPACES = {
+    TANK_SHIFT_START: -8,
+    TANK_SHIFT_GAUGE: TANK_GAUGE_X - (TANK_GUI_WIDTH + 1),
+    TANK_SHIFT_TEXT: 8 - (TANK_GAUGE_X + TANK_GAUGE_W + 1),
+}
+# the title text's line: its glyphs are 7 pixels above the baseline, which is 6 + 7 pixels below the window's top
+TANK_TITLE_BASELINE = 13
+
+VANILLA_BLACK = (0, 0, 0, 255)
+VANILLA_WHITE = (255, 255, 255, 255)
+VANILLA_FACE = (198, 198, 198, 255)
+VANILLA_SHADOW = (85, 85, 85, 255)
+
+
+def rgba(value, alpha=255):
+    return ((value >> 16) & 0xFF, (value >> 8) & 0xFF, value & 0xFF, alpha)
+
+
+def mix(a, b, t):
+    return tuple(round(a[i] + (b[i] - a[i]) * t) for i in range(3)) + (255,)
+
+
+def tank_gui_background():
+    w, h = TANK_GUI_WIDTH, TANK_GUI_HEIGHT
+    px = [[(0, 0, 0, 0)] * w for _ in range(h)]
+
+    def rect(x0, y0, x1, y1, colour):
+        for y in range(max(0, y0), min(h, y1 + 1)):
+            for x in range(max(0, x0), min(w, x1 + 1)):
+                px[y][x] = colour
+
+    # vanilla window rim with its rounded top corners
+    for y in range(h):
+        if y == 0:
+            rect(2, 0, 172, 0, VANILLA_BLACK)
+        elif y == 1:
+            px[1][1] = VANILLA_BLACK
+            rect(2, 1, 172, 1, VANILLA_WHITE)
+            px[1][173] = VANILLA_BLACK
+        elif y == 2:
+            px[2][0] = VANILLA_BLACK
+            rect(1, 2, 172, 2, VANILLA_WHITE)
+            px[2][173] = VANILLA_FACE
+            px[2][174] = VANILLA_BLACK
+        else:
+            px[y][0] = VANILLA_BLACK
+            rect(1, y, 3 if y == 3 else 2, y, VANILLA_WHITE)
+            rect(4 if y == 3 else 3, y, 172, y, VANILLA_FACE)
+            rect(173, y, 174, y, VANILLA_SHADOW)
+            px[y][175] = VANILLA_BLACK
+
+    # the machine: a dark recessed panel over the three chest rows, lit from the top left like vanilla slots
+    top, bottom, left, right = 16, 70, 7, 168
+    dark_top, dark_bottom = rgba(0x1E252D), rgba(0x10141A)
+    for y in range(top, bottom + 1):
+        shade = mix(dark_top, dark_bottom, (y - top) / (bottom - top))
+        for x in range(left, right + 1):
+            # a faint diagonal brushed-metal grain
+            grain = 3 if (x * 7 + y * 3) % 11 == 0 else 0
+            px[y][x] = tuple(min(255, c + grain) for c in shade[:3]) + (255,)
+    rect(left, top, right, top, rgba(0x373737))
+    rect(left, top, left, bottom, rgba(0x373737))
+    rect(left, bottom, right, bottom, VANILLA_WHITE)
+    rect(right, top, right, bottom, VANILLA_WHITE)
+
+    def slot(col, row, rim=None):
+        x0, y0 = 7 + col * 18, 17 + row * 18
+        rect(x0, y0, x0 + 17, y0 + 17, rgba(0x0E1216))
+        rect(x0, y0, x0 + 17, y0, rgba(0x05070A))
+        rect(x0, y0, x0, y0 + 17, rgba(0x05070A))
+        rect(x0, y0 + 17, x0 + 17, y0 + 17, rgba(0x3B4550))
+        rect(x0 + 17, y0, x0 + 17, y0 + 17, rgba(0x3B4550))
+        if rim:
+            glow_in, glow_out = rgba(rim), mix(rgba(rim), rgba(0x10141A), 0.6)
+            for i in range(-1, 19):
+                for (x, y) in ((x0 + i, y0 - 1), (x0 + i, y0 + 18), (x0 - 1, y0 + i), (x0 + 18, y0 + i)):
+                    if 0 <= x < w and 0 <= y < h:
+                        corner = i in (-1, 18)
+                        px[y][x] = glow_out if corner else glow_in
+        return x0, y0
+
+    def ghost(x0, y0, art, colour):
+        for dy, line in enumerate(art):
+            for dx, ch in enumerate(line):
+                if ch == "#":
+                    px[y0 + dy][x0 + dx] = colour
+
+    green = RIFT_GREEN
+    # input: a glowing slot with faint outlines of what goes in (a bottle and a compass)
+    ix, iy = slot(1, 1, rim=green)
+    faint = mix(rgba(0x0E1216), rgba(green), 0.22)
+    ghost(ix + 2, iy + 2, [
+        "...##....",
+        "...##....",
+        "..####...",
+        ".#....#..",
+        "#......#.",
+        "#......#.",
+        "#......#.",
+        ".######..",
+    ], faint)
+    ghost(ix + 9, iy + 9, [
+        ".###.",
+        "#...#",
+        "#.#.#",
+        "#...#",
+        ".###.",
+    ], faint)
+
+    # glass pipes carrying the fluid from the input to the button and on to the gun
+    def pipe(x0, x1, y):
+        rect(x0, y - 3, x1, y - 3, rgba(0x5E6A76))
+        rect(x0, y + 3, x1, y + 3, rgba(0x2A3138))
+        rect(x0, y - 2, x1, y + 2, rgba(0x15281E))
+        rect(x0, y - 1, x1, y - 1, mix(rgba(green), rgba(0x15281E), 0.55))
+        rect(x0, y, x1, y, rgba(green))
+        for x in range(x0 + 2, x1, 5):
+            px[y - 2][x] = rgba(0xBFFFD0)
+
+    pipe(43, 60, 43)
+    pipe(97, 114, 43)
+
+    # the load button over two slots: raised, green, with an arrow pointing to the gun
+    bx0, by0, bx1, by1 = 61, 35, 96, 52
+    for y in range(by0, by1 + 1):
+        shade = mix(rgba(0x3FD86A), rgba(0x168A3C), (y - by0) / (by1 - by0))
+        rect(bx0, y, bx1, y, shade)
+    rect(bx0, by0, bx1, by0, rgba(0xB6FFC9))
+    rect(bx0, by0, bx0, by1, rgba(0xB6FFC9))
+    rect(bx0, by1, bx1, by1, rgba(0x0B4A20))
+    rect(bx1, by0, bx1, by1, rgba(0x0B4A20))
+    rect(bx0 - 1, by0 - 1, bx1 + 1, by0 - 1, rgba(0x05070A))
+    rect(bx0 - 1, by1 + 1, bx1 + 1, by1 + 1, rgba(0x05070A))
+    rect(bx0 - 1, by0, bx0 - 1, by1, rgba(0x05070A))
+    rect(bx1 + 1, by0, bx1 + 1, by1, rgba(0x05070A))
+    arrow = [
+        "..........##......",
+        "..........###.....",
+        "..........####....",
+        "#################.",
+        "##################",
+        "#################.",
+        "..........####....",
+        "..........###.....",
+        "..........##......",
+    ]
+    ax, ay = bx0 + (bx1 - bx0 + 1 - len(arrow[0])) // 2, by0 + (by1 - by0 + 1 - len(arrow)) // 2
+    for dy, line in enumerate(arrow):
+        for dx, ch in enumerate(line):
+            if ch == "#":
+                px[ay + dy + 1][ax + dx + 1] = rgba(0x0B4A20)  # shadow
+    for dy, line in enumerate(arrow):
+        for dx, ch in enumerate(line):
+            if ch == "#":
+                px[ay + dy][ax + dx] = rgba(0xFFFFFF)
+
+    # the gun on a lit pedestal, its compass status below
+    slot(6, 1, rim=0x36C2FF)
+    slot(6, 2)
+    # back: a small grey button with an arrow to the left
+    kx, ky = slot(0, 2)
+    rect(kx + 1, ky + 1, kx + 16, ky + 16, rgba(0x2A3138))
+    rect(kx + 1, ky + 1, kx + 16, ky + 1, rgba(0x4A5560))
+    rect(kx + 1, ky + 1, kx + 1, ky + 16, rgba(0x4A5560))
+    ghost(kx + 4, ky + 5, [
+        "...#.....",
+        "..##.....",
+        ".#######.",
+        "########.",
+        ".#######.",
+        "..##.....",
+        "...#.....",
+    ], rgba(0xD8DEE4))
+
+    # the tank gauge: a tall glass tube with ticks, the fill is a separate glyph
+    gx0, gy0, gx1, gy1 = 151, 17, 168, 70
+    rect(gx0, gy0, gx1, gy1, rgba(0x0E1216))
+    rect(gx0 + 1, gy0 + 1, gx1 - 1, gy1 - 1, rgba(0x5E6A76))
+    rect(TANK_GAUGE_X - 1, TANK_GAUGE_Y - 1, TANK_GAUGE_X + TANK_GAUGE_W, TANK_GAUGE_Y + TANK_GAUGE_H, rgba(0x2A3138))
+    rect(TANK_GAUGE_X, TANK_GAUGE_Y, TANK_GAUGE_X + TANK_GAUGE_W - 1, TANK_GAUGE_Y + TANK_GAUGE_H - 1, rgba(0x0A120E))
+    for i in range(1, 4):
+        y = TANK_GAUGE_Y + TANK_GAUGE_H * i // 4
+        rect(TANK_GAUGE_X, y, TANK_GAUGE_X + 2, y, rgba(0x3B4550))
+    # a glass glint down the left side
+    rect(TANK_GAUGE_X + 1, TANK_GAUGE_Y + 2, TANK_GAUGE_X + 1, TANK_GAUGE_Y + TANK_GAUGE_H - 3, rgba(0x2C3A33))
+
+    # a rift tearing through the empty top row, the gun's signature
+    crack = [(38, 26), (44, 23), (52, 27), (60, 22), (69, 26), (77, 21), (86, 27), (94, 23), (103, 26), (111, 22),
+             (120, 25), (128, 22), (136, 26), (143, 24)]
+    for (xa, ya), (xb, yb) in zip(crack, crack[1:]):
+        steps = max(abs(xb - xa), abs(yb - ya))
+        for i in range(steps + 1):
+            x = round(xa + (xb - xa) * i / steps)
+            y = round(ya + (yb - ya) * i / steps)
+            for dy, colour in ((-1, mix(rgba(green), rgba(0x10141A), 0.7)), (1, mix(rgba(green), rgba(0x10141A), 0.7)),
+                               (0, rgba(0xC8FFD6))):
+                if px[y + dy][x][:3] != (200, 255, 214):
+                    px[y + dy][x] = colour
+    return px
+
+
+def tank_gauge_fill(level):
+    w, h = TANK_GAUGE_W, TANK_GAUGE_H
+    px = [[(0, 0, 0, 0)] * w for _ in range(h)]
+    filled = round(h * level / TANK_GAUGE_LEVELS)
+    for y in range(h - filled, h):
+        depth = (y - (h - filled)) / max(1, filled)
+        for x in range(w):
+            colour = mix(rgba(0x8CFF9E), rgba(0x139A3A), min(1.0, depth * 1.3))
+            if x in (0, w - 1):
+                colour = mix(colour, rgba(0x0A120E), 0.35)
+            px[y][x] = colour
+    if filled:
+        for x in range(1, w - 1):
+            px[h - filled][x] = rgba(0xE4FFE9)  # meniscus
+        for bx, by in ((3, 0.35), (7, 0.6), (5, 0.82), (9, 0.2)):
+            y = h - 1 - round((filled - 3) * by)
+            if h - filled + 2 <= y < h:
+                px[y][bx] = rgba(0xD6FFDF)
+    return px
+
+
+def tank_gauge_strip():
+    strip = [[] for _ in range(TANK_GAUGE_H)]
+    for level in range(TANK_GAUGE_LEVELS + 1):
+        for y, row in enumerate(tank_gauge_fill(level)):
+            strip[y].extend(row)
+    return strip
+
+
+def tank_font_providers():
+    return [
+        {
+            "type": "bitmap",
+            "file": f"{NAMESPACE}:font/tank_gui.png",
+            "ascent": TANK_TITLE_BASELINE,
+            "height": TANK_GUI_HEIGHT,
+            "chars": [TANK_GUI],
+        },
+        {
+            "type": "bitmap",
+            "file": f"{NAMESPACE}:font/tank_gauge.png",
+            "ascent": TANK_TITLE_BASELINE - TANK_GAUGE_Y,
+            "height": TANK_GAUGE_H,
+            "chars": ["".join(TANK_GAUGE_GLYPHS)],
+        },
+        {"type": "space", "advances": TANK_SPACES},
+    ]
 
 
 # --- flat items and the rift portal ---------------------------------------------------------------------------------
@@ -1474,6 +1739,10 @@ def main():
     write_png(os.path.join(java, "pack.png"), render(*ICON_VIEW, 128, margin=6))
     write_json(os.path.join(java, "assets", "minecraft", "font", "default.json"), java_font())
     write_png(os.path.join(java_assets, "textures", "font", "portal_hud.png"), hud_glyph_strip())
+    write_png(os.path.join(java_assets, "textures", "font", "tank_gui.png"), tank_gui_background())
+    write_png(os.path.join(java_assets, "textures", "font", "tank_gauge.png"), tank_gauge_strip())
+    # buttons and frame slots of the tank menu: items that draw nothing, so only the background shows
+    write_json(os.path.join(java_assets, "items", "gui_blank.json"), {"model": {"type": "minecraft:empty"}})
 
     bedrock = os.path.join(OUT, "bedrock")
     write_json(os.path.join(bedrock, "manifest.json"), bedrock_manifest())

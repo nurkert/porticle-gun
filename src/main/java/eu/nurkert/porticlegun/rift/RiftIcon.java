@@ -22,6 +22,7 @@ record RiftIcon(String javaSprite, String bedrockPath) {
     static final RiftIcon HOME_EMPTY = new RiftIcon("item/light_gray_dye", "textures/items/dye_powder_silver");
     static final RiftIcon TRAVEL = new RiftIcon("item/ender_pearl", "textures/items/ender_pearl");
     static final RiftIcon SET_HERE = new RiftIcon("item/compass_16", "textures/items/compass_item");
+    static final RiftIcon RENAME = new RiftIcon("item/name_tag", "textures/items/name_tag");
     static final RiftIcon DELETE = new RiftIcon("item/lava_bucket", "textures/items/bucket_lava");
     static final RiftIcon KEEP = new RiftIcon("item/lime_dye", "textures/items/dye_powder_lime");
     static final RiftIcon TANK = new RiftIcon("item/experience_bottle", "textures/items/portal_fluid");

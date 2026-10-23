@@ -88,7 +88,7 @@ a dialog on Java (Paper 1.21.6+) and a form with big icon buttons on Bedrock, on
 |---|---|
 | **Any world** | A random, safe landing spot: solid ground, room to stand, no lava, water, cactus or nether roof. The worlds of the server show up automatically (up to eight), including ones added later. |
 | **World spawn** | The spawn point of any world. |
-| **Homes** | Up to seven home points per gun, set with one click. They are stored on the gun, so they go wherever the gun goes. |
+| **Homes** | Up to seven home points per gun, set with one click and named as you like. They are stored on the gun, so they go wherever the gun goes. |
 | **Back** | Where you last stepped into a rift. |
 | **Last death** | Back to your belongings. |
 

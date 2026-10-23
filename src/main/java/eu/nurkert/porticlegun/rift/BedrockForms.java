@@ -6,6 +6,7 @@ import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;
+import org.geysermc.cumulus.form.CustomForm;
 import org.geysermc.cumulus.form.SimpleForm;
 import org.geysermc.cumulus.util.FormImage;
 import org.geysermc.floodgate.api.FloodgateApi;
@@ -25,9 +26,8 @@ final class BedrockForms implements ScreenRenderer {
     @Override
     public void show(Player player, RiftScreen screen) {
         List<Runnable> actions = new ArrayList<>();
-        SimpleForm.Builder form = SimpleForm.builder()
-                .title(ChatColor.stripColor(screen.title()))
-                .content(String.join("\n", screen.body()));
+        SimpleForm.Builder form =
+                SimpleForm.builder().title(ChatColor.stripColor(screen.title())).content(content(screen.body()));
         for (RiftScreen.Button button : screen.buttons()) {
             add(form, button);
             actions.add(button.action());
@@ -47,14 +47,40 @@ final class BedrockForms implements ScreenRenderer {
     }
 
     @Override
+    public void prompt(Player player, RiftPrompt prompt) {
+        CustomForm.Builder form = CustomForm.builder().title(ChatColor.stripColor(prompt.title()));
+        int input = 0;
+        if (!prompt.body().isEmpty()) {
+            form.label(content(prompt.body()));
+            input = 1;
+        }
+        form.input(ChatColor.stripColor(prompt.label()), "", prompt.initial());
+        int index = input;
+        form.validResultHandler(response -> {
+            String text = response.asInput(index);
+            Bukkit.getScheduler().runTask(plugin, () -> prompt.submit().accept(text == null ? "" : text));
+        });
+        form.closedOrInvalidResultHandler(() -> Bukkit.getScheduler().runTask(plugin, prompt.cancelled()));
+        FloodgateApi.getInstance().sendForm(player.getUniqueId(), form.build());
+    }
+
+    @Override
     public void close(Player player) {
         FloodgateApi.getInstance().closeForm(player.getUniqueId());
     }
 
+    /**
+     * The text above the buttons in the form's own colour: white and light grey (made for Java's dark windows) give
+     * way to it, the colours that read on any background (the tank bar, green, aqua, yellow, red) stay.
+     */
+    private static String content(List<String> lines) {
+        return String.join("\n", lines).replace("§7", "§r").replace("§f", "§r");
+    }
+
     private static void add(SimpleForm.Builder form, RiftScreen.Button button) {
-        // buttons are light grey on Bedrock: the Java colours (made for dark backgrounds) are replaced by dark ones
+        // the form's own text colour on the light buttons; only the current destination stands out in dark green
         String label = ChatColor.stripColor(button.label());
-        String text = button.selected() ? "§2§l✔ " + label : "§0" + label;
+        String text = button.selected() ? "§2§l✔ §r§2" + label : label;
         if (button.detail() != null) {
             text += "\n§8" + ChatColor.stripColor(button.detail());
         }

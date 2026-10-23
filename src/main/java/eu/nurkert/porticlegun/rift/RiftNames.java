@@ -6,6 +6,7 @@ import java.util.Map;
 import org.bukkit.Bukkit;
 import org.bukkit.World;
 import org.bukkit.command.CommandSender;
+import org.bukkit.inventory.ItemStack;
 
 /**
  * Player-facing names of worlds and rift destinations.
@@ -34,6 +35,14 @@ public final class RiftNames {
     }
 
     public static String describe(RiftDestination destination, CommandSender viewer) {
+        return describe(destination, viewer, null);
+    }
+
+    /** Like {@link #describe(RiftDestination, CommandSender)}, with the names the gun's homes were given. */
+    public static String describe(RiftDestination destination, CommandSender viewer, ItemStack gun) {
+        if (destination.type() == RiftDestination.Type.HOME && gun != null) {
+            return home(gun, destination.home(), viewer);
+        }
         return switch (destination.type()) {
             case WORLD -> message(
                     viewer, "rift.destination.random", Map.of("world", world(destination.world(), viewer)));
@@ -46,6 +55,14 @@ public final class RiftNames {
             case STRUCTURE -> message(
                     viewer, "rift.destination.structure", Map.of("structure", structure(destination.world(), viewer)));
         };
+    }
+
+    /** @return the home's given name, or "Home 2" and the like */
+    public static String home(ItemStack gun, int index, CommandSender viewer) {
+        String name = RiftItems.homeName(gun, index);
+        return name != null
+                ? name
+                : message(viewer, "rift.destination.home", Map.of("home", String.valueOf(index + 1)));
     }
 
     public static String structure(String id, CommandSender viewer) {

@@ -120,7 +120,7 @@ final class RiftScreens {
                         : text(
                                 player,
                                 "rift.screen.destination",
-                                Map.of("destination", RiftNames.describe(selected, player))));
+                                Map.of("destination", RiftNames.describe(selected, player, gun))));
         body.add(text(
                 player,
                 "rift.screen.tank",
@@ -316,7 +316,7 @@ final class RiftScreens {
         boolean home = selected != null && selected.type() == RiftDestination.Type.HOME;
         return new RiftScreen.Button(
                 text(player, "rift.screen.homes", Map.of("set", String.valueOf(set), "total", String.valueOf(total))),
-                home ? RiftNames.describe(selected, player) : text(player, "rift.screen.homes-detail"),
+                home ? RiftNames.describe(selected, player, gun) : text(player, "rift.screen.homes-detail"),
                 List.of(),
                 RiftIcon.HOMES,
                 home,
@@ -347,7 +347,7 @@ final class RiftScreens {
                         })));
             } else {
                 buttons.add(new RiftScreen.Button(
-                        text(player, "rift.menu.home", placeholders),
+                        text(player, "rift.screen.home-label", Map.of("name", RiftNames.home(gun, home, player))),
                         place(player, location),
                         List.of(),
                         RiftIcon.HOME,
@@ -377,6 +377,7 @@ final class RiftScreens {
         }
         Map<String, String> placeholders = new HashMap<>(coordinates(location));
         placeholders.put("home", String.valueOf(home + 1));
+        String name = RiftNames.home(gun, home, player);
         List<RiftScreen.Button> buttons = List.of(
                 new RiftScreen.Button(
                         text(player, "rift.menu.home-select"),
@@ -401,17 +402,49 @@ final class RiftScreens {
                         List.of(),
                         RiftIcon.DELETE,
                         false,
-                        act(context, current -> confirmDelete(context, home))));
+                        act(context, current -> confirmDelete(context, home))),
+                new RiftScreen.Button(
+                        text(player, "rift.screen.rename"),
+                        text(player, "rift.screen.rename-detail"),
+                        List.of(),
+                        RiftIcon.RENAME,
+                        false,
+                        act(context, current -> rename(context, home))));
         context.renderer()
                 .show(
                         player,
                         new RiftScreen(
-                                text(player, "rift.screen.home-title", placeholders),
+                                text(player, "rift.screen.home-named", Map.of("name", name)),
                                 null,
                                 List.of(place(player, location)),
                                 buttons,
                                 1,
                                 backTo(context, () -> homes(context))));
+    }
+
+    /** Asks for the home's new name; an empty one brings back the default name. */
+    private void rename(Context context, int home) {
+        Player player = context.player();
+        ItemStack gun = context.gun();
+        String name = RiftNames.home(gun, home, player);
+        String given = RiftItems.homeName(gun, home);
+        context.renderer()
+                .prompt(
+                        player,
+                        new RiftPrompt(
+                                text(player, "rift.screen.rename-title", Map.of("name", name)),
+                                List.of(text(player, "rift.screen.rename-info")),
+                                text(player, "rift.screen.rename-label"),
+                                given == null ? "" : given,
+                                RiftMenu.MAX_HOME_NAME,
+                                text(player, "rift.screen.save"),
+                                text(player, "rift.screen.cancel"),
+                                entered -> act(context, current -> {
+                                            module.menu().renameHome(player, context.slot(), home, entered);
+                                            home(context, home);
+                                        })
+                                        .run(),
+                                act(context, current -> home(context, home))));
     }
 
     private void confirmDelete(Context context, int home) {
@@ -537,8 +570,8 @@ final class RiftScreens {
         player.getInventory().setItem(context.slot(), gun);
         context.renderer().close(player);
         player.playSound(player, Sound.BLOCK_AMETHYST_BLOCK_CHIME, 1f, 1.2f);
-        String ready =
-                text(player, "rift.destination-ready", Map.of("destination", RiftNames.describe(destination, player)));
+        String ready = text(
+                player, "rift.destination-ready", Map.of("destination", RiftNames.describe(destination, player, gun)));
         player.spigot().sendMessage(ChatMessageType.ACTION_BAR, new TextComponent(TextComponent.fromLegacyText(ready)));
     }
 
