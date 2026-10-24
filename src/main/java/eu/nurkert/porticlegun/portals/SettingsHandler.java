@@ -3,7 +3,6 @@ package eu.nurkert.porticlegun.portals;
 import eu.nurkert.porticlegun.PorticleGun;
 import eu.nurkert.porticlegun.audio.AudioHandler;
 import eu.nurkert.porticlegun.builders.BannerBuilder;
-import eu.nurkert.porticlegun.builders.ItemBuilder;
 import eu.nurkert.porticlegun.item.ItemHandler;
 import eu.nurkert.porticlegun.messages.MessageManager;
 import eu.nurkert.porticlegun.persistence.PersistentHandler;
@@ -14,12 +13,12 @@ import eu.nurkert.porticlegun.visualization.PortalColor;
 import eu.nurkert.porticlegun.visualization.concrete.PortalVisualizationType;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.function.Predicate;
 import org.bukkit.Bukkit;
 import org.bukkit.DyeColor;
-import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
 import org.bukkit.block.banner.Pattern;
 import org.bukkit.block.banner.PatternType;
@@ -29,6 +28,7 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.inventory.*;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.inventory.Inventory;
+import org.bukkit.inventory.InventoryHolder;
 import org.bukkit.inventory.InventoryView;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
@@ -65,61 +65,87 @@ public class SettingsHandler implements Listener {
 
     HashMap<String, Long> lastClick = new HashMap<>();
 
+    /** Marks a settings menu and the gun it belongs to, so it is recognised whatever its title looks like. */
+    private static final class Holder implements InventoryHolder {
+        private final String gunID;
+        private Inventory inventory;
+
+        private Holder(String gunID) {
+            this.gunID = gunID;
+        }
+
+        @Override
+        public Inventory getInventory() {
+            return inventory;
+        }
+    }
+
     @EventHandler
     public void onInventoryClick(InventoryClickEvent event) {
-        if (event.getInventory().getType() == InventoryType.DROPPER && event.getRawSlot() < 9) {
-            String gunID = isPorticleSettingsInv(event.getView());
-            if (gunID != null) {
-                event.setCancelled(true);
-                if (event.getCurrentItem() != null) {
-                    Player player = (Player) event.getWhoClicked();
-                    if (event.getRawSlot() == 4) {
-                        if (lastClick.containsKey(gunID) && System.currentTimeMillis() - lastClick.get(gunID) < 500) {
-                            activePortals.closePortals(gunID);
-                            AudioHandler.playSound(
-                                    (Player) event.getWhoClicked(), AudioHandler.PortalSound.PORTAL_CLOSE);
-                        } else {
-                            lastClick.put(gunID, System.currentTimeMillis());
-                        }
-                    } else if (event.getRawSlot() == 0 || event.getRawSlot() == 6) {
-                        PortalColor before = gunColors.getColors(gunID).getPrimary();
-                        if (event.getRawSlot() == 0) {
-                            gunColors.selectNextPrimary(gunID);
-                        } else {
-                            gunColors.selectPreviousPrimary(gunID);
-                        }
-                        changeColour(event.getClickedInventory(), gunID, player, 3, before, event.getRawSlot() == 6);
-                    } else if (event.getRawSlot() == 2 || event.getRawSlot() == 8) {
-                        PortalColor before = gunColors.getColors(gunID).getSecondary();
-                        if (event.getRawSlot() == 2) {
-                            gunColors.selectNextSecondary(gunID);
-                        } else {
-                            gunColors.selectPreviousSecondary(gunID);
-                        }
-                        changeColour(event.getClickedInventory(), gunID, player, 5, before, event.getRawSlot() == 8);
-                    } else if (event.getRawSlot() == 7) {
-
-                        Portal[] portals = new Portal[] {
-                            activePortals.getPrimaryPortal(gunID), activePortals.getSecondaryPortal(gunID)
-                        };
-
-                        for (Portal portal : portals) if (portal != null) portal.toggleVisualizationType();
-
-                        PortalVisualizationType visualizationType = PortalVisualizationType.fromString(
-                                persistence.get("porticleguns." + ItemHandler.saveable(gunID) + ".shape"));
-                        persistence.set(
-                                "porticleguns." + ItemHandler.saveable(gunID) + ".shape",
-                                visualizationType.getNext().toString());
-
-                        Inventory inv = getCurrentSettings(gunID, player);
-                        event.getClickedInventory().setContents(inv.getContents());
-                    } else {
-                        return;
-                    }
-                    AudioHandler.playSound((Player) event.getWhoClicked(), AudioHandler.PortalSound.CLICK);
+        String gunID = isPorticleSettingsInv(event.getView());
+        if (gunID == null) {
+            return;
+        }
+        // nothing moves into or out of the menu; the player's own inventory works as usual, but nothing can be
+        // shift-clicked or double-click collected from there into the menu
+        int clicked = event.getRawSlot();
+        boolean menu =
+                clicked >= 0 && clicked < event.getView().getTopInventory().getSize();
+        if (menu || event.isShiftClick() || event.getAction() == InventoryAction.COLLECT_TO_CURSOR) {
+            event.setCancelled(true);
+        }
+        if (!menu || event.getCurrentItem() == null || !(event.getWhoClicked() instanceof Player player)) {
+            return;
+        }
+        if (clicked == 1) {
+            boolean blocked = !activePortals.isBlocked(gunID);
+            activePortals.setBlocked(gunID, blocked);
+            event.getView().getTopInventory().setItem(1, flat(createConnectionItem(blocked, player), player));
+            AudioHandler.playSound(
+                    player, blocked ? AudioHandler.PortalSound.PORTAL_CLOSE : AudioHandler.PortalSound.CLICK);
+            return;
+        } else if (clicked == 4) {
+            if (lastClick.containsKey(gunID) && System.currentTimeMillis() - lastClick.get(gunID) < 500) {
+                activePortals.closePortals(gunID);
+                AudioHandler.playSound(player, AudioHandler.PortalSound.PORTAL_CLOSE);
+            } else {
+                lastClick.put(gunID, System.currentTimeMillis());
+            }
+        } else if (clicked == 0 || clicked == 6) {
+            PortalColor before = gunColors.getColors(gunID).getPrimary();
+            if (clicked == 0) {
+                gunColors.selectNextPrimary(gunID);
+            } else {
+                gunColors.selectPreviousPrimary(gunID);
+            }
+            changeColour(event.getView().getTopInventory(), gunID, player, 3, before, clicked == 6);
+        } else if (clicked == 2 || clicked == 8) {
+            PortalColor before = gunColors.getColors(gunID).getSecondary();
+            if (clicked == 2) {
+                gunColors.selectNextSecondary(gunID);
+            } else {
+                gunColors.selectPreviousSecondary(gunID);
+            }
+            changeColour(event.getView().getTopInventory(), gunID, player, 5, before, clicked == 8);
+        } else if (clicked == 7) {
+            for (Portal portal :
+                    new Portal[] {activePortals.getPrimaryPortal(gunID), activePortals.getSecondaryPortal(gunID)}) {
+                if (portal != null) {
+                    portal.toggleVisualizationType();
                 }
             }
+            PortalVisualizationType visualizationType = PortalVisualizationType.fromString(
+                    persistence.get("porticleguns." + ItemHandler.saveable(gunID) + ".shape"));
+            persistence.set(
+                    "porticleguns." + ItemHandler.saveable(gunID) + ".shape",
+                    visualizationType.getNext().toString());
+            event.getView()
+                    .getTopInventory()
+                    .setContents(getCurrentSettings(gunID, player).getContents());
+        } else {
+            return;
         }
+        AudioHandler.playSound(player, AudioHandler.PortalSound.CLICK);
     }
 
     /** The colour banner: filled with the colour, so it is clear at a glance which colour a portal has. */
@@ -274,6 +300,44 @@ public class SettingsHandler implements Listener {
     }
 
     @EventHandler
+    public void on(InventoryDragEvent event) {
+        if (isPorticleSettingsInv(event.getView()) == null) {
+            return;
+        }
+        int top = event.getView().getTopInventory().getSize();
+        for (int slot : event.getRawSlots()) {
+            if (slot < top) {
+                event.setCancelled(true);
+                return;
+            }
+        }
+    }
+
+    /**
+     * The connection switch: green passage while things can go through the portals, red bar while they are blocked
+     * (they stay where they are, but push everything back).
+     */
+    private static ItemStack createConnectionItem(boolean blocked, Player player) {
+        String state = MessageManager.getMessage(
+                player, blocked ? "menus.settings.connection-off" : "menus.settings.connection-on");
+        ItemStack item = new BannerBuilder()
+                .setBaseColor(DyeColor.WHITE)
+                .setPatterns(
+                        blocked
+                                ? new Pattern(DyeColor.RED, PatternType.STRIPE_MIDDLE)
+                                : new Pattern(DyeColor.GREEN, PatternType.STRIPE_CENTER),
+                        new Pattern(DyeColor.LIGHT_GRAY, PatternType.BORDER))
+                .hideItemFlags()
+                .setName(MessageManager.getMessage(player, "menus.settings.connection-label", Map.of("state", state)))
+                .build();
+        ItemMeta meta = item.getItemMeta();
+        meta.setLore(List.of(MessageManager.getMessage(
+                player, blocked ? "menus.settings.connection-lore-off" : "menus.settings.connection-lore-on")));
+        item.setItemMeta(meta);
+        return item;
+    }
+
+    @EventHandler
     public void on(PlayerInteractEvent event) {
         // check if player is holding a gun and is sneaking
         if (event.getItem() != null && event.getPlayer().isSneaking()) {
@@ -296,8 +360,10 @@ public class SettingsHandler implements Listener {
      */
     public Inventory getCurrentSettings(String gunID, Player player) {
         String title = MessageManager.getMessage(player, "menus.settings.title");
-        boolean drawn = drawn(player);
-        Inventory inv = Bukkit.createInventory(null, InventoryType.DROPPER, drawn ? SettingsGui.title(title) : title);
+        Holder holder = new Holder(gunID);
+        Inventory inv =
+                Bukkit.createInventory(holder, InventoryType.DROPPER, drawn(player) ? SettingsGui.title(title) : title);
+        holder.inventory = inv;
         GunColors colors = gunColors.getColors(gunID);
         inv.setItem(0, flat(arrow(colors.getPrimary().next(), true, player), player));
         inv.setItem(2, flat(arrow(colors.getSecondary().next(), true, player), player));
@@ -307,18 +373,7 @@ public class SettingsHandler implements Listener {
         inv.setItem(3, flat(getColorPreview(colors.getPrimary(), player), player));
         inv.setItem(5, flat(getColorPreview(colors.getSecondary(), player), player));
 
-        ItemStack background = new ItemBuilder(Material.GRAY_STAINED_GLASS_PANE)
-                .setName(ItemHandler.vanishID(gunID))
-                .build();
-        if (drawn) {
-            // the drawn background leaves the free slot empty: the pane still carries the id, but draws nothing
-            ItemMeta meta = background.getItemMeta();
-            meta.setItemModel(new NamespacedKey(PorticleGun.getInstance(), "gui_blank"));
-            meta.setHideTooltip(true);
-            background.setItemMeta(meta);
-        }
-        for (int i = 1; i <= 3; i++) inv.setItem((i * 3) - 2, background);
-
+        inv.setItem(1, flat(createConnectionItem(activePortals.isBlocked(gunID), player), player));
         inv.setItem(4, flat(createResetItem(player), player));
 
         PortalVisualizationType visualizationType = PortalVisualizationType.fromString(
@@ -386,21 +441,6 @@ public class SettingsHandler implements Listener {
      * @return the gun id if the inventory is a portal settings inventory, null otherwise
      */
     private String isPorticleSettingsInv(InventoryView view) {
-        String title = SettingsGui.plain(view.getTitle());
-        if (MessageManager.matchesConfiguredValue("menus.settings.title", title)) {
-            Inventory inv = view.getTopInventory();
-            ItemStack slot = inv.getItem(1);
-            if (slot != null && slot.getType() == Material.GRAY_STAINED_GLASS_PANE) {
-                if (slot.hasItemMeta()
-                        && slot.getItemMeta().hasDisplayName()
-                        && slot.getItemMeta().getDisplayName().contains("§")) {
-                    String gunID = ItemHandler.revealID(slot.getItemMeta().getDisplayName());
-                    if (ItemHandler.isValidGunID(gunID)) {
-                        return gunID;
-                    }
-                }
-            }
-        }
-        return null;
+        return view.getTopInventory().getHolder() instanceof Holder holder ? holder.gunID : null;
     }
 }

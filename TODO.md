@@ -3,7 +3,7 @@
 Befunde aus dem Code-Review. Status: `[ ]` offen · `[~]` in Arbeit · `[x]` erledigt · `[!]` gesperrt, nur nach Rücksprache.
 
 > **Regel:** Das Einstellungs-GUI (`SettingsHandler`, Dropper-Menü) nur nach Absprache ändern. Zuletzt auf Wunsch des Users umgebaut (1.6.3: Pfeile in Zielfarbe, gefüllte Banner, Animation; 1.6.11 gezeichneter Hintergrund, in 1.6.12 wieder entfernt; jetzt nur flache Banner mit Pack); Layout, Slots und Bedienung sind gleich geblieben.
-> **Release:** [`v1.6.14`](https://github.com/nurkert/porticle-gun/releases/tag/v1.6.14) (2026-10-24). Damit werden die offenen „Du:“-Punkte (PG-14, PG-15, PG-16, PG-22, PG-23, PG-24, PG-25, PG-26) auf dem Server getestet.
+> **Release:** [`v1.6.15`](https://github.com/nurkert/porticle-gun/releases/tag/v1.6.15) (2026-10-24). Damit werden die offenen „Du:“-Punkte (PG-14, PG-15, PG-16, PG-22, PG-23, PG-24, PG-25, PG-26) auf dem Server getestet.
 
 Reihenfolge = Priorität. Unter jedem Punkt: Problem, Lösungsansatz, Notizen beim Abarbeiten.
 
@@ -179,10 +179,12 @@ Reihenfolge = Priorität. Unter jedem Punkt: Problem, Lösungsansatz, Notizen be
   - [x] 1.6.11: gezeichnetes Einstellungsmenü (Layout/Slots unverändert, Rückfall wie bisher), Tank-Menü sauber ausgerichtet, keine Symbole/kein Grau in Java-Dialogen
   - [x] 1.6.12: Einstellungsmenü wieder Vanilla, Banner mit Pack flach/frontal ohne Stange (26.3+), Tank-Menü im hellen Vanilla-Stil, versehentlich eingecheckte Logs entfernt
   - [x] 1.6.14: Einstellungsmenü gezeichnet (26.3+ mit Pack): schlichtes Grau ohne Slots, Farbspalten als Schieberegler-Leisten, Sockel für die Knöpfe; Banner genau 8x16, Titel bleibt mittig
+  - [x] 1.6.15: Fix Banner herausnehmbar (Holder statt Titel), Portale blockieren (Schalter oben Mitte, Kraftfeld, Rückstoß), neue Portal-Partikel (Option B), neues /porticlegun-Menü (Items wie Kreativ, Rezepte als Werkbank, Admin-Portalverwaltung)
+  - [ ] **Du:** /porticlegun-Menü (Nehmen, Rezepte, Admin) und Blockieren auf Java und Bedrock testen; Partikel ansehen
   - [ ] **Du:** Tank-Menü (Java mit Pack, Bedrock) und Homes umbenennen und Einstellungsmenü testen
   - [ ] **Du:** Neues Riss-Menü auf Java und Bedrock testen (Ziele, Homes, Atlas, Tank füllen und zurück)
   - [ ] **Du:** Neues Gun-Modell im Spiel ansehen (Java, Bedrock; wenn möglich auch ein 1.21.11-Client)
-  - [ ] **Du:** Auf eurem Server prüfen, ob nach dem Update auf 1.6.14 (u. a. ob die alten Homes auf der Gun landen) Portale und Menüs wieder gehen; sonst `logs/latest.log` schicken
+  - [ ] **Du:** Auf eurem Server prüfen, ob nach dem Update auf 1.6.15 (u. a. ob die alten Homes auf der Gun landen) Portale und Menüs wieder gehen; sonst `logs/latest.log` schicken
   - [ ] **Du:** Riss-Gun auf Java und Bedrock: Links-/Rechtsklick, neues Menü, Partikel, kein Lag beim Zufallsziel
   - [ ] **Du:** Portal-Loop (Boden + Decke) und Gun aus dem Inventar werfen, Java und Bedrock
   - Notizen: Lag auf dem lokalen Testserver kam vor allem vom Mac: Prozesse aus Claude Code laufen mit Hintergrund-Priorität (PRI 4), dazu Speicherdruck (llama-server, Client, Photoshop). Testserver jetzt über Terminal starten (`start-server.command` im Scratchpad bzw. `scripts/dev-server.sh` im eigenen Terminal). Die Struktursuche des Riss-Atlas läuft weiter im Hauptthread (die Server-API bietet keine asynchrone Variante); bei Rucklern den `structure-search-radius` senken.

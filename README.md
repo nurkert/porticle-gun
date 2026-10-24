@@ -151,7 +151,8 @@ star) and the End (rift shards). Details in [docs/interdimensional-gun.md](docs/
 
 | | |
 |---|---|
-| **Portals** | Two linked portals per gun, oval or rectangular, in any of the configured colours |
+| **Portals** | Two linked portals per gun, oval or rectangular, in any of the configured colours; a closed, glowing rim with a swirl inside, a burst when something goes through |
+| **Blocking** | A switch in the settings menu keeps the portals in place but closed: a force field shows, everything is pushed back |
 | **Physics** | Momentum and view direction are rotated into the exit portal, for players and other entities |
 | **Interdimensional gun** | Wobbling green rift pairs to homes, any world, spawns, back and your last death, fuelled by portal fluid |
 | **Rift atlas** | A rift compass attunes the gun: free rifts and rifts to the nearest village, temple, ancient city, fortress, end city and more |
@@ -197,7 +198,7 @@ Every gun has its own pair of portals. Placing a new primary or secondary portal
 |---|---|---|
 | Primary portal | Left click | Right trigger (RT / R2) |
 | Secondary portal | Right click | Left trigger (LT / L2) |
-| Settings: colours, shape, close portals | Sneak + right click | Sneak + left trigger |
+| Settings: colours, shape, block/open, close portals | Sneak + right click | Sneak + left trigger |
 | Gravity gun: pick up / let go | Drop key (Q) | Drop |
 | Drop the gun itself | Drop key twice quickly | Drop twice quickly |
 | Break free when carried by another player | Sneak | Sneak |
@@ -231,7 +232,7 @@ tank chest is drawn in the vanilla style:
 
 | Command | Description | Permission |
 |---|---|---|
-| `/porticlegun` or `/pg` | Opens a chest with every PorticleGun item, one click takes it (admins also get the interdimensional gun, shards, fluid and compass) | `porticlegun.command` |
+| `/porticlegun` or `/pg` | Opens the PorticleGun menu: take the items like from a creative inventory, look at every recipe on a crafting table, and (admins) manage all portals | `porticlegun.command` |
 | `/porticlegun removeportal [linked]` | Closes the portal you look at (and its partner) | `porticlegun.command` |
 | `/porticlegun give <item> [player] [amount]` | Gives a PorticleGun, interdimensional gun, rift shards, portal fluid or rift compasses | `porticlegun.admin` |
 | `/porticlegun list` | Lists all stored guns and their portals | `porticlegun.admin` |
@@ -241,6 +242,19 @@ tank chest is drawn in the vanilla style:
 
 `porticlegun.command` and `porticlegun.interdimensional` (crafting and using the interdimensional gun) are granted to
 everyone by default, `porticlegun.admin` to operators. The console can run all admin commands.
+
+### The /porticlegun menu
+
+- **Items**: click, shift-click, a number key or the drop key takes an item, as often as you like. Everyone may take
+  the PorticleGun; the interdimensional gun, the rift compass, portal fluid and rift shards only admins.
+- **Recipes**: the button below each item shows its recipe on a crafting table, with a back button. Admins can take the
+  ingredients and the result there too.
+- **Manage portals** (admins): every gun with open portals, listed by gun (with who used it last), by world or by
+  distance. A gun's page shows both portals (a click travels there), switches them between connected and blocked and
+  closes them (two clicks).
+
+Java players with the resource pack see these menus drawn in the vanilla style; Bedrock and everyone else get the same
+slots between glass panes.
 
 <p align="center"><img src="images/divider.png" alt="" width="100%"></p>
 

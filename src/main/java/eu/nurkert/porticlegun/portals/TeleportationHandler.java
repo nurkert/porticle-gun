@@ -1,8 +1,11 @@
 package eu.nurkert.porticlegun.portals;
 
 import eu.nurkert.porticlegun.PorticleGun;
+import eu.nurkert.porticlegun.audio.AudioHandler;
 import eu.nurkert.porticlegun.gravity.GravityGun;
 import eu.nurkert.porticlegun.util.WorldGuardIntegration;
+import eu.nurkert.porticlegun.visualization.GunColors;
+import eu.nurkert.porticlegun.visualization.VisualizationHandler;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -35,6 +38,8 @@ public class TeleportationHandler implements Listener {
     private static final long FALL_PROTECTION_MS = 600;
     // players move faster than this only when something is wrong; keeps a lag spike from flinging them away
     private static final double MAX_SPEED = 4.0;
+    // a blocked portal pushes back at most this often per entity, so standing in it is a soft bounce, not a launch
+    private static final long REPEL_COOLDOWN_MS = 350;
 
     private final Map<UUID, Long> teleportCooldown;
     private final Map<UUID, Portal> portalReentryLock;
@@ -43,6 +48,7 @@ public class TeleportationHandler implements Listener {
     // a player's movement during the last tick: the server does not know a player's real velocity
     private final Map<UUID, Vector> playerMotion = new HashMap<>();
     private final Set<UUID> heldMotion = new HashSet<>();
+    private final Map<UUID, Long> lastRepel = new HashMap<>();
 
     private final ActivePortalsHandler activePortals;
 
@@ -178,6 +184,7 @@ public class TeleportationHandler implements Listener {
     private void cleanupCooldowns() {
         long now = System.currentTimeMillis();
         teleportCooldown.entrySet().removeIf(entry -> now - entry.getValue() > TELEPORT_COOLDOWN_MS * 10);
+        lastRepel.entrySet().removeIf(entry -> now - entry.getValue() > REPEL_COOLDOWN_MS * 10);
         portalReentryLock.entrySet().removeIf(entry -> {
             Portal lockedPortal = entry.getValue();
             if (lockedPortal == null
@@ -201,6 +208,11 @@ public class TeleportationHandler implements Listener {
 
         Portal linkedPortal = portal.getLinkedPortal();
         if (linkedPortal == null || linkedPortal.getLocation().getWorld() == null) {
+            return false;
+        }
+
+        if (activePortals.isBlocked(portal.getGunID())) {
+            repel(entity, portal);
             return false;
         }
 
@@ -252,7 +264,36 @@ public class TeleportationHandler implements Listener {
 
         setPortalLock(entity, linkedPortal);
         setCooldown(entity);
+        GunColors colors = PorticleGun.getInstance().getGunColors().getColors(portal.getGunID());
+        VisualizationHandler.passThrough(
+                portal,
+                linkedPortal,
+                colors.get(portal.getType()).getBukkitColor(),
+                colors.get(linkedPortal.getType()).getBukkitColor());
         return true;
+    }
+
+    /**
+     * Pushes an entity gently back out of a blocked portal: away from the wall (and a little up), up off a floor
+     * portal, down from a ceiling portal.
+     */
+    private void repel(Entity entity, Portal portal) {
+        long now = System.currentTimeMillis();
+        Long last = lastRepel.get(entity.getUniqueId());
+        if (last != null && now - last < REPEL_COOLDOWN_MS) {
+            return;
+        }
+        lastRepel.put(entity.getUniqueId(), now);
+        Vector direction = portal.getDirection().clone().normalize();
+        Vector push = direction.getY() == 0.0
+                ? direction.multiply(0.45).setY(0.2)
+                : new Vector(0, direction.getY() > 0 ? 0.45 : -0.3, 0);
+        entity.setVelocity(push);
+        entity.setFallDistance(0F);
+        VisualizationHandler.repelled(portal);
+        if (entity instanceof Player player) {
+            AudioHandler.playSound(player, AudioHandler.PortalSound.DENY);
+        }
     }
 
     private Vector velocity(Entity entity) {

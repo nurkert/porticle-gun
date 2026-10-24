@@ -177,6 +177,8 @@ public class PortalOpenHandler implements Listener {
             activePortals.setSecondaryPortal(gunID, portal);
         }
         portal.saveAll(persistence, gunColors);
+        // who used the gun last, for the admin menu
+        persistence.set("porticleguns." + ItemHandler.saveable(gunID) + ".user", player.getName());
         PortalCreationAnimation.play(portal);
         TitleHandler.sendPortalStatus(player, gunID);
         AudioHandler.playSound(player, AudioHandler.PortalSound.PORTAL_OPEN);

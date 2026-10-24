@@ -1,8 +1,10 @@
 package eu.nurkert.porticlegun.portals;
 
+import eu.nurkert.porticlegun.item.ItemHandler;
 import eu.nurkert.porticlegun.persistence.PersistentHandler;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Map;
 import org.bukkit.Location;
 import org.bukkit.entity.Player;
 
@@ -14,9 +16,27 @@ public class ActivePortalsHandler {
     private final HashMap<String, Portal> primaryPortals = new HashMap<>();
     private final HashMap<String, Portal> secondaryPortals = new HashMap<>();
     private final PersistentHandler persistence;
+    // whether a gun's portals are blocked, read from portals.yml once per gun
+    private final Map<String, Boolean> blocked = new HashMap<>();
 
     public ActivePortalsHandler(PersistentHandler persistence) {
         this.persistence = persistence;
+    }
+
+    /**
+     * @return whether the gun's portals are blocked: they stay open, but nothing goes through them
+     */
+    public boolean isBlocked(String gunID) {
+        return blocked.computeIfAbsent(gunID, id -> "true".equals(persistence.get(blockedPath(id))));
+    }
+
+    public void setBlocked(String gunID, boolean value) {
+        blocked.put(gunID, value);
+        persistence.set(blockedPath(gunID), value ? true : null);
+    }
+
+    private static String blockedPath(String gunID) {
+        return "porticleguns." + ItemHandler.saveable(gunID) + ".blocked";
     }
 
     public void setPrimaryPortal(String gunID, Portal portal) {
@@ -107,6 +127,7 @@ public class ActivePortalsHandler {
     public void clear() {
         primaryPortals.clear();
         secondaryPortals.clear();
+        blocked.clear();
     }
 
     /**
