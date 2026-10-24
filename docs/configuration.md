@@ -63,7 +63,9 @@ See [interdimensional-gun.md](interdimensional-gun.md).
 | `gravity-gun.enabled` | `true` | `false` disables the gravity gun completely. |
 | `gravity-gun.allow-player-capture` | `false` | Whether players can pick up other players. |
 | `gravity-gun.allow-chest-capture` | `true` | Whether chests can be picked up. Their contents travel with them and survive restarts. |
-| `gravity-gun.block-blacklist` | `[AIR]` | Blocks that cannot be picked up (Bukkit material names). |
+| `gravity-gun.block-blacklist` | `[AIR]` | Blocks that cannot be picked up (Bukkit material names). Blocks that cannot be mined in survival are only picked up in creative mode anyway. |
+
+See [gravity-gun.md](gravity-gun.md) for how carried blocks behave.
 
 ## Portal status overlay
 

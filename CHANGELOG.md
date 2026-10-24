@@ -5,6 +5,27 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+## [1.6.17] - 2026-10-24
+
+### Fixed
+- **Gravity gun lost and dropped chest contents**: picking up one half of a double chest took the contents of both
+  halves, and when it was put down everything that did not fit spilled out, while the chest stayed a broken half.
+  Double chests (and beds, doors and tall plants) are now lifted and put down as one piece, each half with its own
+  contents.
+- **Carried blocks broke into items** when they came down on a slab, a torch, a carpet or inside another block, and
+  when they were held against a wall or the floor. The plugin now places carried blocks itself, on the nearest free spot
+  where they can stand; only without any room nearby do they drop, with everything inside.
+- A door or bed picked up at one half could drop an extra item for the other half.
+
+### Changed
+- Carried blocks keep their complete state: besides container contents and spawner types also spawner settings, sign
+  text, banner patterns, custom names, lecterns, bookshelves, decorated pots, jukeboxes and campfires. On Paper they
+  survive a crash with everything.
+- Blocks that cannot be mined in survival (bedrock, barriers, end portal frames, command blocks) can only be picked up
+  in creative mode; fire, portals and moving pistons not at all. An extended piston is carried retracted.
+- While held, a block stays in front of walls and floors. If the server stops while one is carried, it is put on the
+  ground below.
+
 ## [1.6.16] - 2026-10-24
 
 ### Changed

@@ -50,8 +50,8 @@
       <img src="images/gravity_preview.gif" alt="Gravity gun carrying a spawner" width="49%">
       <img src="images/gravity_preview_mobs.gif" alt="Gravity gun carrying a pig" width="49%"><br>
       <b>Gravity gun included</b><br>
-      Press the drop key and carry animals, monsters or even blocks around. Chests keep their contents, spawners their mob, even across
-      restarts.
+      Press the drop key and carry animals, monsters or even blocks around. Double chests, beds and doors move in one
+      piece, and every block keeps its contents, even across restarts.
     </td>
     <td width="33%" valign="top">
       <img src="images/in_action_preview.gif" alt="Portals in action" width="100%"><br>
@@ -156,7 +156,7 @@ star) and the End (rift shards). Details in [docs/interdimensional-gun.md](docs/
 | **Physics** | Momentum and view direction are rotated into the exit portal, for players and other entities |
 | **Interdimensional gun** | Wobbling green rift pairs to homes, any world, spawns, back and your last death, fuelled by portal fluid |
 | **Rift atlas** | A rift compass attunes the gun: free rifts and rifts to the nearest village, temple, ancient city, fortress, end city and more |
-| **Gravity gun** | Carry blocks and mobs; contents and spawner types survive restarts and crashes |
+| **Gravity gun** | Carry blocks and mobs; blocks keep their complete state, double chests, beds and doors move in one piece, nothing breaks into an item when put down ([details](docs/gravity-gun.md)) |
 | **Portal overlay** | Rings around the crosshair in the portal colours show which portals are open |
 | **3D models** | Own Java and Bedrock models for both guns and the new items, installed into Geyser automatically |
 | **Bedrock** | Floodgate integration, portal status mirrored for controllers, Bedrock pack validated on every change |
@@ -263,6 +263,7 @@ slots between glass panes.
 | Guide | Covers |
 |---|---|
 | [Interdimensional gun](docs/interdimensional-gun.md) | Destinations, placement, tank, drops, recipes |
+| [Gravity gun](docs/gravity-gun.md) | Carrying blocks and mobs, what travels with a block, where it is put down |
 | [Configuration](docs/configuration.md) | Every option in `config.yml`, custom portal colours |
 | [Resource pack and 3D model](docs/resourcepack.md) | How the model is delivered, self-hosting, changing the model |
 | [Bedrock / Geyser](docs/bedrock.md) | Setup, proxies, what Bedrock players get |

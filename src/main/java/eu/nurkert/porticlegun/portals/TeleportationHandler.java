@@ -206,6 +206,12 @@ public class TeleportationHandler implements Listener {
             return false;
         }
 
+        // one half of a double chest, bed or door would come apart from the other
+        GravityGun carrier = GravityGun.getInstance();
+        if (carrier != null && carrier.isMultiBlockPart(entity)) {
+            return false;
+        }
+
         Portal linkedPortal = portal.getLinkedPortal();
         if (linkedPortal == null || linkedPortal.getLocation().getWorld() == null) {
             return false;
