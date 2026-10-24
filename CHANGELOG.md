@@ -5,7 +5,9 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
-## [1.6.13] - 2026-10-24
+## [1.6.14] - 2026-10-24
+
+The tag v1.6.13 failed its build check (formatting) and was never published; 1.6.14 is the same release.
 
 ### Changed
 - **Settings menu with sliders**: with the resource pack on 26.3+ the dropper drops its nine slots for plain vanilla

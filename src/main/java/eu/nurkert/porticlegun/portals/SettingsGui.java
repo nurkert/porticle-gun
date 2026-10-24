@@ -26,8 +26,14 @@ final class SettingsGui {
 
     // advances of the vanilla font (ascii.png, accented.png, nonlatin_european.png and the space), by character
     private static final String[] WIDTHS = {
-        "", "", "!',.:;i|", "`l", " \"()*I[]t{}", "<>fk",
-        "#$%&+-/0123456789=?ABCDEFGHJKLMNOPQRSTUVWXYZ\\^_abcdeghjmnopqrsuvwxyzäöüÄÖÜß", "@~"
+        "",
+        "",
+        "!',.:;i|",
+        "`l",
+        " \"()*I[]t{}",
+        "<>fk",
+        "#$%&+-/0123456789=?ABCDEFGHJKLMNOPQRSTUVWXYZ\\^_abcdeghjmnopqrsuvwxyzäöüÄÖÜß",
+        "@~"
     };
 
     private SettingsGui() {}
