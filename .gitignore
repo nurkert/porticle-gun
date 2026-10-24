@@ -19,6 +19,9 @@ out/
 # Local test server
 run/
 
+# Locally built website
+_site/
+
 # Python
 __pycache__/
 .impeccable/review/

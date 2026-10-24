@@ -96,6 +96,8 @@ window.PG_DE = {
   "dl.all": "Alle Release-Dateien auf GitHub",
   "dl.small": "Java-Spieler bekommen das Resource Pack beim Betreten. Mit Geyser auf demselben Server wird das Bedrock-Pack automatisch installiert, die zusätzlichen Dateien brauchst du also nur zum Selbsthosten.",
   "docs.title": "Alles Weitere, aufgeschrieben",
+  "docs.wiki": "Wiki öffnen",
+  "docs.start": "Erste Schritte",
   "docs.config": "Konfiguration",
   "docs.pack": "Resource Pack",
   "docs.bedrock": "Bedrock und Geyser",
