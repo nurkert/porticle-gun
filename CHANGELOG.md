@@ -5,6 +5,15 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+## [1.6.13] - 2026-10-24
+
+### Changed
+- **Settings menu with sliders**: with the resource pack on 26.3+ the dropper drops its nine slots for plain vanilla
+  grey; each colour column (up arrow, colour, down arrow) sits in one long recessed bar, so it reads as a slider, and
+  the two buttons in the middle get a socket each. The flat banners are now exactly 8x16 pixels so they fit the bars.
+  The title stays centred: the background no longer depends on the title's width. Older clients and Bedrock keep
+  the vanilla dropper.
+
 ## [1.6.12] - 2026-10-23
 
 ### Changed
