@@ -1,0 +1,68 @@
+{
+  "providers": [
+    {
+      "type": "bitmap",
+      "file": "porticlegun:font/portal_hud.png",
+      "ascent": 1,
+      "height": 8,
+      "chars": [
+        "\ue9a0\ue9a1\ue9a2\ue9a3"
+      ]
+    },
+    {
+      "type": "space",
+      "advances": {
+        "\ue9a4": 7,
+        "\ue9a5": 1
+      }
+    },
+    {
+      "type": "bitmap",
+      "file": "porticlegun:font/tank_gui.png",
+      "ascent": 13,
+      "height": 72,
+      "chars": [
+        "\ue9b0"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "porticlegun:font/tank_gauge.png",
+      "ascent": -6,
+      "height": 50,
+      "chars": [
+        "\ue9b1\ue9b2\ue9b3\ue9b4\ue9b5\ue9b6\ue9b7\ue9b8\ue9b9\ue9ba\ue9bb\ue9bc\ue9bd"
+      ]
+    },
+    {
+      "type": "space",
+      "advances": {
+        "\ue9c0": -8,
+        "\ue9c1": -23,
+        "\ue9c2": -159
+      }
+    },
+    {
+      "type": "bitmap",
+      "file": "porticlegun:font/settings_gui.png",
+      "ascent": 13,
+      "height": 72,
+      "chars": [
+        "\ue9d0"
+      ]
+    },
+    {
+      "type": "space",
+      "advances": {
+        "\ue9d1": -1,
+        "\ue9d2": -2,
+        "\ue9d3": -4,
+        "\ue9d4": -8,
+        "\ue9d5": -16,
+        "\ue9d6": -32,
+        "\ue9d7": -64,
+        "\ue9d8": -128
+      }
+    }
+  ]
+}

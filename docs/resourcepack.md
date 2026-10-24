@@ -58,10 +58,16 @@ match `PortalHud.java`.
   Buttons and frame slots are items with the empty model `porticlegun:gui_blank`, the tank gauge is a second glyph
   picked by the fill level. Made in the "tank menu" section of `scripts/generate_resourcepack.py`; the validator checks
   that every glyph the plugin uses exists in the font.
-- **Settings menu**: stays the vanilla dropper. Its banners (colours, arrows, close, shape) point at
-  `porticlegun:gui_banner_<colour>`, which shows them flat and from the front without pole, like a wall banner filling
-  the slot. That needs `"attachment": "wall"` in the banner model (26.3+, the `flat_banners` overlay); older clients
-  and Bedrock see vanilla banners.
+- **Settings menu**: its banners (colours, arrows, close, shape) point at `porticlegun:gui_banner_<colour>`, which
+  shows them flat and from the front without pole, exactly 8x16 pixels in the middle of the slot. That needs
+  `"attachment": "wall"` in the banner model (26.3+, the `flat_banners` overlay). On those clients the dropper is drawn
+  too: plain vanilla grey without the nine slots, a long recessed bar behind each colour column, so arrow, colour and
+  arrow read as one slider, and a socket behind each button of the middle column. The glyph only draws in the
+  overlay's font; the base font has an empty space of the same width there, so older clients see the vanilla dropper
+  with vanilla banners, like Bedrock. The dropper centres its title, so `SettingsGui.java` moves to the window's edge
+  and back with shift glyphs and makes the whole title 0 pixels wide; for that it needs the text's width, which it
+  knows for the vanilla font's Latin letters (a title with other characters stays vanilla). Made in the "settings
+  menu" section of `scripts/generate_resourcepack.py`.
 
 <p align="center">
   <img src="../images/tank_menu.png" alt="The drawn tank menu" width="380">

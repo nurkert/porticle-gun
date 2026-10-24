@@ -248,7 +248,7 @@ public class SettingsHandler implements Listener {
      */
     private ItemStack flat(ItemStack banner, Player player) {
         String material = banner.getType().name();
-        if (!material.endsWith("_BANNER") || BedrockSupport.isBedrock(player) || !resourcePack.test(player)) {
+        if (!material.endsWith("_BANNER") || !drawn(player)) {
             return banner;
         }
         String colour =
@@ -257,6 +257,11 @@ public class SettingsHandler implements Listener {
         meta.setItemModel(new NamespacedKey(PorticleGun.getInstance(), "gui_banner_" + colour));
         banner.setItemMeta(meta);
         return banner;
+    }
+
+    /** Java players with the resource pack get the drawn menu (SettingsGui) and flat banners. */
+    private boolean drawn(Player player) {
+        return !BedrockSupport.isBedrock(player) && resourcePack.test(player);
     }
 
     private static ItemStack fill(DyeColor base, Pattern pattern, String name) {
@@ -290,8 +295,9 @@ public class SettingsHandler implements Listener {
      * @return
      */
     public Inventory getCurrentSettings(String gunID, Player player) {
-        Inventory inv = Bukkit.createInventory(
-                null, InventoryType.DROPPER, MessageManager.getMessage(player, "menus.settings.title"));
+        String title = MessageManager.getMessage(player, "menus.settings.title");
+        boolean drawn = drawn(player);
+        Inventory inv = Bukkit.createInventory(null, InventoryType.DROPPER, drawn ? SettingsGui.title(title) : title);
         GunColors colors = gunColors.getColors(gunID);
         inv.setItem(0, flat(arrow(colors.getPrimary().next(), true, player), player));
         inv.setItem(2, flat(arrow(colors.getSecondary().next(), true, player), player));
@@ -304,6 +310,13 @@ public class SettingsHandler implements Listener {
         ItemStack background = new ItemBuilder(Material.GRAY_STAINED_GLASS_PANE)
                 .setName(ItemHandler.vanishID(gunID))
                 .build();
+        if (drawn) {
+            // the drawn background leaves the free slot empty: the pane still carries the id, but draws nothing
+            ItemMeta meta = background.getItemMeta();
+            meta.setItemModel(new NamespacedKey(PorticleGun.getInstance(), "gui_blank"));
+            meta.setHideTooltip(true);
+            background.setItemMeta(meta);
+        }
         for (int i = 1; i <= 3; i++) inv.setItem((i * 3) - 2, background);
 
         inv.setItem(4, flat(createResetItem(player), player));
@@ -373,7 +386,7 @@ public class SettingsHandler implements Listener {
      * @return the gun id if the inventory is a portal settings inventory, null otherwise
      */
     private String isPorticleSettingsInv(InventoryView view) {
-        String title = view.getTitle();
+        String title = SettingsGui.plain(view.getTitle());
         if (MessageManager.matchesConfiguredValue("menus.settings.title", title)) {
             Inventory inv = view.getTopInventory();
             ItemStack slot = inv.getItem(1);

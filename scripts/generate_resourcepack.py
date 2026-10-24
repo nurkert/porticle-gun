@@ -941,7 +941,7 @@ def hud_glyph_strip():
     return pixels
 
 
-def java_font():
+def java_font(drawn_settings=False):
     return {
         "providers": [
             {
@@ -954,6 +954,7 @@ def java_font():
             {"type": "space", "advances": {HUD_GAP: HUD_GAP_ADVANCE, HUD_LEAD: 1}},
         ]
         + tank_font_providers()
+        + settings_font_providers(drawn_settings)
     }
 
 
@@ -1213,6 +1214,69 @@ def vanilla_rim(px):
 
 
 
+# --- settings menu (drawn dropper background) ------------------------------------------------------------------------
+# For Java players with the pack the settings menu draws its own background like the tank menu: plain vanilla grey
+# without the nine slots, a long recessed bar behind each colour column (up arrow, colour, down arrow), so the flat
+# banners read as two sliders, and a socket behind each button of the middle column. It needs the flat banners, so
+# the glyph only draws in the flat_banners overlay; below, it is an empty space of the same advance and the menu
+# stays vanilla. The dropper centres its title: SettingsGui.java moves to the window's edge and back with the
+# shifts, so the whole title is 0 wide and the text centred on its own. Keep in sync with SettingsGui.java.
+SETTINGS_GUI = "\ue9d0"
+SETTINGS_SHIFTS = {chr(0xE9D1 + bit): -(1 << bit) for bit in range(8)}  # -1, -2, -4 ... -128
+SETTINGS_GUI_HEIGHT = 72
+SETTINGS_SLOT_X, SETTINGS_SLOT_Y = 62, 17  # the dropper's first item, slots 18 pixels apart
+SETTINGS_BANNER_INSET, SETTINGS_BANNER_WIDTH = 4, 8  # a flat banner covers 8x16 pixels in the middle of its slot
+
+
+def settings_gui_background():
+    w, h = TANK_GUI_WIDTH, SETTINGS_GUI_HEIGHT
+    px = [[(0, 0, 0, 0)] * w for _ in range(h)]
+    vanilla_rim(px)
+
+    def recess(x0, y0, x1, y1, inside):
+        """A recess like a vanilla slot's: dark rim top left, white bottom right, around x0..x1, y0..y1."""
+        for y in range(y0, y1 + 1):
+            for x in range(x0, x1 + 1):
+                px[y][x] = inside
+        for x in range(x0 - 1, x1 + 1):
+            px[y0 - 1][x] = VANILLA_DARK
+        for y in range(y0 - 1, y1 + 1):
+            px[y][x0 - 1] = VANILLA_DARK
+        for x in range(x0, x1 + 2):
+            px[y1 + 1][x] = VANILLA_WHITE
+        for y in range(y0, y1 + 2):
+            px[y][x1 + 1] = VANILLA_WHITE
+        px[y0 - 1][x1 + 1] = px[y1 + 1][x0 - 1] = VANILLA_SLOT
+
+    def banner_x(column):
+        return SETTINGS_SLOT_X + 18 * column + SETTINGS_BANNER_INSET
+
+    # the colour sliders: one bar through all three rows, between the banners in the black of the arrows' background
+    # (the black dye's banner colour), so the arrows and the gaps join into one bar
+    for column in (0, 2):
+        x0 = banner_x(column)
+        recess(x0, SETTINGS_SLOT_Y, x0 + SETTINGS_BANNER_WIDTH - 1, SETTINGS_SLOT_Y + 2 * 18 + 15, rgba(0x1D1D21))
+    # the buttons (close portals, shape); the top slot carries the gun's id and draws nothing
+    x0 = banner_x(1)
+    for row in (1, 2):
+        y0 = SETTINGS_SLOT_Y + 18 * row
+        recess(x0, y0, x0 + SETTINGS_BANNER_WIDTH - 1, y0 + 15, VANILLA_SLOT)
+    return px
+
+
+def settings_font_providers(drawn):
+    background = {"type": "space", "advances": {SETTINGS_GUI: TANK_GUI_WIDTH + 1}}
+    if drawn:
+        background = {
+            "type": "bitmap",
+            "file": f"{NAMESPACE}:font/settings_gui.png",
+            "ascent": TANK_TITLE_BASELINE,
+            "height": SETTINGS_GUI_HEIGHT,
+            "chars": [SETTINGS_GUI],
+        }
+    return [background, {"type": "space", "advances": SETTINGS_SHIFTS}]
+
+
 # --- flat banners in the settings menu --------------------------------------------------------------------------------
 # The settings menu shows its banners (colours, arrows, close, shape) flat and from the front, without pole: like a
 # wall banner, filling the slot. The plugin points those banners (only there, only for players with the pack) at
@@ -1230,7 +1294,7 @@ BANNER_ITEM_TRANSFORMATION = {
     "scale": [2 / 3, -2 / 3, -2 / 3],
     "translation": [0.5, 0.0, 0.5],
 }
-FLAT_BANNER_SCALE = 0.58
+FLAT_BANNER_SCALE = 0.6  # 20x40 model pixels * 2/3 * 0.6 = exactly 8x16 slot pixels
 
 
 def gui_banner_definition(colour, flat):
@@ -1773,6 +1837,9 @@ def main():
     write_png(os.path.join(java_assets, "textures", "font", "portal_hud.png"), hud_glyph_strip())
     write_png(os.path.join(java_assets, "textures", "font", "tank_gui.png"), tank_gui_background())
     write_png(os.path.join(java_assets, "textures", "font", "tank_gauge.png"), tank_gauge_strip())
+    write_png(os.path.join(java_assets, "textures", "font", "settings_gui.png"), settings_gui_background())
+    write_json(os.path.join(java, FLAT_BANNERS_OVERLAY, "assets", "minecraft", "font", "default.json"),
+               java_font(drawn_settings=True))
     for colour in DYE_COLOURS:
         write_json(os.path.join(java_assets, "items", f"gui_banner_{colour}.json"), gui_banner_definition(colour, False))
         write_json(os.path.join(java, FLAT_BANNERS_OVERLAY, "assets", NAMESPACE, "items", f"gui_banner_{colour}.json"),
