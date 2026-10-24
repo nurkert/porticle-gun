@@ -54,6 +54,20 @@ CI (`.github/workflows/ci.yml`) runs the build and both smoke tests for every pu
 | `resourcepack` | Sending the Java pack, installing the Bedrock pack |
 | `config`, `messages`, `audio`, `builders`, `util` | Configuration, texts, sounds, item builders, WorldGuard and Floodgate |
 
+## Website and wiki
+
+The GitHub Pages site lives in `site/` and is deployed by `.github/workflows/pages.yml` on every change to the site,
+the images or the documentation. `scripts/build_wiki.py` turns `docs/`, the getting started and command sections of
+the README and the changelog into the wiki at `/wiki/` (sidebar, search over every heading, links rewritten from `.md`
+to the wiki pages). A new page in `docs/` needs an entry in `PAGES` there. To look at it locally:
+
+```bash
+pip install markdown==3.7
+mkdir -p _site && cp -r site/. _site/ && cp -r images _site/images
+python3 scripts/build_wiki.py _site
+python3 -m http.server -d _site 8000   # http://localhost:8000/wiki/
+```
+
 ## Releasing
 
 1. Make sure `main` is green.

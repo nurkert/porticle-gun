@@ -5,6 +5,11 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+### Added
+- **Wiki on the website**: the documentation is built into a searchable wiki at
+  [nurkert.github.io/porticle-gun/wiki](https://nurkert.github.io/porticle-gun/wiki/) on every change, in the look of
+  the site.
+
 ## [1.6.17] - 2026-10-24
 
 ### Fixed

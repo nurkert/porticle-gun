@@ -260,6 +260,8 @@ slots between glass panes.
 
 ## Documentation
 
+Everything below is also on the website as a searchable wiki: **[nurkert.github.io/porticle-gun/wiki](https://nurkert.github.io/porticle-gun/wiki/)**.
+
 | Guide | Covers |
 |---|---|
 | [Interdimensional gun](docs/interdimensional-gun.md) | Destinations, placement, tank, drops, recipes |
