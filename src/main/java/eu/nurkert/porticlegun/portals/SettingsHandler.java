@@ -320,13 +320,18 @@ public class SettingsHandler implements Listener {
     private static ItemStack createConnectionItem(boolean blocked, Player player) {
         String state = MessageManager.getMessage(
                 player, blocked ? "menus.settings.connection-off" : "menus.settings.connection-on");
+        // a vertical switch in the black of the colour sliders: a grey groove, the knob up and lit when open, down and
+        // red when blocked, shaded towards the groove
         ItemStack item = new BannerBuilder()
-                .setBaseColor(DyeColor.WHITE)
+                .setBaseColor(DyeColor.BLACK)
                 .setPatterns(
+                        new Pattern(DyeColor.GRAY, PatternType.STRIPE_CENTER),
                         blocked
-                                ? new Pattern(DyeColor.RED, PatternType.STRIPE_MIDDLE)
-                                : new Pattern(DyeColor.GREEN, PatternType.STRIPE_CENTER),
-                        new Pattern(DyeColor.LIGHT_GRAY, PatternType.BORDER))
+                                ? new Pattern(DyeColor.RED, PatternType.HALF_HORIZONTAL_BOTTOM)
+                                : new Pattern(DyeColor.LIME, PatternType.HALF_HORIZONTAL),
+                        new Pattern(DyeColor.BLACK, PatternType.STRIPE_MIDDLE),
+                        new Pattern(DyeColor.BLACK, blocked ? PatternType.GRADIENT : PatternType.GRADIENT_UP),
+                        new Pattern(DyeColor.BLACK, PatternType.BORDER))
                 .hideItemFlags()
                 .setName(MessageManager.getMessage(player, "menus.settings.connection-label", Map.of("state", state)))
                 .build();
