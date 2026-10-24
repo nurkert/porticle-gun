@@ -14,6 +14,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
@@ -26,10 +27,16 @@ import org.bukkit.entity.Player;
  */
 public class PorticleGunCommand implements CommandExecutor, TabCompleter {
 
-    private final GunMenu menu = new GunMenu();
+    private final GunMenu menu;
+    private final AdminMenu adminMenu;
     private final Map<String, SubCommand> subCommands = new LinkedHashMap<>();
 
-    public PorticleGunCommand(PorticleGun plugin) {
+    /** @param resourcePack whether a player has the resource pack, for the drawn menus */
+    public PorticleGunCommand(PorticleGun plugin, Predicate<Player> resourcePack) {
+        adminMenu = new AdminMenu(
+                plugin.getActivePortals(), plugin.getPersistence(), plugin.getGunColors(), player -> getMenu()
+                        .open(player));
+        menu = new GunMenu(adminMenu, resourcePack);
         GunData gunData = new GunData(plugin.getActivePortals(), plugin.getPersistence());
         register(new RemovePortalCommand(plugin.getActivePortals(), plugin.getConfigManager()));
         register(new ListCommand(plugin.getActivePortals(), plugin.getPersistence()));
@@ -45,6 +52,10 @@ public class PorticleGunCommand implements CommandExecutor, TabCompleter {
 
     public GunMenu getMenu() {
         return menu;
+    }
+
+    public AdminMenu getAdminMenu() {
+        return adminMenu;
     }
 
     @Override

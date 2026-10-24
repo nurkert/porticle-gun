@@ -45,11 +45,11 @@ CI (`.github/workflows/ci.yml`) runs the build and both smoke tests for every pu
 | Package | Content |
 |---|---|
 | `eu.nurkert.porticlegun` | Plugin entry point and `LoadingHandler` |
-| `commands` | `/porticlegun`, its sub commands and the gun menu |
+| `commands` | `/porticlegun`, its sub commands, the item/recipe menu (`GunMenu`, `RecipeBook`) and the admin menu |
 | `portals` | Portal model, placement, teleportation, settings menu |
 | `gravity` | Gravity gun |
 | `item` | Gun items, recipe, item migration and 3D model appearance |
-| `visualization` | Portal colours, particles, animations, titles |
+| `visualization` | Portal colours, particles (`VisualizationHandler`, `PortalFrame`), animations, titles |
 | `persistence` | `portals.yml` |
 | `resourcepack` | Sending the Java pack, installing the Bedrock pack |
 | `config`, `messages`, `audio`, `builders`, `util` | Configuration, texts, sounds, item builders, WorldGuard and Floodgate |

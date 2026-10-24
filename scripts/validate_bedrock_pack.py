@@ -229,11 +229,13 @@ def check_hud():
     sources = {
         "TankGui.java": ("rift", "TankGui.java"),
         "SettingsGui.java": ("portals", "SettingsGui.java"),
+        "GuiGlyphs.java": ("util", "GuiGlyphs.java"),
+        "MenuGui.java": ("commands", "MenuGui.java"),
     }
     for name, parts in sources.items():
         with open(os.path.join(ROOT, "src", "main", "java", "eu", "nurkert", "porticlegun", *parts),
                   encoding="utf-8") as file:
-            menu = {chr(int(code, 16)) for code in re.findall(r"\\u(e9[b-d][0-9a-f])", file.read(), re.IGNORECASE)}
+            menu = {chr(int(code, 16)) for code in re.findall(r"\\u(e9[b-e][0-9a-f])", file.read(), re.IGNORECASE)}
         if not menu:
             error(f"found no glyphs in {name}")
         missing = menu - set(glyphs) - space_glyphs

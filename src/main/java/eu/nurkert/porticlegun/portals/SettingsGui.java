@@ -1,5 +1,6 @@
 package eu.nurkert.porticlegun.portals;
 
+import eu.nurkert.porticlegun.util.GuiGlyphs;
 import org.bukkit.ChatColor;
 
 /**
@@ -16,10 +17,6 @@ import org.bukkit.ChatColor;
 final class SettingsGui {
 
     private static final char BACKGROUND = '\ue9d0';
-    // shifts by -1, -2, -4 ... -128 pixels, combined like bits
-    private static final char SHIFT_ONE = '\ue9d1';
-    private static final int SHIFT_BITS = 8;
-    private static final char SHIFT_LAST = '\ue9d8';
 
     private static final int WINDOW_WIDTH = 176;
     private static final int BACKGROUND_ADVANCE = WINDOW_WIDTH + 1;
@@ -46,31 +43,8 @@ final class SettingsGui {
         }
         int start = (WINDOW_WIDTH - width) / 2;
         int centre = WINDOW_WIDTH / 2;
-        return "§f" + shift(centre) + BACKGROUND + shift(BACKGROUND_ADVANCE - start) + "§r" + text
-                + shift(start + width - centre);
-    }
-
-    /** @return the title text without the drawn background, as configured */
-    static String plain(String title) {
-        StringBuilder text = new StringBuilder(title.length());
-        for (char c : title.toCharArray()) {
-            if (c != BACKGROUND && (c < SHIFT_ONE || c > SHIFT_LAST)) {
-                text.append(c);
-            }
-        }
-        return text.indexOf("§f§r") == 0 ? text.substring(4) : text.toString();
-    }
-
-    /** @return the shift characters moving the given number of pixels to the left */
-    private static String shift(int pixels) {
-        StringBuilder shift = new StringBuilder();
-        for (int bit = SHIFT_BITS - 1; bit >= 0; bit--) {
-            while (pixels >= 1 << bit) {
-                shift.append((char) (SHIFT_ONE + bit));
-                pixels -= 1 << bit;
-            }
-        }
-        return shift.toString();
+        return "§f" + GuiGlyphs.shiftLeft(centre) + BACKGROUND + GuiGlyphs.shiftLeft(BACKGROUND_ADVANCE - start) + "§r"
+                + text + GuiGlyphs.shiftLeft(start + width - centre);
     }
 
     private static int width(String text) {

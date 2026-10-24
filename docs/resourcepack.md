@@ -62,12 +62,18 @@ match `PortalHud.java`.
   shows them flat and from the front without pole, exactly 8x16 pixels in the middle of the slot. That needs
   `"attachment": "wall"` in the banner model (26.3+, the `flat_banners` overlay). On those clients the dropper is drawn
   too: plain vanilla grey without the nine slots, a long recessed bar behind each colour column, so arrow, colour and
-  arrow read as one slider, and a socket behind each button of the middle column. The glyph only draws in the
+  arrow read as one slider, and a socket behind each of the three buttons in the middle column (connection, close,
+  shape). The glyph only draws in the
   overlay's font; the base font has an empty space of the same width there, so older clients see the vanilla dropper
   with vanilla banners, like Bedrock. The dropper centres its title, so `SettingsGui.java` moves to the window's edge
   and back with shift glyphs and makes the whole title 0 pixels wide; for that it needs the text's width, which it
   knows for the vanilla font's Latin letters (a title with other characters stays vanilla). Made in the "settings
-  menu" section of `scripts/generate_resourcepack.py`.
+  menu" section of `scripts/generate_resourcepack.py`. The menu is recognised by its inventory holder, never by its
+  title.
+- **/porticlegun menus**: the overview (recessed slots for the items, raised buttons for their recipes and the admin
+  menu) and the recipe page (a crafting table: 3x3 grid, arrow, large result slot, back button) are drawn the same
+  way as the tank menu, in four overview variants (all items or only the PorticleGun, with or without the admin
+  button). Made in the "command menus" section of `scripts/generate_resourcepack.py`, the slots in `MenuGui.java`.
 
 <p align="center">
   <img src="../images/tank_menu.png" alt="The drawn tank menu" width="380">

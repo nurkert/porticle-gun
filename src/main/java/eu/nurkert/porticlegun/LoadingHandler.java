@@ -57,7 +57,7 @@ public class LoadingHandler implements Listener {
         this.persistence = plugin.getPersistence();
         this.activePortals = plugin.getActivePortals();
         this.gunColors = plugin.getGunColors();
-        porticleGunCommand = new PorticleGunCommand(plugin);
+        porticleGunCommand = new PorticleGunCommand(plugin, resourcePackHandler::isLoaded);
         register(this);
         registerEvents();
         registerCommands();
@@ -70,6 +70,7 @@ public class LoadingHandler implements Listener {
         register(resourcePackHandler);
         register(new PortalOpenHandler(activePortals, gunColors, persistence));
         register(porticleGunCommand.getMenu());
+        register(porticleGunCommand.getAdminMenu());
         register(new VisualizationHandler(activePortals, gunColors));
         register(new TeleportationHandler(activePortals));
         register(new SettingsHandler(activePortals, gunColors, persistence, resourcePackHandler::isLoaded));

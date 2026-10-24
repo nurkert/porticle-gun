@@ -55,12 +55,6 @@ class SettingsGuiTest {
     }
 
     @Test
-    void plainTitleIsTheConfiguredOne() {
-        assertEquals("§8Einstellungen", SettingsGui.plain(SettingsGui.title("§8Einstellungen")));
-        assertEquals("§8Settings", SettingsGui.plain("§8Settings"));
-    }
-
-    @Test
     void unknownCharactersKeepTheVanillaTitle() {
         assertEquals("§8Настройки", SettingsGui.title("§8Настройки"));
     }

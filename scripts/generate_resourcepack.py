@@ -955,6 +955,7 @@ def java_font(drawn_settings=False):
         ]
         + tank_font_providers()
         + settings_font_providers(drawn_settings)
+        + menu_font_providers()
     }
 
 
@@ -1217,9 +1218,9 @@ def vanilla_rim(px):
 # --- settings menu (drawn dropper background) ------------------------------------------------------------------------
 # For Java players with the pack the settings menu draws its own background like the tank menu: plain vanilla grey
 # without the nine slots, a long recessed bar behind each colour column (up arrow, colour, down arrow), so the flat
-# banners read as two sliders, and a socket behind each button of the middle column. It needs the flat banners, so
-# the glyph only draws in the flat_banners overlay; below, it is an empty space of the same advance and the menu
-# stays vanilla. The dropper centres its title: SettingsGui.java moves to the window's edge and back with the
+# banners read as two sliders, and a socket behind each of the three buttons in the middle column. It needs the flat
+# banners, so the glyph only draws in the flat_banners overlay; below, it is an empty space of the same advance and
+# the menu stays vanilla. The dropper centres its title: SettingsGui.java moves to the window's edge and back with the
 # shifts, so the whole title is 0 wide and the text centred on its own. Keep in sync with SettingsGui.java.
 SETTINGS_GUI = "\ue9d0"
 SETTINGS_SHIFTS = {chr(0xE9D1 + bit): -(1 << bit) for bit in range(8)}  # -1, -2, -4 ... -128
@@ -1256,9 +1257,9 @@ def settings_gui_background():
     for column in (0, 2):
         x0 = banner_x(column)
         recess(x0, SETTINGS_SLOT_Y, x0 + SETTINGS_BANNER_WIDTH - 1, SETTINGS_SLOT_Y + 2 * 18 + 15, rgba(0x1D1D21))
-    # the buttons (close portals, shape); the top slot carries the gun's id and draws nothing
+    # the buttons: connection, close portals, shape
     x0 = banner_x(1)
-    for row in (1, 2):
+    for row in (0, 1, 2):
         y0 = SETTINGS_SLOT_Y + 18 * row
         recess(x0, y0, x0 + SETTINGS_BANNER_WIDTH - 1, y0 + 15, VANILLA_SLOT)
     return px
@@ -1275,6 +1276,137 @@ def settings_font_providers(drawn):
             "chars": [SETTINGS_GUI],
         }
     return [background, {"type": "space", "advances": SETTINGS_SHIFTS}]
+
+
+# --- command menus (drawn chest backgrounds) --------------------------------------------------------------------------
+# The /porticlegun menus for Java players with the pack, drawn like the tank menu (a glyph in the chest title over the
+# window's top half): the overview with recessed slots for the items, raised buttons for their recipes below and one
+# for the admin menu in the bottom right corner, and the recipe page as a crafting table (3x3 grid, arrow, large result slot, back button). Keep in
+# sync with MenuGui.java.
+MENU_OVERVIEW = "\ue9e0"  # all items: five slots, four recipe buttons
+MENU_OVERVIEW_ADMIN = "\ue9e1"  # the same with the admin button
+MENU_SINGLE = "\ue9e2"  # only the PorticleGun
+MENU_SINGLE_ADMIN = "\ue9e3"
+MENU_RECIPE = "\ue9e4"
+MENU_HEIGHT = 72
+MENU_COLUMNS = [0, 2, 4, 6, 8]  # the items, a free column between them; their recipe buttons below
+
+
+def chest_cell(column, row):
+    """The top left corner of a chest slot's 18 pixel frame."""
+    return 7 + 18 * column, 17 + 18 * row
+
+
+def raised_button(px, x0, y0, size=18):
+    """A raised vanilla button filling a slot's frame: black outline, light top left, dark bottom right."""
+    x1, y1 = x0 + size - 1, y0 + size - 1
+    for y in range(y0, y1 + 1):
+        for x in range(x0, x1 + 1):
+            edge = x in (x0, x1) or y in (y0, y1)
+            px[y][x] = VANILLA_BLACK if edge else rgba(0x8B8B8B)
+    for x in range(x0 + 1, x1):
+        px[y0 + 1][x] = rgba(0xDADADA)
+        px[y1 - 1][x] = VANILLA_SHADOW
+    for y in range(y0 + 1, y1):
+        px[y][x0 + 1] = rgba(0xDADADA)
+        px[y][x1 - 1] = VANILLA_SHADOW
+    px[y1 - 1][x0 + 1] = px[y0 + 1][x1 - 1] = rgba(0x8B8B8B)
+    # rounded like vanilla buttons
+    for x, y in ((x0, y0), (x1, y0), (x0, y1), (x1, y1)):
+        px[y][x] = VANILLA_FACE
+
+
+def menu_overview_background(columns, admin):
+    px = [[(0, 0, 0, 0)] * TANK_GUI_WIDTH for _ in range(MENU_HEIGHT)]
+    vanilla_rim(px)
+    for index, column in enumerate(columns):
+        vanilla_slot(px, *chest_cell(column, 0))
+        if index < 4:  # the rift shard has no recipe
+            raised_button(px, *chest_cell(column, 1))
+    if admin:
+        raised_button(px, *chest_cell(8, 2))
+    return px
+
+
+def menu_recipe_background():
+    px = [[(0, 0, 0, 0)] * TANK_GUI_WIDTH for _ in range(MENU_HEIGHT)]
+    vanilla_rim(px)
+    # back: the same small button as in the tank menu
+    kx0, ky0, kx1, ky1 = 9, 19, 22, 32
+    for y in range(ky0 - 1, ky1 + 2):
+        for x in range(kx0 - 1, kx1 + 2):
+            px[y][x] = VANILLA_BLACK
+    for y in range(ky0, ky1 + 1):
+        for x in range(kx0, kx1 + 1):
+            px[y][x] = rgba(0x8B8B8B)
+    for x in range(kx0, kx1 + 1):
+        px[ky0][x] = rgba(0xDADADA)
+        px[ky1][x] = VANILLA_SHADOW
+    for y in range(ky0, ky1 + 1):
+        px[y][kx0] = rgba(0xDADADA)
+        px[y][kx1] = VANILLA_SHADOW
+    back_arrow = ["...#....", "..##....", ".#######", "########", ".#######", "..##....", "...#...."]
+    bxa, bya = kx0 + (kx1 - kx0 + 1 - 8) // 2, ky0 + (ky1 - ky0 + 1 - 7) // 2
+    draw_art(px, bxa + 1, bya + 1, back_arrow, VANILLA_SHADOW)
+    draw_art(px, bxa, bya, back_arrow, rgba(0xFFFFFF))
+    # the crafting grid
+    for row in range(3):
+        for column in range(1, 4):
+            vanilla_slot(px, *chest_cell(column, row))
+    # the arrow of the vanilla crafting table, between grid and result
+    arrow = [
+        "..............##......",
+        "..............###.....",
+        "..............####....",
+        "..............#####...",
+        "####################..",
+        "#####################.",
+        "######################",
+        "#####################.",
+        "####################..",
+        "..............#####...",
+        "..............####....",
+        "..............###.....",
+        "..............##......",
+    ]
+    draw_art(px, 89, 37, arrow, VANILLA_SLOT)
+    # the result: a large slot around the item in column 6, middle row
+    rx0, ry0 = 8 + 18 * 6 - 5, 18 + 18 - 5
+    size = 26
+    for y in range(ry0, ry0 + size):
+        for x in range(rx0, rx0 + size):
+            px[y][x] = VANILLA_SLOT
+    for x in range(rx0, rx0 + size - 1):
+        px[ry0][x] = VANILLA_DARK
+    for y in range(ry0, ry0 + size - 1):
+        px[y][rx0] = VANILLA_DARK
+    for x in range(rx0 + 1, rx0 + size):
+        px[ry0 + size - 1][x] = VANILLA_WHITE
+    for y in range(ry0 + 1, ry0 + size):
+        px[y][rx0 + size - 1] = VANILLA_WHITE
+    return px
+
+
+MENU_BACKGROUNDS = {
+    MENU_OVERVIEW: ("menu_overview", lambda: menu_overview_background(MENU_COLUMNS, False)),
+    MENU_OVERVIEW_ADMIN: ("menu_overview_admin", lambda: menu_overview_background(MENU_COLUMNS, True)),
+    MENU_SINGLE: ("menu_single", lambda: menu_overview_background([4], False)),
+    MENU_SINGLE_ADMIN: ("menu_single_admin", lambda: menu_overview_background([4], True)),
+    MENU_RECIPE: ("menu_recipe", menu_recipe_background),
+}
+
+
+def menu_font_providers():
+    return [
+        {
+            "type": "bitmap",
+            "file": f"{NAMESPACE}:font/{name}.png",
+            "ascent": TANK_TITLE_BASELINE,
+            "height": MENU_HEIGHT,
+            "chars": [char],
+        }
+        for char, (name, _) in MENU_BACKGROUNDS.items()
+    ]
 
 
 # --- flat banners in the settings menu --------------------------------------------------------------------------------
@@ -1838,6 +1970,8 @@ def main():
     write_png(os.path.join(java_assets, "textures", "font", "tank_gui.png"), tank_gui_background())
     write_png(os.path.join(java_assets, "textures", "font", "tank_gauge.png"), tank_gauge_strip())
     write_png(os.path.join(java_assets, "textures", "font", "settings_gui.png"), settings_gui_background())
+    for name, draw in MENU_BACKGROUNDS.values():
+        write_png(os.path.join(java_assets, "textures", "font", f"{name}.png"), draw())
     write_json(os.path.join(java, FLAT_BANNERS_OVERLAY, "assets", "minecraft", "font", "default.json"),
                java_font(drawn_settings=True))
     for colour in DYE_COLOURS:

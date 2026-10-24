@@ -5,6 +5,29 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+## [1.6.15] - 2026-10-24
+
+### Added
+- **Blocking portals**: the free slot at the top of the settings menu is a switch between connected and blocked. Blocked
+  portals stay where they are, show a flickering force field instead of their swirl, and push players, mobs and items
+  gently back.
+- **New /porticlegun menu**: items are taken like from a creative inventory (click, shift-click, number key, drop key,
+  as often as wanted) instead of being handed out on click; a button below each item shows its recipe on a crafting
+  table with a back button, and admins can take the ingredients and the result there. Drawn in the vanilla style for
+  Java players with the resource pack, glass panes for everyone else.
+- **Admin menu**: every gun with open portals, by gun (with who used it last), by world or by distance; a page per gun
+  travels to its portals, blocks or opens them and closes them.
+
+### Changed
+- **Portal particles**: a closed, glowing rim in the portal colour, two bright sparks with a tail running around it, a
+  darker swirl turning inwards and glints flying off the surface; a portal still waiting for its partner breathes
+  dimmed, and a burst rings both portals when something goes through. Bedrock players get fewer particles.
+
+### Fixed
+- The banners in the drawn settings menu could be taken out: the menu was recognised by its title, which Paper hands
+  back changed once it carries the background glyphs. It is now recognised by its inventory holder, and shift-clicks,
+  double-click collecting and dragging into it are blocked too.
+
 ## [1.6.14] - 2026-10-24
 
 The tag v1.6.13 failed its build check (formatting) and was never published; 1.6.14 is the same release.

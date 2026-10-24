@@ -63,6 +63,51 @@
         "\ue9d7": -64,
         "\ue9d8": -128
       }
+    },
+    {
+      "type": "bitmap",
+      "file": "porticlegun:font/menu_overview.png",
+      "ascent": 13,
+      "height": 72,
+      "chars": [
+        "\ue9e0"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "porticlegun:font/menu_overview_admin.png",
+      "ascent": 13,
+      "height": 72,
+      "chars": [
+        "\ue9e1"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "porticlegun:font/menu_single.png",
+      "ascent": 13,
+      "height": 72,
+      "chars": [
+        "\ue9e2"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "porticlegun:font/menu_single_admin.png",
+      "ascent": 13,
+      "height": 72,
+      "chars": [
+        "\ue9e3"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "porticlegun:font/menu_recipe.png",
+      "ascent": 13,
+      "height": 72,
+      "chars": [
+        "\ue9e4"
+      ]
     }
   ]
 }
