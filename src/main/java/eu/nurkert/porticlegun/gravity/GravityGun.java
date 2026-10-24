@@ -4,6 +4,7 @@ import eu.nurkert.porticlegun.PorticleGun;
 import eu.nurkert.porticlegun.audio.AudioHandler;
 import eu.nurkert.porticlegun.item.ItemHandler;
 import eu.nurkert.porticlegun.util.WorldGuardIntegration;
+import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -11,18 +12,39 @@ import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 import java.util.logging.Level;
 import org.bukkit.Bukkit;
+import org.bukkit.FluidCollisionMode;
+import org.bukkit.GameMode;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
 import org.bukkit.Tag;
 import org.bukkit.World;
 import org.bukkit.block.Block;
+import org.bukkit.block.BlockFace;
+import org.bukkit.block.BlockState;
+import org.bukkit.block.Campfire;
+import org.bukkit.block.ChiseledBookshelf;
 import org.bukkit.block.Container;
 import org.bukkit.block.CreatureSpawner;
+import org.bukkit.block.DecoratedPot;
+import org.bukkit.block.Jukebox;
+import org.bukkit.block.Lectern;
+import org.bukkit.block.data.Bisected;
+import org.bukkit.block.data.BlockData;
+import org.bukkit.block.data.Directional;
+import org.bukkit.block.data.Waterlogged;
+import org.bukkit.block.data.type.Bed;
+import org.bukkit.block.data.type.Chest;
+import org.bukkit.block.data.type.Piston;
+import org.bukkit.block.data.type.Stairs;
+import org.bukkit.block.data.type.TrapDoor;
 import org.bukkit.configuration.InvalidConfigurationException;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.BlockDisplay;
@@ -37,6 +59,7 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.entity.EntityChangeBlockEvent;
 import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.entity.EntityDropItemEvent;
+import org.bukkit.event.entity.EntityRemoveEvent;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.inventory.InventoryType;
 import org.bukkit.event.player.PlayerDropItemEvent;
@@ -46,18 +69,27 @@ import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.event.player.PlayerTeleportEvent;
 import org.bukkit.event.player.PlayerToggleSneakEvent;
 import org.bukkit.event.world.EntitiesLoadEvent;
+import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.metadata.FixedMetadataValue;
 import org.bukkit.persistence.PersistentDataContainer;
 import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.scheduler.BukkitTask;
+import org.bukkit.util.RayTraceResult;
 import org.bukkit.util.Vector;
 
 /**
  * The gravity gun: with the gun in hand, the drop key picks up the targeted block or mob and lets it go again.
  *
- * <p>Carried blocks are falling block entities pulled towards the player's crosshair every tick.
+ * <p>Carried blocks are falling block entities pulled towards the player's crosshair every tick. The block is taken
+ * with its complete state (contents, spawner settings, sign text, names, ...) as a snapshot, and the plugin puts it back
+ * itself wherever it comes down: vanilla would break a falling block into an item as soon as it lands on a slab, a
+ * torch or in a full block, and lose everything inside. Double chests, beds, doors and tall plants travel as one piece.
+ *
+ * <p>Nothing inside a block may be lost or doubled: the snapshot is taken before the block is removed, the live block
+ * is emptied before it is removed, and every carried block is placed (or, without any room nearby, dropped with all its
+ * contents) exactly once.
  */
 public class GravityGun implements Listener {
 
@@ -68,22 +100,46 @@ public class GravityGun implements Listener {
     // held entity -> the location it is pulled towards
     private final HashMap<Entity, Location> entitys;
     private final HashMap<Entity, BlockDisplay> visualDisplays;
+    // held block -> the other parts of its double chest, bed or door, which follow it
+    private final HashMap<Entity, List<FallingBlock>> followers = new HashMap<>();
+    // every carried block entity that still has to be placed, held or on its way down
+    private final Set<FallingBlock> carried = new LinkedHashSet<>();
+    // carried block -> the state it was picked up with, contents included
+    private final Map<UUID, BlockState> states = new HashMap<>();
+    // carried blocks already put back, so no event places one twice
+    private final Set<UUID> placed = new HashSet<>();
     private BukkitTask task;
 
     private final Set<Material> blacklist;
     private boolean allowPlayerCapture;
 
     /*
-     * Everything that must survive a restart or crash is kept in the falling block's persistent data container,
-     * because the entity itself is saved with its chunk.
+     * Everything that must survive a restart or crash is kept with the falling block itself, because the entity is
+     * saved with its chunk: on Paper the complete block state (FallingBlock#setBlockState), elsewhere the spawner type
+     * and the container contents in its persistent data container.
      */
     private final NamespacedKey keyCarried;
     private final NamespacedKey keySpawnerType;
     private final NamespacedKey keyContainerItems;
+    private final NamespacedKey keyGroup;
+    private final NamespacedKey keyOffset;
 
-    private static final Set<Material> VISUAL_FALLBACK_BLOCKS =
-            EnumSet.of(Material.CHEST, Material.TRAPPED_CHEST, Material.ENDER_CHEST);
-    private static final int BLOCK_PLACEMENT_SEARCH_HEIGHT = 4;
+    // Paper only, looked up once: the falling block's complete state and entities without collisions
+    private static final Method SET_BLOCK_STATE = method(FallingBlock.class, "setBlockState", BlockState.class);
+    private static final Method GET_BLOCK_STATE = method(FallingBlock.class, "getBlockState");
+    private static final Method SET_NO_PHYSICS = method(Entity.class, "setNoPhysics", boolean.class);
+
+    // blocks nobody should move: technical blocks and the inside of a moving piston
+    private static final Set<Material> NEVER = EnumSet.of(
+            Material.MOVING_PISTON,
+            Material.FIRE,
+            Material.SOUL_FIRE,
+            Material.BUBBLE_COLUMN,
+            Material.NETHER_PORTAL,
+            Material.END_PORTAL,
+            Material.END_GATEWAY);
+    // where a carried block may go when the spot it comes down on is taken: straight up first, then around it
+    private static final List<int[]> SEARCH = searchOrder();
 
     public GravityGun(Collection<Material> blockBlacklist, boolean allowPlayerCapture) {
         instance = this;
@@ -94,6 +150,8 @@ public class GravityGun implements Listener {
         keyCarried = new NamespacedKey(PorticleGun.getInstance(), "gravity_carried");
         keySpawnerType = new NamespacedKey(PorticleGun.getInstance(), "gravity_spawner_type");
         keyContainerItems = new NamespacedKey(PorticleGun.getInstance(), "gravity_container_items");
+        keyGroup = new NamespacedKey(PorticleGun.getInstance(), "gravity_group");
+        keyOffset = new NamespacedKey(PorticleGun.getInstance(), "gravity_offset");
         this.allowPlayerCapture = allowPlayerCapture;
         updateBlockBlacklist(blockBlacklist);
         init();
@@ -145,13 +203,37 @@ public class GravityGun implements Listener {
                     Vector direction = plV.subtract(spV)
                             .normalize()
                             .multiply(entry.getValue().distance(entity.getLocation()) / 2);
-                    entity.setVelocity(direction);
+                    if (Double.isFinite(direction.getX())) {
+                        entity.setVelocity(direction);
+                    }
+                    pullFollowers(entity, direction);
                     updateVisualDisplay(entity);
                 }
 
                 updateRemainingVisualDisplays();
             }
         }.runTaskTimer(PorticleGun.getInstance(), 0, 1);
+    }
+
+    /** The other parts of a carried double chest, bed or door keep their place next to the held one. */
+    private void pullFollowers(Entity leader, Vector leaderVelocity) {
+        List<FallingBlock> parts = followers.get(leader);
+        if (parts == null) {
+            return;
+        }
+        Vector next = leader.getLocation().toVector();
+        if (Double.isFinite(leaderVelocity.getX())) {
+            next.add(leaderVelocity);
+        }
+        for (FallingBlock part : parts) {
+            if (!part.isValid()) {
+                continue;
+            }
+            part.setTicksLived(1);
+            int[] offset = offset(part);
+            Vector target = next.clone().add(new Vector(offset[0], offset[1], offset[2]));
+            part.setVelocity(target.subtract(part.getLocation().toVector()));
+        }
     }
 
     /**
@@ -166,10 +248,15 @@ public class GravityGun implements Listener {
 
         for (Entity entity : new ArrayList<>(entitys.keySet())) {
             releaseEntity(entity, false);
-            if (entity instanceof FallingBlock && entity.isValid()) {
-                placeCarriedBlock((FallingBlock) entity);
+        }
+        for (FallingBlock block : new ArrayList<>(carried)) {
+            if (block.isValid() && !placed.contains(block.getUniqueId())) {
+                // no time left to let it fall: put it on the ground below
+                land(block, groundBelow(block.getLocation().getBlock()));
+                block.remove();
             }
         }
+        carried.clear();
 
         for (BlockDisplay display : visualDisplays.values()) {
             if (display != null && display.isValid()) {
@@ -191,6 +278,13 @@ public class GravityGun implements Listener {
         return releaseEntity(entity, false);
     }
 
+    /** Whether the entity is one part of a carried double chest, bed or door, which must not be separated. */
+    public boolean isMultiBlockPart(Entity entity) {
+        return entity instanceof FallingBlock
+                && entity.getPersistentDataContainer().has(keyGroup, PersistentDataType.STRING)
+                && !placed.contains(entity.getUniqueId());
+    }
+
     private boolean releaseEntity(Entity entity, boolean playSound) {
         if (entity == null || !entitys.containsKey(entity)) {
             return false;
@@ -199,7 +293,17 @@ public class GravityGun implements Listener {
         entitys.remove(entity);
         entity.setFallDistance(0F);
         if (entity instanceof FallingBlock) {
-            entity.setGravity(true);
+            letFall(entity);
+        }
+        List<FallingBlock> parts = followers.remove(entity);
+        if (parts != null) {
+            for (FallingBlock part : parts) {
+                if (part.isValid()) {
+                    // the same speed as the held part, so they come down side by side
+                    part.setVelocity(entity.getVelocity());
+                    letFall(part);
+                }
+            }
         }
 
         Player owner = getOwner(entity);
@@ -211,6 +315,11 @@ public class GravityGun implements Listener {
         }
 
         return true;
+    }
+
+    private void letFall(Entity entity) {
+        entity.setGravity(true);
+        setNoPhysics(entity, false);
     }
 
     private Player getOwner(Entity entity) {
@@ -296,38 +405,236 @@ public class GravityGun implements Listener {
             }
         }
 
-        if (PorticleGun.isWorldGuardEnabled() && !WorldGuardIntegration.canUseGravityGun(player, block.getLocation())) {
+        if (!pickUp(player, block)) {
             AudioHandler.playSound(player, AudioHandler.PortalSound.DENY);
-            return;
+        }
+    }
+
+    /** Lifts the block, together with the other half of a double chest, bed or door, out of the world. */
+    private boolean pickUp(Player player, Block block) {
+        if (block.getType() == Material.PISTON_HEAD && block.getBlockData() instanceof Directional head) {
+            // the head belongs to its piston: take the piston, retracted
+            block = block.getRelative(head.getFacing().getOppositeFace());
+        }
+        if (!canPickUp(player, block)) {
+            return false;
         }
 
-        if (blacklist.contains(block.getType()) || block.isLiquid()) {
-            AudioHandler.playSound(player, AudioHandler.PortalSound.DENY);
-            return;
+        for (Block part : parts(block)) {
+            if (PorticleGun.isWorldGuardEnabled()
+                    && !WorldGuardIntegration.canUseGravityGun(player, part.getLocation())) {
+                return false;
+            }
         }
 
+        List<FallingBlock> spawned = lift(block);
         AudioHandler.playSound(player.getLocation(), AudioHandler.PortalSound.GRAB_BLOCK);
-        FallingBlock fallingblock =
-                block.getWorld().spawnFallingBlock(block.getLocation().add(0.5, 0, 0.5), block.getBlockData());
-        // without gravity the Bedrock client does not simulate the block falling and landing on its own
-        fallingblock.setGravity(false);
-        fallingblock.setDropItem(true);
+        FallingBlock leader = spawned.get(0);
+        if (spawned.size() > 1) {
+            followers.put(leader, new ArrayList<>(spawned.subList(1, spawned.size())));
+        }
+        entitys.put(leader, playersLook(player));
+        players.put(player, leader);
+        return true;
+    }
 
-        PersistentDataContainer data = fallingblock.getPersistentDataContainer();
-        data.set(keyCarried, PersistentDataType.BYTE, (byte) 1);
-        if (block.getState() instanceof CreatureSpawner spawnerState && spawnerState.getSpawnedType() != null) {
-            data.set(
-                    keySpawnerType,
-                    PersistentDataType.STRING,
-                    spawnerState.getSpawnedType().name());
+    /** The block and the other half of its double chest, bed or door. */
+    private static List<Block> parts(Block block) {
+        List<Block> parts = new ArrayList<>();
+        parts.add(block);
+        Block partner = partner(block);
+        if (partner != null) {
+            parts.add(partner);
+        }
+        return parts;
+    }
+
+    /** Replaces the block (and its other half) with carried falling blocks; the first one is the block itself. */
+    private List<FallingBlock> lift(Block block) {
+        List<Block> parts = parts(block);
+
+        // the complete states first, before anything in the world changes
+        List<BlockState> snapshots = new ArrayList<>();
+        for (Block part : parts) {
+            BlockState snapshot = part.getState();
+            snapshot.setBlockData(carriedData(snapshot.getBlockData(), parts.size() > 1));
+            snapshots.add(snapshot);
+        }
+        Block pistonHead = null;
+        if (block.getBlockData() instanceof Piston piston && piston.isExtended()) {
+            pistonHead = block.getRelative(piston.getFacing());
         }
 
-        createVisualDisplayIfNeeded(block, fallingblock);
-        storeContainerInventory(block, fallingblock);
+        // empty the live blocks, so nothing inside can drop or be left behind when they are removed
+        for (Block part : parts) {
+            emptyLive(part);
+        }
+        /*
+         * Removed without block updates first: with updates, the half removed first would make vanilla destroy the
+         * other one, and a door's lower half or a bed's head drops its item when destroyed. Then air with updates, so
+         * torches on them break off and redstone notices, like after mining.
+         */
+        List<Block> cells = new ArrayList<>(parts);
+        if (pistonHead != null && pistonHead.getType() == Material.PISTON_HEAD) {
+            cells.add(pistonHead);
+        }
+        for (Block cell : cells) {
+            cell.setType(Material.STRUCTURE_VOID, false);
+        }
+        for (Block cell : cells) {
+            cell.setType(Material.AIR, true);
+        }
 
-        block.setType(Material.AIR);
-        entitys.put(fallingblock, playersLook(player));
-        players.put(player, fallingblock);
+        String group = parts.size() > 1 ? UUID.randomUUID().toString() : null;
+        List<FallingBlock> spawned = new ArrayList<>();
+        for (int i = 0; i < parts.size(); i++) {
+            Block part = parts.get(i);
+            int[] offset = {part.getX() - block.getX(), part.getY() - block.getY(), part.getZ() - block.getZ()};
+            spawned.add(spawnCarried(part, snapshots.get(i), group, offset));
+        }
+        return spawned;
+    }
+
+    private boolean canPickUp(Player player, Block block) {
+        Material type = block.getType();
+        if (type.isAir() || block.isLiquid() || blacklist.contains(type) || NEVER.contains(type)) {
+            return false;
+        }
+        // bedrock, barriers, end portal frames, command blocks ... only in creative mode
+        return type.getHardness() >= 0 || player.getGameMode() == GameMode.CREATIVE;
+    }
+
+    /**
+     * The other half of a double chest, bed, door or tall plant, if it is really there; {@code null} for blocks that
+     * stand alone.
+     */
+    private static Block partner(Block block) {
+        BlockData data = block.getBlockData();
+        if (data instanceof Chest chest && chest.getType() != Chest.Type.SINGLE) {
+            // vanilla: the left half's partner is clockwise of its facing, the right half's counter-clockwise
+            BlockFace side = chest.getType() == Chest.Type.LEFT
+                    ? clockwise(chest.getFacing())
+                    : clockwise(chest.getFacing()).getOppositeFace();
+            Block other = block.getRelative(side);
+            if (other.getType() == block.getType()
+                    && other.getBlockData() instanceof Chest otherChest
+                    && otherChest.getFacing() == chest.getFacing()
+                    && otherChest.getType() != chest.getType()
+                    && otherChest.getType() != Chest.Type.SINGLE) {
+                return other;
+            }
+            return null;
+        }
+        if (data instanceof Bed bed) {
+            BlockFace side = bed.getPart() == Bed.Part.FOOT
+                    ? bed.getFacing()
+                    : bed.getFacing().getOppositeFace();
+            Block other = block.getRelative(side);
+            if (other.getType() == block.getType()
+                    && other.getBlockData() instanceof Bed otherBed
+                    && otherBed.getPart() != bed.getPart()) {
+                return other;
+            }
+            return null;
+        }
+        // doors and tall plants; stairs and trapdoors are bisected too, but only describe which way up they are
+        if (data instanceof Bisected bisected && !(data instanceof Stairs) && !(data instanceof TrapDoor)) {
+            Block other = block.getRelative(bisected.getHalf() == Bisected.Half.BOTTOM ? BlockFace.UP : BlockFace.DOWN);
+            if (other.getType() == block.getType()
+                    && other.getBlockData() instanceof Bisected otherHalf
+                    && otherHalf.getHalf() != bisected.getHalf()) {
+                return other;
+            }
+        }
+        return null;
+    }
+
+    private static BlockFace clockwise(BlockFace face) {
+        return switch (face) {
+            case NORTH -> BlockFace.EAST;
+            case EAST -> BlockFace.SOUTH;
+            case SOUTH -> BlockFace.WEST;
+            case WEST -> BlockFace.NORTH;
+            default -> face;
+        };
+    }
+
+    /**
+     * The block as it travels: without the water it stood in (that stays behind), a chest carried alone as a single
+     * chest, a piston retracted (its head stays behind and disappears).
+     */
+    private static BlockData carriedData(BlockData data, boolean wholeGroup) {
+        BlockData copy = data.clone();
+        if (copy instanceof Waterlogged waterlogged) {
+            waterlogged.setWaterlogged(false);
+        }
+        if (copy instanceof Chest chest && !wholeGroup) {
+            chest.setType(Chest.Type.SINGLE);
+        }
+        if (copy instanceof Piston piston) {
+            piston.setExtended(false);
+        }
+        return copy;
+    }
+
+    /** Takes everything out of the block in the world; the snapshot keeps it. */
+    private static void emptyLive(Block block) {
+        BlockState state = block.getState();
+        if (state instanceof org.bukkit.block.Chest chest) {
+            // only this half: the inventory of a double chest would be both
+            chest.getBlockInventory().clear();
+        } else if (state instanceof Container container) {
+            container.getInventory().clear();
+        } else if (state instanceof Lectern lectern) {
+            lectern.getInventory().clear();
+        } else if (state instanceof ChiseledBookshelf bookshelf) {
+            bookshelf.getInventory().clear();
+        } else if (state instanceof DecoratedPot pot) {
+            pot.getInventory().clear();
+        } else if (state instanceof Jukebox jukebox) {
+            jukebox.getInventory().clear();
+        } else if (state instanceof Campfire campfire) {
+            for (int i = 0; i < 4; i++) {
+                campfire.setItem(i, null);
+            }
+            campfire.update(true, false);
+        }
+    }
+
+    private FallingBlock spawnCarried(Block origin, BlockState snapshot, String group, int[] offset) {
+        FallingBlock fallingBlock =
+                origin.getWorld().spawnFallingBlock(origin.getLocation().add(0.5, 0, 0.5), snapshot.getBlockData());
+        // without gravity the Bedrock client does not simulate the block falling and landing on its own
+        fallingBlock.setGravity(false);
+        // without collisions (Paper) a carried block never lands, whatever it is held against
+        setNoPhysics(fallingBlock, true);
+        fallingBlock.setDropItem(true);
+        fallingBlock.setHurtEntities(false);
+
+        PersistentDataContainer data = fallingBlock.getPersistentDataContainer();
+        data.set(keyCarried, PersistentDataType.BYTE, (byte) 1);
+        if (group != null) {
+            data.set(keyGroup, PersistentDataType.STRING, group);
+            data.set(keyOffset, PersistentDataType.INTEGER_ARRAY, offset);
+        }
+        if (!storeStateInEntity(fallingBlock, snapshot)) {
+            // without Paper only the spawner type and the contents survive a crash
+            if (snapshot instanceof CreatureSpawner spawner && spawner.getSpawnedType() != null) {
+                data.set(
+                        keySpawnerType,
+                        PersistentDataType.STRING,
+                        spawner.getSpawnedType().name());
+            }
+            ItemStack[] contents = contentsOf(snapshot);
+            if (snapshot instanceof Container && hasItems(contents)) {
+                data.set(keyContainerItems, PersistentDataType.STRING, serializeItems(contents));
+            }
+        }
+
+        states.put(fallingBlock.getUniqueId(), snapshot);
+        carried.add(fallingBlock);
+        createVisualDisplayIfNeeded(snapshot.getBlockData(), fallingBlock);
+        return fallingBlock;
     }
 
     /**
@@ -364,42 +671,46 @@ public class GravityGun implements Listener {
         }
     }
 
-    @EventHandler
+    /** A carried block came down: the plugin places it, not vanilla. */
+    @EventHandler(priority = EventPriority.HIGHEST)
     public void on(EntityChangeBlockEvent event) {
         if (!(event.getEntity() instanceof FallingBlock fallingBlock) || !isCarriedBlock(fallingBlock)) {
             return;
         }
-
-        // the block landed
-        releaseEntity(fallingBlock, true);
-        removeVisualDisplay(fallingBlock);
-
-        Block block = event.getBlock();
-        EntityType spawnedType = getSpawnerType(fallingBlock);
-        if (spawnedType != null) {
-            event.setCancelled(true);
-            block.setType(Material.SPAWNER);
-            applySpawnerType(block, spawnedType);
-        }
-
-        // the block is only placed after this event, so fill the container one tick later
-        ItemStack[] storedItems = getStoredContainerItems(fallingBlock);
-        fallingBlock.getPersistentDataContainer().remove(keyContainerItems);
-        if (storedItems != null) {
-            Bukkit.getScheduler().runTask(PorticleGun.getInstance(), () -> fillContainerOrDrop(block, storedItems));
-        }
+        event.setCancelled(true);
+        land(fallingBlock, event.getBlock());
     }
 
-    @EventHandler
+    /** Vanilla would break a carried block into an item (on a slab, a torch, in a full block): place it instead. */
+    @EventHandler(priority = EventPriority.HIGHEST)
     public void on(EntityDropItemEvent event) {
         if (!(event.getEntity() instanceof FallingBlock fallingBlock) || !isCarriedBlock(fallingBlock)) {
             return;
         }
+        event.setCancelled(true);
+        land(fallingBlock, fallingBlock.getLocation().getBlock());
+    }
 
-        // the block could not be placed where it landed and breaks into an item: keep the contents with it
-        releaseEntity(fallingBlock, false);
-        removeVisualDisplay(fallingBlock);
-        dropContainerItems(fallingBlock);
+    /** The last safety net: a carried block that vanishes for any other reason is placed as well. */
+    @EventHandler(priority = EventPriority.MONITOR)
+    public void on(EntityRemoveEvent event) {
+        if (!(event.getEntity() instanceof FallingBlock fallingBlock) || !isCarriedBlock(fallingBlock)) {
+            return;
+        }
+        switch (event.getCause()) {
+            case DESPAWN, DROP, ENTER_BLOCK, EXPLODE, HIT -> {
+                if (!placed.contains(fallingBlock.getUniqueId())) {
+                    land(fallingBlock, fallingBlock.getLocation().getBlock());
+                }
+            }
+            case UNLOAD -> {
+                // saved with its chunk and placed when it comes back; only let go of it here
+                releaseEntity(fallingBlock, false);
+                carried.remove(fallingBlock);
+                removeVisualDisplay(fallingBlock);
+            }
+            default -> {}
+        }
     }
 
     @EventHandler
@@ -444,14 +755,33 @@ public class GravityGun implements Listener {
         }
     }
 
+    /**
+     * Where the held entity is pulled to: three blocks in front of the eyes, but never into a wall or the floor, so a
+     * block held against something stays in front of it.
+     */
     private Location playersLook(Player player) {
-        return player.getEyeLocation()
-                .add(player.getEyeLocation()
-                        .add(0, 0.75, 0)
-                        .getDirection()
-                        .normalize()
-                        .multiply(3.0D))
+        Location eye = player.getEyeLocation();
+        Location target = eye.clone()
+                .add(eye.clone().add(0, 0.75, 0).getDirection().normalize().multiply(3.0D))
                 .subtract(0, 0.2, 0);
+        // the held block hangs from the target point; trace towards its centre
+        Vector toCentre = target.toVector().add(new Vector(0, 0.5, 0)).subtract(eye.toVector());
+        double length = toCentre.length();
+        if (length < 1.0E-3) {
+            return target;
+        }
+        Vector direction = toCentre.clone().multiply(1 / length);
+        RayTraceResult hit =
+                player.getWorld().rayTraceBlocks(eye, direction, length + 0.6, FluidCollisionMode.NEVER, true);
+        if (hit == null) {
+            return target;
+        }
+        double free = hit.getHitPosition().distance(eye.toVector()) - 0.6;
+        if (free >= length) {
+            return target;
+        }
+        Vector centre = eye.toVector().add(direction.multiply(Math.max(free, 0.8)));
+        return centre.subtract(new Vector(0, 0.5, 0)).toLocation(player.getWorld(), target.getYaw(), target.getPitch());
     }
 
     private boolean isCarriedBlock(Entity entity) {
@@ -471,43 +801,316 @@ public class GravityGun implements Listener {
     }
 
     private void recoverIfOrphaned(Entity entity) {
-        if (entity instanceof FallingBlock && isCarriedBlock(entity) && !entitys.containsKey(entity)) {
-            entity.setGravity(true);
+        if (entity instanceof FallingBlock fallingBlock
+                && isCarriedBlock(entity)
+                && !entitys.containsKey(entity)
+                && !placed.contains(entity.getUniqueId())) {
+            letFall(entity);
+            carried.add(fallingBlock);
         }
     }
 
+    // --- putting blocks back ----------------------------------------------------------------------------------------
+
     /**
-     * Puts a carried block back into the world at (or slightly above) its current position, including spawner type
-     * and container contents. Drops it as items if there is no room.
+     * Puts a carried block, with the other parts of its double chest, bed or door, back into the world where it came
+     * down, or as close above or beside it as there is room. Without any room it drops, with everything inside.
      */
-    private void placeCarriedBlock(FallingBlock fallingBlock) {
-        Block target = fallingBlock.getLocation().getBlock();
-        for (int i = 0; i < BLOCK_PLACEMENT_SEARCH_HEIGHT && !canPlaceInto(target); i++) {
-            target = target.getRelative(0, 1, 0);
+    private void land(FallingBlock fallingBlock, Block where) {
+        if (!placed.add(fallingBlock.getUniqueId())) {
+            return;
+        }
+        Entity holder = leaderOf(fallingBlock);
+        if (holder != null) {
+            releaseEntity(holder, false);
         }
 
-        if (canPlaceInto(target)) {
-            target.setBlockData(fallingBlock.getBlockData());
-            EntityType spawnedType = getSpawnerType(fallingBlock);
-            if (spawnedType != null) {
-                applySpawnerType(target, spawnedType);
+        List<FallingBlock> group = new ArrayList<>();
+        group.add(fallingBlock);
+        for (FallingBlock other : groupMembers(fallingBlock)) {
+            if (placed.add(other.getUniqueId())) {
+                group.add(other);
             }
-            restoreContainerInventory(target, fallingBlock);
-        } else {
-            Location location = fallingBlock.getLocation();
-            dropItems(
-                    location,
-                    new ItemStack[] {new ItemStack(fallingBlock.getBlockData().getPlacementMaterial())});
-            dropContainerItems(fallingBlock);
+        }
+        boolean whole = !isMultiBlock(fallingBlock) || group.size() > 1;
+
+        int[] own = offset(fallingBlock);
+        Block base = where.getRelative(-own[0], -own[1], -own[2]);
+        Block spot = whole ? findSpot(base, group) : null;
+        boolean loneChestHalf = !whole && dataOf(fallingBlock) instanceof Chest;
+        if (loneChestHalf) {
+            // its other half got lost (an unloaded chunk): it is still a whole chest of its own
+            spot = findSpot(where, List.of(fallingBlock));
+            own = new int[3];
         }
 
-        removeVisualDisplay(fallingBlock);
-        fallingBlock.remove();
+        for (FallingBlock part : group) {
+            int[] offset = loneChestHalf ? own : offset(part);
+            if (spot != null) {
+                place(part, spot.getRelative(offset[0], offset[1], offset[2]), group.size() == 1, loneChestHalf);
+            } else {
+                drop(part, where.getLocation().add(0.5, 0.5, 0.5));
+            }
+            forget(part);
+            if (part != fallingBlock && part.isValid()) {
+                part.remove();
+            }
+        }
+    }
+
+    private Block groundBelow(Block block) {
+        int lowest = Math.max(block.getWorld().getMinHeight(), block.getY() - 64);
+        while (block.getY() > lowest && canPlaceInto(block.getRelative(BlockFace.DOWN))) {
+            block = block.getRelative(BlockFace.DOWN);
+        }
+        return block;
+    }
+
+    /** The held entity a carried block belongs to: itself, or the part of its group the player holds. */
+    private Entity leaderOf(FallingBlock fallingBlock) {
+        if (entitys.containsKey(fallingBlock)) {
+            return fallingBlock;
+        }
+        for (Map.Entry<Entity, List<FallingBlock>> entry : followers.entrySet()) {
+            if (entry.getValue().contains(fallingBlock)) {
+                return entry.getKey();
+            }
+        }
+        return null;
+    }
+
+    private boolean isMultiBlock(FallingBlock fallingBlock) {
+        return fallingBlock.getPersistentDataContainer().has(keyGroup, PersistentDataType.STRING);
+    }
+
+    /** The other parts of the block's group that are still on their way, found by their group id. */
+    private List<FallingBlock> groupMembers(FallingBlock fallingBlock) {
+        String group = fallingBlock.getPersistentDataContainer().get(keyGroup, PersistentDataType.STRING);
+        List<FallingBlock> members = new ArrayList<>();
+        if (group == null) {
+            return members;
+        }
+        for (Entity nearby : fallingBlock.getNearbyEntities(4, 4, 4)) {
+            if (nearby instanceof FallingBlock other
+                    && nearby.isValid()
+                    && !placed.contains(nearby.getUniqueId())
+                    && group.equals(nearby.getPersistentDataContainer().get(keyGroup, PersistentDataType.STRING))) {
+                members.add(other);
+            }
+        }
+        return members;
+    }
+
+    /** The first spot (straight up first, then around) where every part of the group fits and holds. */
+    private Block findSpot(Block base, List<FallingBlock> group) {
+        World world = base.getWorld();
+        for (int[] step : SEARCH) {
+            Block candidate = base.getRelative(step[0], step[1], step[2]);
+            boolean fits = true;
+            for (FallingBlock part : group) {
+                int[] offset = group.size() == 1 ? new int[3] : offset(part);
+                Block cell = candidate.getRelative(offset[0], offset[1], offset[2]);
+                if (cell.getY() < world.getMinHeight()
+                        || cell.getY() >= world.getMaxHeight()
+                        || !canPlaceInto(cell)
+                        || (!(group.size() > 1 && restsOnOtherHalf(dataOf(part)))
+                                && !dataOf(part).isSupported(cell))) {
+                    fits = false;
+                    break;
+                }
+            }
+            if (fits) {
+                return candidate;
+            }
+        }
+        return null;
+    }
+
+    /** The upper half of a door or tall plant only holds on its lower half, which is not there yet when checking. */
+    private static boolean restsOnOtherHalf(BlockData data) {
+        return data instanceof Bisected bisected
+                && bisected.getHalf() == Bisected.Half.TOP
+                && !(data instanceof Stairs)
+                && !(data instanceof TrapDoor);
+    }
+
+    private static List<int[]> searchOrder() {
+        List<int[]> order = new ArrayList<>();
+        for (int up = 0; up <= 4; up++) {
+            order.add(new int[] {0, up, 0});
+        }
+        for (int radius = 1; radius <= 2; radius++) {
+            for (int up = 0; up <= 2; up++) {
+                for (int x = -radius; x <= radius; x++) {
+                    for (int z = -radius; z <= radius; z++) {
+                        if (Math.max(Math.abs(x), Math.abs(z)) == radius) {
+                            order.add(new int[] {x, up, z});
+                        }
+                    }
+                }
+            }
+        }
+        return order;
     }
 
     private boolean canPlaceInto(Block block) {
         return block.getType().isAir() || (Tag.REPLACEABLE.isTagged(block.getType()) && !block.isLiquid());
     }
+
+    /**
+     * Places the block with its complete state. Parts of a group go in without block updates first, so a door's lower
+     * half does not break off before its upper half is there.
+     */
+    private void place(FallingBlock fallingBlock, Block target, boolean updates, boolean singleChest) {
+        BlockState state = states.get(fallingBlock.getUniqueId());
+        ItemStack[] legacyContents = getStoredContainerItems(fallingBlock);
+        if (state == null && legacyContents == null) {
+            state = stateFromEntity(fallingBlock);
+        }
+        BlockData data = dataOf(fallingBlock).clone();
+        if (singleChest && data instanceof Chest chest) {
+            chest.setType(Chest.Type.SINGLE);
+        }
+        if (state != null) {
+            BlockState copy = state.copy(target.getLocation());
+            if (copy.getType() == data.getMaterial()) {
+                copy.setBlockData(data);
+            }
+            copy.update(true, updates);
+            return;
+        }
+        // without a state (a crash without Paper): the block, the spawner type and the contents
+        target.setBlockData(data, updates);
+        EntityType spawnedType = getSpawnerType(fallingBlock);
+        if (spawnedType != null) {
+            applySpawnerType(target, spawnedType);
+        }
+        fillContainerOrDrop(target, legacyContents);
+    }
+
+    /**
+     * No room anywhere near: the block drops as an item with everything that was inside. Of a bed, door or tall plant
+     * only one part gives the item (the one the player picked up), each half of a double chest is a chest.
+     */
+    private void drop(FallingBlock fallingBlock, Location location) {
+        BlockState state = states.get(fallingBlock.getUniqueId());
+        ItemStack[] contents = getStoredContainerItems(fallingBlock);
+        if (contents == null) {
+            if (state == null) {
+                state = stateFromEntity(fallingBlock);
+            }
+            contents = state == null ? null : contentsOf(state);
+        }
+        dropItems(location, contents);
+        int[] offset = offset(fallingBlock);
+        boolean mainPart = !isMultiBlock(fallingBlock)
+                || dataOf(fallingBlock) instanceof Chest
+                || (offset[0] == 0 && offset[1] == 0 && offset[2] == 0);
+        if (mainPart) {
+            dropItems(
+                    location,
+                    new ItemStack[] {new ItemStack(dataOf(fallingBlock).getPlacementMaterial())});
+        }
+    }
+
+    private void forget(FallingBlock fallingBlock) {
+        states.remove(fallingBlock.getUniqueId());
+        carried.remove(fallingBlock);
+        removeVisualDisplay(fallingBlock);
+        fallingBlock.getPersistentDataContainer().remove(keyContainerItems);
+    }
+
+    private BlockData dataOf(FallingBlock fallingBlock) {
+        BlockState state = states.get(fallingBlock.getUniqueId());
+        return state != null ? state.getBlockData() : fallingBlock.getBlockData();
+    }
+
+    private int[] offset(FallingBlock fallingBlock) {
+        int[] offset = fallingBlock.getPersistentDataContainer().get(keyOffset, PersistentDataType.INTEGER_ARRAY);
+        return offset != null && offset.length == 3 ? offset : new int[3];
+    }
+
+    /** Everything inside a block state that would be lost if the block dropped as a plain item. */
+    private static ItemStack[] contentsOf(BlockState state) {
+        if (state instanceof Container container) {
+            return container.getSnapshotInventory().getContents();
+        }
+        Inventory inventory = null;
+        if (state instanceof Lectern lectern) {
+            inventory = lectern.getSnapshotInventory();
+        } else if (state instanceof ChiseledBookshelf bookshelf) {
+            inventory = bookshelf.getSnapshotInventory();
+        } else if (state instanceof DecoratedPot pot) {
+            inventory = pot.getSnapshotInventory();
+        } else if (state instanceof Jukebox jukebox) {
+            inventory = jukebox.getSnapshotInventory();
+        } else if (state instanceof Campfire campfire) {
+            ItemStack[] items = new ItemStack[4];
+            for (int i = 0; i < items.length; i++) {
+                items[i] = campfire.getItem(i);
+            }
+            return items;
+        }
+        return inventory == null ? null : inventory.getContents();
+    }
+
+    private static boolean hasItems(ItemStack[] items) {
+        if (items == null) {
+            return false;
+        }
+        for (ItemStack item : items) {
+            if (item != null && item.getType() != Material.AIR) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    // --- Paper ------------------------------------------------------------------------------------------------------
+
+    private static Method method(Class<?> type, String name, Class<?>... parameters) {
+        try {
+            return type.getMethod(name, parameters);
+        } catch (NoSuchMethodException exception) {
+            return null;
+        }
+    }
+
+    private static boolean storeStateInEntity(FallingBlock fallingBlock, BlockState state) {
+        if (SET_BLOCK_STATE == null) {
+            return false;
+        }
+        try {
+            SET_BLOCK_STATE.invoke(fallingBlock, state);
+            return true;
+        } catch (ReflectiveOperationException | RuntimeException exception) {
+            return false;
+        }
+    }
+
+    private static BlockState stateFromEntity(FallingBlock fallingBlock) {
+        if (GET_BLOCK_STATE == null) {
+            return null;
+        }
+        try {
+            return (BlockState) GET_BLOCK_STATE.invoke(fallingBlock);
+        } catch (ReflectiveOperationException | RuntimeException exception) {
+            return null;
+        }
+    }
+
+    private static void setNoPhysics(Entity entity, boolean noPhysics) {
+        if (SET_NO_PHYSICS == null) {
+            return;
+        }
+        try {
+            SET_NO_PHYSICS.invoke(entity, noPhysics);
+        } catch (ReflectiveOperationException | RuntimeException ignored) {
+            // Spigot: carried blocks keep their collisions and land when held against something
+        }
+    }
+
+    // --- legacy data (servers without Paper) ------------------------------------------------------------------------
 
     private EntityType getSpawnerType(Entity entity) {
         String name = entity.getPersistentDataContainer().get(keySpawnerType, PersistentDataType.STRING);
@@ -528,45 +1131,16 @@ public class GravityGun implements Listener {
         }
     }
 
-    private void storeContainerInventory(Block block, FallingBlock fallingBlock) {
-        if (!(block.getState() instanceof Container container)) {
-            return;
-        }
-
-        ItemStack[] contents = container.getInventory().getContents();
-
-        boolean hasItems = false;
-        for (ItemStack item : contents) {
-            if (item != null && item.getType() != Material.AIR) {
-                hasItems = true;
-                break;
-            }
-        }
-
-        if (!hasItems) {
-            return;
-        }
-
-        fallingBlock
-                .getPersistentDataContainer()
-                .set(keyContainerItems, PersistentDataType.STRING, serializeItems(contents));
-        container.getInventory().clear();
-        container.update(true);
-    }
-
-    private void restoreContainerInventory(Block block, Entity entity) {
-        ItemStack[] storedItems = getStoredContainerItems(entity);
-        entity.getPersistentDataContainer().remove(keyContainerItems);
-        fillContainerOrDrop(block, storedItems);
-    }
-
     private void fillContainerOrDrop(Block block, ItemStack[] storedItems) {
         if (storedItems == null) {
             return;
         }
 
         if (block.getState() instanceof Container container) {
-            ItemStack[] destination = new ItemStack[container.getInventory().getSize()];
+            Inventory inventory = container instanceof org.bukkit.block.Chest chest
+                    ? chest.getBlockInventory()
+                    : container.getInventory();
+            ItemStack[] destination = new ItemStack[inventory.getSize()];
             int limit = Math.min(destination.length, storedItems.length);
             System.arraycopy(storedItems, 0, destination, 0, limit);
 
@@ -575,8 +1149,7 @@ public class GravityGun implements Listener {
                 dropItems(block.getLocation().add(0.5, 0.5, 0.5), overflow);
             }
 
-            container.getInventory().setContents(destination);
-            container.update(true);
+            inventory.setContents(destination);
         } else {
             dropItems(block.getLocation().add(0.5, 0.5, 0.5), storedItems);
         }
@@ -588,6 +1161,14 @@ public class GravityGun implements Listener {
         }
 
         removeVisualDisplay(entity);
+        List<FallingBlock> parts = followers.remove(entity);
+        if (parts != null) {
+            for (FallingBlock part : parts) {
+                if (part.isValid()) {
+                    letFall(part);
+                }
+            }
+        }
 
         Player owner = getOwner(entity);
         if (owner != null) {
@@ -595,18 +1176,48 @@ public class GravityGun implements Listener {
         }
     }
 
-    private void createVisualDisplayIfNeeded(Block block, FallingBlock fallingBlock) {
-        if (!VISUAL_FALLBACK_BLOCKS.contains(block.getType())) {
+    // --- stand-ins for blocks a falling block does not show
+    // ------------------------------------------------------------
+
+    /**
+     * Blocks drawn by the client's block entity renderers (chests, beds, shulker boxes, banners, signs, heads, ...)
+     * are invisible as falling blocks on Java; a block display shows them while they are carried.
+     */
+    private static boolean needsVisualDisplay(Material material) {
+        String name = material.name();
+        return name.equals("CHEST")
+                || name.endsWith("_CHEST")
+                || Tag.BEDS.isTagged(material)
+                || name.endsWith("SHULKER_BOX")
+                || name.endsWith("BANNER")
+                || name.endsWith("SIGN")
+                || name.endsWith("_SKULL")
+                || (name.endsWith("_HEAD") && material != Material.PISTON_HEAD)
+                || name.endsWith("GOLEM_STATUE")
+                || material == Material.DECORATED_POT
+                || material == Material.CONDUIT
+                || material == Material.BELL;
+    }
+
+    private void createVisualDisplayIfNeeded(BlockData data, FallingBlock fallingBlock) {
+        if (!needsVisualDisplay(data.getMaterial())) {
             return;
         }
 
-        BlockDisplay display = block.getWorld()
-                .spawn(block.getLocation().add(0.5, 0, 0.5), BlockDisplay.class, spawned -> {
-                    spawned.setBlock(block.getBlockData());
+        BlockDisplay display = fallingBlock
+                .getWorld()
+                .spawn(fallingBlock.getLocation(), BlockDisplay.class, spawned -> {
+                    spawned.setBlock(data);
                     spawned.setGravity(false);
                     spawned.setInvulnerable(true);
                     spawned.setPersistent(false);
                 });
+        // the display is placed from its corner, the falling block from its bottom centre
+        display.setTransformation(new org.bukkit.util.Transformation(
+                new org.joml.Vector3f(-0.5f, 0, -0.5f),
+                display.getTransformation().getLeftRotation(),
+                display.getTransformation().getScale(),
+                display.getTransformation().getRightRotation()));
 
         visualDisplays.put(fallingBlock, display);
     }
@@ -664,12 +1275,6 @@ public class GravityGun implements Listener {
         if (display != null && display.isValid()) {
             display.remove();
         }
-    }
-
-    private void dropContainerItems(Entity entity) {
-        ItemStack[] storedItems = getStoredContainerItems(entity);
-        entity.getPersistentDataContainer().remove(keyContainerItems);
-        dropItems(entity.getLocation(), storedItems);
     }
 
     private ItemStack[] getStoredContainerItems(Entity entity) {
