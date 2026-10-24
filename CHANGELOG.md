@@ -5,6 +5,13 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+## [1.6.16] - 2026-10-24
+
+### Changed
+- **Connection switch** in the settings menu: drawn as a vertical switch in the black of the colour sliders instead of a
+  white banner with a stripe. A grey groove, the knob up and lime while the portals are connected, down and red while
+  they are blocked, shaded towards the groove.
+
 ## [1.6.15] - 2026-10-24
 
 ### Added
