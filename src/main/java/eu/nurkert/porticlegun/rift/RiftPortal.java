@@ -12,6 +12,10 @@ final class RiftPortal {
 
     static final double HALF_WIDTH = 1.0;
     static final double HEIGHT = 2.4;
+    // how far in front of or behind its plane a body still counts as standing in the portal
+    static final double DEPTH = 0.5;
+    // half a player's width: the body goes through as soon as it touches the oval, not only with its centre
+    static final double MARGIN = 0.3;
 
     final UUID owner;
     final Location feet;
@@ -38,14 +42,38 @@ final class RiftPortal {
      * @return whether a point (an entity's centre) is inside the portal's oval, close to its plane
      */
     boolean contains(Location point) {
-        if (point.getWorld() == null || !point.getWorld().equals(feet.getWorld())) {
+        return crossedBy(point, point);
+    }
+
+    /**
+     * Whether a body moving between two points (its centre) went through the portal: it stands in it, or it passed the
+     * portal's plane between them, however fast. A body touching the oval with its side counts as well.
+     *
+     * @return whether the move took the body through the oval
+     */
+    boolean crossedBy(Location from, Location to) {
+        if (to.getWorld() == null
+                || !to.getWorld().equals(feet.getWorld())
+                || !to.getWorld().equals(from.getWorld())) {
             return false;
         }
-        Vector relative = point.toVector().subtract(centre().toVector());
-        double depth = relative.dot(normal);
-        double side = relative.dot(right) / HALF_WIDTH;
-        double up = relative.getY() / (HEIGHT / 2);
-        return Math.abs(depth) < 0.45 && side * side + up * up <= 1.0;
+        Vector centre = centre().toVector();
+        Vector a = from.toVector().subtract(centre);
+        Vector b = to.toVector().subtract(centre);
+        double depthA = a.dot(normal);
+        double depthB = b.dot(normal);
+        Vector at;
+        if (Math.abs(depthB) < DEPTH) {
+            at = b;
+        } else if (depthA * depthB < 0 && a.distanceSquared(b) < 16) {
+            // the point where the move passed the plane
+            at = a.add(b.clone().subtract(a).multiply(depthA / (depthA - depthB)));
+        } else {
+            return false;
+        }
+        double side = at.dot(right) / (HALF_WIDTH + MARGIN);
+        double up = at.getY() / (HEIGHT / 2 + MARGIN);
+        return side * side + up * up <= 1.0;
     }
 
     /**

@@ -3,12 +3,20 @@
 All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project uses [semantic versioning](https://semver.org).
 
-## [Unreleased]
+## [1.6.18] - 2026-10-24
 
 ### Added
 - **Wiki on the website**: the documentation is built into a searchable wiki at
   [nurkert.github.io/porticle-gun/wiki](https://nurkert.github.io/porticle-gun/wiki/) on every change, in the look of
   the site.
+
+### Fixed
+- **Rifts often let players walk through without taking them along.** A player was only checked when their body moved
+  into another block, while the crossing usually happens within one, and checked a second time a tick later, when a
+  running player was already past the rift. Rifts now notice every move that passes through the oval, at any speed, and
+  count the body touching the rim, not only its centre.
+- **Carried blocks could sink through the ground**: a block let go of while held low, already a bit inside the floor,
+  fell straight through it. Such a block is now placed at once on the free spot above it, with everything inside.
 
 ## [1.6.17] - 2026-10-24
 

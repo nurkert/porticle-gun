@@ -6,8 +6,10 @@ import eu.nurkert.porticlegun.util.WorldGuardIntegration;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
 import org.bukkit.Bukkit;
@@ -417,17 +419,20 @@ public class RiftPortalManager implements Listener {
     }
 
     /**
-     * Rebuilds the grid of blocks each open portal covers. Players are checked against it only when their body moves
-     * into another block, with one hash lookup instead of a loop over all portals.
+     * Rebuilds the grid of blocks each open portal covers. A moving player is checked only against the portals of the
+     * blocks their body moves from and to, with a hash lookup instead of a loop over all portals.
      */
     private void index() {
         cells.clear();
         for (RiftPortal[] pair : pairs.values()) {
             for (RiftPortal portal : pair) {
                 Location centre = portal.centre();
-                for (double side = -RiftPortal.HALF_WIDTH; side <= RiftPortal.HALF_WIDTH; side += 0.5) {
-                    for (double up = -RiftPortal.HEIGHT / 2; up <= RiftPortal.HEIGHT / 2; up += 0.5) {
-                        for (double depth = -0.45; depth <= 0.45; depth += 0.45) {
+                double halfWidth = RiftPortal.HALF_WIDTH + RiftPortal.MARGIN;
+                double halfHeight = RiftPortal.HEIGHT / 2 + RiftPortal.MARGIN;
+                for (double side = -halfWidth; side <= halfWidth + 1.0E-6; side += halfWidth / 3) {
+                    for (double up = -halfHeight; up <= halfHeight + 1.0E-6; up += halfHeight / 4) {
+                        // a move that passes the plane starts or ends within a block of it
+                        for (double depth = -1.0; depth <= 1.0; depth += 0.5) {
                             Location cell = centre.clone()
                                     .add(portal.right.clone().multiply(side))
                                     .add(portal.normal.clone().multiply(depth))
@@ -459,20 +464,16 @@ public class RiftPortalManager implements Listener {
         double middle = player.getHeight() / 2;
         Location from = event.getFrom().clone().add(0, middle, 0);
         Location to = event.getTo().clone().add(0, middle, 0);
-        if (from.getBlockX() == to.getBlockX()
-                && from.getBlockY() == to.getBlockY()
-                && from.getBlockZ() == to.getBlockZ()
-                && from.getWorld() == to.getWorld()) {
+        if (from.getWorld() != to.getWorld() || from.toVector().equals(to.toVector())) {
             return;
         }
-        List<RiftPortal> here = cells.get(cellKey(to));
-        if (here == null) {
-            return;
-        }
-        for (RiftPortal portal : here) {
-            if (exitLocks.get(player.getUniqueId()) != portal && portal.contains(to) && canTravel(player)) {
+        // the portal stands in the middle of its blocks: the move that crosses it often stays within one block
+        Set<RiftPortal> near = new LinkedHashSet<>(cells.getOrDefault(cellKey(to), List.of()));
+        near.addAll(cells.getOrDefault(cellKey(from), List.of()));
+        for (RiftPortal portal : near) {
+            if (exitLocks.get(player.getUniqueId()) != portal && portal.crossedBy(from, to) && canTravel(player)) {
                 // after the event the player would be put back to where the event says; move them next tick
-                Bukkit.getScheduler().runTask(plugin, () -> travel(player, portal));
+                Bukkit.getScheduler().runTask(plugin, () -> travel(player, portal, false));
                 return;
             }
         }
@@ -485,17 +486,24 @@ public class RiftPortalManager implements Listener {
             if (entity instanceof Player || !canTravel(entity) || exitLocks.get(entity.getUniqueId()) == portal) {
                 continue;
             }
-            if (portal.contains(entity.getLocation().add(0, entity.getHeight() / 2, 0))) {
-                travel(entity, portal);
+            Location now = entity.getLocation().add(0, entity.getHeight() / 2, 0);
+            // checked every other tick: where it was then, so a fast arrow or item does not fly through unnoticed
+            Location before = now.clone().subtract(entity.getVelocity().clone().multiply(2));
+            if (portal.crossedBy(before, now)) {
+                travel(entity, portal, false);
             }
         }
     }
 
-    private void travel(Entity entity, RiftPortal portal) {
+    /**
+     * Takes an entity through a portal it was found going through. A player is moved a tick later, when they may have
+     * walked on already; the crossing counts all the same.
+     */
+    private void travel(Entity entity, RiftPortal portal, boolean recheck) {
         if (!entity.isValid()
                 || !isOpen(portal)
                 || exitLocks.get(entity.getUniqueId()) == portal
-                || !portal.contains(entity.getLocation().add(0, entity.getHeight() / 2, 0))) {
+                || (recheck && !portal.contains(entity.getLocation().add(0, entity.getHeight() / 2, 0)))) {
             return; // e.g. two move events in one tick: the first already took the player through
         }
         RiftPortal target = portal.partner;

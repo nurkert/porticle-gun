@@ -25,7 +25,8 @@ cannot stand there (a door on a carpet), on the nearest free spot above or besid
 within two blocks does the block drop as an item, together with everything that was inside.
 
 While it is held, a block stays in front of walls and floors instead of being pushed into them, and holding it against
-something never makes it fall (Paper).
+something never makes it fall (Paper). A block let go of while it still sticks partly in the floor or a wall is placed
+right away on the free spot above or beside it, so it can never sink through the ground.
 
 ## Restarts and crashes
 
