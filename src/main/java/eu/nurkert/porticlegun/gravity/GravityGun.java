@@ -76,6 +76,7 @@ import org.bukkit.persistence.PersistentDataContainer;
 import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.scheduler.BukkitTask;
+import org.bukkit.util.BoundingBox;
 import org.bukkit.util.RayTraceResult;
 import org.bukkit.util.Vector;
 
@@ -210,6 +211,12 @@ public class GravityGun implements Listener {
                     updateVisualDisplay(entity);
                 }
 
+                for (FallingBlock block : new ArrayList<>(carried)) {
+                    if (block.isValid() && !placed.contains(block.getUniqueId()) && leaderOf(block) == null) {
+                        settleIfStuck(List.of(block));
+                    }
+                }
+
                 updateRemainingVisualDisplays();
             }
         }.runTaskTimer(PorticleGun.getInstance(), 0, 1);
@@ -292,8 +299,10 @@ public class GravityGun implements Listener {
 
         entitys.remove(entity);
         entity.setFallDistance(0F);
-        if (entity instanceof FallingBlock) {
+        List<FallingBlock> released = new ArrayList<>();
+        if (entity instanceof FallingBlock fallingBlock) {
             letFall(entity);
+            released.add(fallingBlock);
         }
         List<FallingBlock> parts = followers.remove(entity);
         if (parts != null) {
@@ -302,8 +311,13 @@ public class GravityGun implements Listener {
                     // the same speed as the held part, so they come down side by side
                     part.setVelocity(entity.getVelocity());
                     letFall(part);
+                    released.add(part);
                 }
             }
+        }
+        // land() lets go of the holder itself; it is placing the group already
+        if (released.stream().noneMatch(part -> placed.contains(part.getUniqueId()))) {
+            settleIfStuck(released);
         }
 
         Player owner = getOwner(entity);
@@ -320,6 +334,40 @@ public class GravityGun implements Listener {
     private void letFall(Entity entity) {
         entity.setGravity(true);
         setNoPhysics(entity, false);
+    }
+
+    /**
+     * A carried block let go of while it is partly inside the ground or a wall would fall straight through it, since
+     * nothing stops a falling block from moving out of a block it is already in. Such a block is placed right away, on
+     * the nearest free spot above or beside it.
+     */
+    private void settleIfStuck(List<FallingBlock> blocks) {
+        for (FallingBlock block : blocks) {
+            if (block.isValid() && isStuck(block)) {
+                land(block, block.getLocation().add(0, 0.49, 0).getBlock());
+                return;
+            }
+        }
+    }
+
+    private static boolean isStuck(FallingBlock block) {
+        BoundingBox box = block.getBoundingBox().expand(-0.02);
+        World world = block.getWorld();
+        for (int x = (int) Math.floor(box.getMinX()); x <= (int) Math.floor(box.getMaxX()); x++) {
+            for (int z = (int) Math.floor(box.getMinZ()); z <= (int) Math.floor(box.getMaxZ()); z++) {
+                if (!world.isChunkLoaded(x >> 4, z >> 4)) {
+                    continue;
+                }
+                for (int y = (int) Math.floor(box.getMinY()); y <= (int) Math.floor(box.getMaxY()); y++) {
+                    // collision shapes are relative to their block
+                    BoundingBox local = box.clone().shift(-x, -y, -z);
+                    if (world.getBlockAt(x, y, z).getCollisionShape().overlaps(local)) {
+                        return true;
+                    }
+                }
+            }
+        }
+        return false;
     }
 
     private Player getOwner(Entity entity) {
@@ -773,15 +821,22 @@ public class GravityGun implements Listener {
         Vector direction = toCentre.clone().multiply(1 / length);
         RayTraceResult hit =
                 player.getWorld().rayTraceBlocks(eye, direction, length + 0.6, FluidCollisionMode.NEVER, true);
-        if (hit == null) {
-            return target;
+        if (hit != null) {
+            double free = hit.getHitPosition().distance(eye.toVector()) - 0.6;
+            if (free < length) {
+                Vector centre = eye.toVector().add(direction.multiply(Math.max(free, 0.8)));
+                target = centre.subtract(new Vector(0, 0.5, 0))
+                        .toLocation(player.getWorld(), target.getYaw(), target.getPitch());
+            }
         }
-        double free = hit.getHitPosition().distance(eye.toVector()) - 0.6;
-        if (free >= length) {
-            return target;
+        // held low, at a flat angle, the margin along the view still leaves the block in the floor: lift it onto it
+        RayTraceResult floor = player.getWorld()
+                .rayTraceBlocks(
+                        target.clone().add(0, 0.5, 0), new Vector(0, -1, 0), 0.5, FluidCollisionMode.NEVER, true);
+        if (floor != null && floor.getHitPosition().getY() > target.getY()) {
+            target.setY(floor.getHitPosition().getY() + 0.01);
         }
-        Vector centre = eye.toVector().add(direction.multiply(Math.max(free, 0.8)));
-        return centre.subtract(new Vector(0, 0.5, 0)).toLocation(player.getWorld(), target.getYaw(), target.getPitch());
+        return target;
     }
 
     private boolean isCarriedBlock(Entity entity) {

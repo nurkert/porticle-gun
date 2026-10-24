@@ -88,6 +88,8 @@ chest menu has room for eight, so on servers with more worlds list the ones nobo
   destination is found.
 - At the destination all four compass directions are scored: room for the exit portal behind the landing spot, free
   space in front of it, and the direction the player walked in. Travellers step out facing open space.
+- Going through counts as soon as the body touches the oval, at any speed: a sprint jump that passes the rift between
+  two steps takes the player through as well. Mobs, items and arrows are checked the same way.
 - Stored places (homes, back, death, spawn) that have been built over move to the nearest safe spot within three
   blocks.
 - A rift pair closes when its opener is farther than `close-distance` blocks from both portals for three seconds, and
